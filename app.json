@@ -17,7 +17,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.mukilan19.DaySumm"
+      "package": "com.mukilan19.daysumm"
     },
     "web": {
       "favicon": "./assets/favicon.png"
