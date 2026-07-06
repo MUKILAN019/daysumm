@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@react-native-firebase/app": "^25.1.0",
+    "@react-native-firebase/auth": "^25.1.0",
+    "@react-native-firebase/firestore": "^25.1.0",
+    "@react-native-firebase/messaging": "^25.1.0",
     "expo": "~57.0.2",
+    "expo-dev-client": "~57.0.5",
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.0"
