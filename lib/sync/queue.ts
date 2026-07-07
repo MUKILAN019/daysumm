@@ -41,6 +41,7 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   const user = getAuth().currentUser;
 
   if (!user) {
+    console.log('Sync skipped: no authenticated user');
     return {
       attempted: 0,
       synced: 0,
@@ -49,6 +50,17 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   }
 
   const pendingEntries = await getPendingSyncEntries();
+
+  if (pendingEntries.length === 0) {
+    console.log('Sync skipped: no pending entries');
+    return {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+    };
+  }
+
+  console.log(`Syncing ${pendingEntries.length} pending entries`);
   const db = getFirestore();
   const result: SyncEntriesResult = {
     attempted: pendingEntries.length,
@@ -75,5 +87,6 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     }
   }
 
+  console.log('Sync complete', result);
   return result;
 }
