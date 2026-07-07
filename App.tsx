@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import NetInfo from '@react-native-community/netinfo';
 import {
   getAuth,
   onAuthStateChanged,
   signInAnonymously,
 } from '@react-native-firebase/auth';
 import {
+  AppState,
+  type AppStateStatus,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,11 +23,16 @@ import {
   insertEntry,
   type LocalEntry,
 } from './lib/db/entries';
+import { syncEntries } from './lib/sync/queue';
+
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 export default function App() {
   const [text, setText] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [entries, setEntries] = useState<LocalEntry[]>([]);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const wasOnlineRef = useRef<boolean | null>(null);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -33,12 +41,40 @@ export default function App() {
     console.log('Local SQLite entries', localEntries);
   }
 
+  async function runSync(reason: string) {
+    try {
+      const networkState = await NetInfo.fetch();
+      const isOnline =
+        networkState.isConnected === true && networkState.isInternetReachable !== false;
+
+      if (!isOnline) {
+        console.log(`Sync ${reason} skipped offline`);
+        return;
+      }
+
+      const result = await syncEntries();
+
+      if (result.attempted > 0) {
+        console.log(`Sync ${reason}`, result);
+      }
+
+      await loadEntries();
+    } catch (error) {
+      console.warn(`Sync ${reason} failed`, error);
+    }
+  }
+
   useEffect(() => {
     const auth = getAuth();
     let isSigningIn = false;
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user || isSigningIn) {
+      if (user) {
+        runSync('auth-ready');
+        return;
+      }
+
+      if (isSigningIn) {
         return;
       }
 
@@ -61,6 +97,39 @@ export default function App() {
       .catch((error: unknown) => {
         console.warn('SQLite initialization failed', error);
       });
+  }, []);
+
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+      const previousAppState = appStateRef.current;
+      appStateRef.current = nextAppState;
+
+      if (previousAppState !== 'active' && nextAppState === 'active') {
+        runSync('foreground');
+      }
+    });
+
+    const netInfoUnsubscribe = NetInfo.addEventListener((state) => {
+      const isOnline = state.isConnected === true && state.isInternetReachable !== false;
+      const wasOnline = wasOnlineRef.current;
+      wasOnlineRef.current = isOnline;
+
+      if (wasOnline === false && isOnline) {
+        runSync('reconnect');
+      }
+    });
+
+    const intervalId = setInterval(() => {
+      if (appStateRef.current === 'active') {
+        runSync('interval');
+      }
+    }, FIFTEEN_MINUTES_MS);
+
+    return () => {
+      appStateSubscription.remove();
+      netInfoUnsubscribe();
+      clearInterval(intervalId);
+    };
   }, []);
 
   async function handleSave() {

@@ -112,3 +112,36 @@ export async function getAllEntries() {
     synced: row.synced === 1,
   }));
 }
+
+export async function getUnsyncedEntries() {
+  await initDb();
+
+  const db = await getDb();
+  const rows = await db.getAllAsync<EntryRow>(`
+    SELECT localId, uid, text, createdAt, source, synced
+    FROM entries
+    WHERE synced = 0
+    ORDER BY createdAt ASC
+  `);
+
+  return rows.map<LocalEntry>((row) => ({
+    ...row,
+    synced: row.synced === 1,
+  }));
+}
+
+export async function markEntrySynced(localId: string, uid: string) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET synced = 1, uid = ?
+      WHERE localId = ?
+    `,
+    uid,
+    localId,
+  );
+}
