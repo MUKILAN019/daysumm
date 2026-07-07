@@ -23,6 +23,7 @@ import {
   insertEntry,
   type LocalEntry,
 } from './lib/db/entries';
+import { EntryListScreen } from './lib/screens/EntryListScreen';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -31,6 +32,8 @@ export default function App() {
   const [text, setText] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [entries, setEntries] = useState<LocalEntry[]>([]);
+  const [showEntryList, setShowEntryList] = useState(false);
+  const [entriesRefreshVersion, setEntriesRefreshVersion] = useState(0);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const wasOnlineRef = useRef<boolean | null>(null);
 
@@ -39,6 +42,11 @@ export default function App() {
 
     setEntries(localEntries);
     console.log('Local SQLite entries', localEntries);
+  }
+
+  async function refreshEntries() {
+    await loadEntries();
+    setEntriesRefreshVersion((value) => value + 1);
   }
 
   async function runSync(reason: string) {
@@ -59,6 +67,7 @@ export default function App() {
       }
 
       await loadEntries();
+      setEntriesRefreshVersion((value) => value + 1);
     } catch (error) {
       console.warn(`Sync ${reason} failed`, error);
     }
@@ -93,7 +102,7 @@ export default function App() {
 
   useEffect(() => {
     initDb()
-      .then(loadEntries)
+      .then(refreshEntries)
       .catch((error: unknown) => {
         console.warn('SQLite initialization failed', error);
       });
@@ -141,9 +150,11 @@ export default function App() {
 
     try {
       await insertEntry(trimmedText, 'text');
-      await loadEntries();
+      await refreshEntries();
       setText('');
       setSavedMessage('Saved locally');
+
+      await runSync('save');
 
       setTimeout(() => {
         setSavedMessage('');
@@ -155,6 +166,15 @@ export default function App() {
   }
 
   const canSave = text.trim().length > 0;
+
+  if (showEntryList) {
+    return (
+      <EntryListScreen
+        onBack={() => setShowEntryList(false)}
+        refreshKey={entriesRefreshVersion}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -175,18 +195,27 @@ export default function App() {
 
       <View style={styles.actionRow}>
         <Text style={styles.savedMessage}>{savedMessage}</Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={!canSave}
-          style={({ pressed }) => [
-            styles.saveButton,
-            !canSave && styles.saveButtonDisabled,
-            pressed && canSave && styles.saveButtonPressed,
-          ]}
-          onPress={handleSave}
-        >
-          <Text style={styles.saveButtonText}>Save</Text>
-        </Pressable>
+        <View style={styles.buttonRow}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.secondaryButton}
+            onPress={() => setShowEntryList(true)}
+          >
+            <Text style={styles.secondaryButtonText}>View Entries</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canSave}
+            style={({ pressed }) => [
+              styles.saveButton,
+              !canSave && styles.saveButtonDisabled,
+              pressed && canSave && styles.saveButtonPressed,
+            ]}
+            onPress={handleSave}
+          >
+            <Text style={styles.saveButtonText}>Save</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.debugPanel}>
@@ -257,6 +286,25 @@ const styles = StyleSheet.create({
     color: '#047857',
     fontSize: 15,
     fontWeight: '600',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  secondaryButton: {
+    minWidth: 112,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 12,
+  },
+  secondaryButtonText: {
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: '700',
   },
   saveButton: {
     minWidth: 96,
