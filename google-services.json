@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "710945440659",
+    "project_id": "daysumm",
+    "storage_bucket": "daysumm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:710945440659:android:6cbcd07f8afe24475c1e66",
+        "android_client_info": {
+          "package_name": "com.mukilan19.daysumm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "710945440659-nujnnlf8u1ua2colslgt9tl6mv84a98n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mukilan19.daysumm",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7oirYZ-lUxoZVg2oV2ClZzZ_ycibAFvQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
