@@ -65,6 +65,11 @@ export async function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_entries_synced
       ON entries (synced);
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
   `);
 }
 
@@ -144,4 +149,47 @@ export async function markEntrySynced(localId: string, uid: string) {
     uid,
     localId,
   );
+}
+
+interface SettingRow {
+  key: string;
+  value: string;
+}
+
+async function getSetting(key: string): Promise<string | null> {
+  await initDb();
+
+  const db = await getDb();
+  const rows = await db.getAllAsync<SettingRow>(`
+    SELECT value
+    FROM settings
+    WHERE key = ?
+    LIMIT 1
+  `,
+  key);
+
+  return rows.length > 0 ? rows[0].value : null;
+}
+
+async function setSetting(key: string, value: string) {
+  await initDb();
+
+  const db = await getDb();
+  await db.runAsync(
+    `
+      INSERT OR REPLACE INTO settings (key, value)
+      VALUES (?, ?)
+    `,
+    key,
+    value,
+  );
+}
+
+export async function getHasSeenSampleDigest() {
+  const settingValue = await getSetting('seenSampleDigest');
+  return settingValue === '1';
+}
+
+export async function markSampleDigestSeen() {
+  await setSetting('seenSampleDigest', '1');
 }

@@ -2,8 +2,36 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DigestCard } from '../components/DigestCard';
-import { getAllEntries, type LocalEntry } from '../db/entries';
+import {
+  getAllEntries,
+  getHasSeenSampleDigest,
+  markSampleDigestSeen,
+  type LocalEntry,
+} from '../db/entries';
 import { generateDigest, type Digest } from '../functions/generateDigest';
+
+const sampleDigest: Digest = {
+  uid: 'sample',
+  date: new Date().toISOString(),
+  headline: 'Daily digest preview',
+  highlights: [
+    'Captured the most important notes from busy work today',
+    'Turned scattered updates into a clear summary',
+    'Prepared action items for tomorrow',
+  ],
+  actionItems: [
+    'Follow up on the top priority task',
+    'Share the update with your team',
+  ],
+  decisions: [
+    'Confirmed next sprint milestone and timeline',
+  ],
+  blockers: [
+    'Waiting on review feedback to move forward',
+  ],
+  statusUpdate:
+    'Overall progress is strong; focus on the highest-value items and clear any blockers early.',
+};
 
 interface EntryListScreenProps {
   onBack: () => void;
@@ -16,6 +44,7 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
   const [digest, setDigest] = useState<Digest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showSampleDigest, setShowSampleDigest] = useState(false);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -23,7 +52,17 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
   }
 
   useEffect(() => {
-    loadEntries().catch((error: unknown) => {
+    async function loadScreen() {
+      await loadEntries();
+
+      const hasSeenSample = await getHasSeenSampleDigest();
+      if (!hasSeenSample) {
+        setShowSampleDigest(true);
+        await markSampleDigestSeen();
+      }
+    }
+
+    loadScreen().catch((error: unknown) => {
       console.warn('Failed to load entries', error);
     });
   }, [refreshKey]);
@@ -35,6 +74,8 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
     try {
       const nextDigest = await generateDigest();
       setDigest(nextDigest);
+      await markSampleDigestSeen();
+      setShowSampleDigest(false);
     } catch (error) {
       console.warn('Digest generation failed', error);
       setErrorMessage('We could not generate a digest right now.');
@@ -75,6 +116,8 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
             <View style={styles.skeletonLine} />
             <View style={styles.skeletonLine} />
           </View>
+        ) : showSampleDigest ? (
+          <DigestCard digest={sampleDigest} />
         ) : digest ? (
           <DigestCard digest={digest} />
         ) : errorMessage ? (
