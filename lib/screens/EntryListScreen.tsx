@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { DigestCard } from '../components/DigestCard';
 import { getAllEntries, type LocalEntry } from '../db/entries';
+import { generateDigest, type Digest } from '../functions/generateDigest';
 
 interface EntryListScreenProps {
   onBack: () => void;
@@ -11,6 +13,9 @@ interface EntryListScreenProps {
 export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
   const [entries, setEntries] = useState<LocalEntry[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [digest, setDigest] = useState<Digest | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -23,6 +28,21 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
     });
   }, [refreshKey]);
 
+  async function handleGenerateNow() {
+    setIsGenerating(true);
+    setErrorMessage(null);
+
+    try {
+      const nextDigest = await generateDigest();
+      setDigest(nextDigest);
+    } catch (error) {
+      console.warn('Digest generation failed', error);
+      setErrorMessage('We could not generate a digest right now.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -33,6 +53,39 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
       </View>
 
       <Text style={styles.subtitle}>All saved notes, newest first.</Text>
+
+      <View style={styles.digestSection}>
+        <View style={styles.digestHeaderRow}>
+          <Text style={styles.digestTitle}>Today’s digest</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isGenerating}
+            onPress={handleGenerateNow}
+            style={[styles.generateButton, isGenerating && styles.generateButtonDisabled]}
+          >
+            <Text style={styles.generateButtonText}>{isGenerating ? 'Generating…' : 'Generate now'}</Text>
+          </Pressable>
+        </View>
+
+        {isGenerating ? (
+          <View style={styles.skeletonCard}>
+            <View style={styles.skeletonHeadline} />
+            <View style={styles.skeletonLine} />
+            <View style={styles.skeletonLine} />
+            <View style={styles.skeletonLine} />
+            <View style={styles.skeletonLine} />
+          </View>
+        ) : digest ? (
+          <DigestCard digest={digest} />
+        ) : errorMessage ? (
+          <View style={styles.errorCard}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+            <Pressable accessibilityRole="button" onPress={handleGenerateNow} style={styles.retryButton}>
+              <Text style={styles.retryButtonText}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </View>
 
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
         {entries.length === 0 ? (
@@ -143,6 +196,85 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#6B7280',
     fontSize: 14,
+  },
+  digestSection: {
+    gap: 10,
+  },
+  digestHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  digestTitle: {
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  generateButton: {
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+  },
+  generateButtonDisabled: {
+    opacity: 0.7,
+  },
+  generateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  skeletonCard: {
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  skeletonHeadline: {
+    height: 20,
+    width: '70%',
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+  },
+  skeletonLine: {
+    height: 12,
+    width: '100%',
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+  },
+  errorCard: {
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 12,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  retryButton: {
+    minHeight: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   list: {
     flex: 1,
