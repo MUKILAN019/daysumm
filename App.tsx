@@ -77,8 +77,15 @@ export default function App() {
     const auth = getAuth();
     let isSigningIn = false;
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        try {
+          const token = await user.getIdToken();
+          console.log('Firebase client auth ID token:', token);
+        } catch (error) {
+          console.warn('Unable to retrieve Firebase auth token', error);
+        }
+
         runSync('auth-ready');
         return;
       }
