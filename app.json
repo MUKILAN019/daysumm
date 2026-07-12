@@ -28,6 +28,11 @@
       "@react-native-firebase/auth",
       "@react-native-firebase/messaging",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "df3789f1-7679-4a5c-9aaa-4412176c2c7b"
+      }
+    }
   }
 }
