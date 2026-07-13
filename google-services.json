@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "710945440659-nujnnlf8u1ua2colslgt9tl6mv84a98n.apps.googleusercontent.com",
+          "client_id": "710945440659-320nv9etithjtgvi3aqqvqgv868h5ln4.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.mukilan19.daysumm",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "certificate_hash": "be0ce33c2caddceddd4a85415ad20b5cc51d76e3"
           }
         },
         {

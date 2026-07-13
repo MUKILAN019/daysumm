@@ -3,12 +3,15 @@ import { StatusBar } from 'expo-status-bar';
 import NetInfo from '@react-native-community/netinfo';
 import {
   getAuth,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInAnonymously,
 } from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import {
   AppState,
   type AppStateStatus,
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,19 +27,25 @@ import {
   type LocalEntry,
 } from './lib/db/entries';
 import { EntryListScreen } from './lib/screens/EntryListScreen';
+import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
 import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
 
 export default function App() {
   const [text, setText] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [entries, setEntries] = useState<LocalEntry[]>([]);
   const [entriesRefreshVersion, setEntriesRefreshVersion] = useState(0);
+  const [authReady, setAuthReady] = useState(false);
+  const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice'>('capture');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const wasOnlineRef = useRef<boolean | null>(null);
-  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice'>('capture');
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -75,11 +84,25 @@ export default function App() {
   }
 
   useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      offlineAccess: false,
+    });
+  }, []);
+
+  useEffect(() => {
     const auth = getAuth();
     let isSigningIn = false;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        const hasGoogleProvider = user.providerData.some(
+          (provider) => provider.providerId === 'google.com'
+        );
+        setShowGoogleSignIn(!hasGoogleProvider);
+        setAuthReady(true);
+        setGoogleError(null);
+
         try {
           const token = await user.getIdToken();
           console.log('Firebase client auth ID token:', token);
@@ -174,6 +197,73 @@ export default function App() {
   }
 
   const canSave = text.trim().length > 0;
+
+  async function handleGoogleLink() {
+    setGoogleBusy(true);
+    setGoogleError(null);
+
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const signInResponse = await GoogleSignin.signIn();
+
+      if (signInResponse.type !== 'success') {
+        throw new Error('Google sign-in was not successful.');
+      }
+
+      const tokens = await GoogleSignin.getTokens();
+      const { idToken, accessToken } = tokens;
+
+      if (!idToken || !accessToken) {
+        throw new Error('Google sign-in did not return valid ID and access tokens.');
+      }
+
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        throw new Error('Unable to link credential: no authenticated user.');
+      }
+
+      const credential = GoogleAuthProvider.credential(idToken, accessToken);
+      await (currentUser as any).linkWithCredential(credential);
+      setShowGoogleSignIn(false);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+        setGoogleError('Google sign-in was cancelled. Please try again.');
+      } else if (err.code === 'auth/credential-already-in-use') {
+        setGoogleError(
+          'This Google account is already linked to a different Daysumm account. Use another Google account or keep using your current anonymous session.'
+        );
+      } else if (err.code === 'auth/provider-already-linked') {
+        setGoogleError('This app is already connected to that Google account.');
+      } else {
+        setGoogleError(err.message ?? 'Google sign-in failed. Please try again.');
+      }
+      console.warn('Google sign-in/link error', error);
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  if (!authReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={styles.loadingText}>Loading your account…</Text>
+      </View>
+    );
+  }
+
+  if (showGoogleSignIn) {
+    return (
+      <GoogleSignInScreen
+        isLoading={googleBusy}
+        errorMessage={googleError ?? undefined}
+        onContinue={handleGoogleLink}
+      />
+    );
+  }
 
   if (screenMode === 'entries') {
     return (
@@ -393,5 +483,16 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 12,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F8FA',
+  },
+  loadingText: {
+    marginTop: 18,
+    color: '#4B5563',
+    fontSize: 16,
   },
 });
