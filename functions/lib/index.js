@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { z } from 'zod';
 initializeApp();
 const db = getFirestore();
@@ -183,4 +184,10 @@ export const transcribeAudio = onCall({ secrets: [GROQ_API_KEY] }, async (reques
     }
     const result = (await response.json());
     return { text: result.text };
+});
+export const digestDispatcher = onSchedule('every 10 minutes', async (event) => {
+    const now = new Date().toISOString();
+    const userSettingsSnapshot = await db.collection('userSettings').get();
+    const userCount = userSettingsSnapshot.size;
+    console.log(`digestDispatcher fired at ${now} — userSettings document count: ${userCount}`);
 });
