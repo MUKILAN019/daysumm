@@ -24,12 +24,6 @@ export interface DigestRecord {
   statusUpdate: string;
 }
 
-export interface UserSettings {
-  role: string;
-  timezone: string;
-  fcmToken: string;
-}
-
 export interface UserStats {
   currentStreak: number;
   longestStreak: number;
@@ -40,4 +34,10 @@ export interface DailyUsage {
   uid: string;
   date: string;
   digestCount: number;
+}
+
+export interface UserSettings {
+  role?: string;
+  timezone?: string;
+  onboardingComplete?: boolean;
 }

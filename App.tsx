@@ -4,8 +4,10 @@ import NetInfo from '@react-native-community/netinfo';
 import {
   getAuth,
   GoogleAuthProvider,
+  linkWithCredential,
   onAuthStateChanged,
   signInAnonymously,
+  signInWithCredential,
 } from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import {
@@ -29,6 +31,8 @@ import {
 import { EntryListScreen } from './lib/screens/EntryListScreen';
 import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
 import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
+import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
+import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -45,6 +49,8 @@ export default function App() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice'>('capture');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const wasOnlineRef = useRef<boolean | null>(null);
 
   async function loadEntries() {
@@ -90,46 +96,6 @@ export default function App() {
     });
   }, []);
 
-  useEffect(() => {
-    const auth = getAuth();
-    let isSigningIn = false;
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const hasGoogleProvider = user.providerData.some(
-          (provider) => provider.providerId === 'google.com'
-        );
-        setShowGoogleSignIn(!hasGoogleProvider);
-        setAuthReady(true);
-        setGoogleError(null);
-
-        try {
-          const token = await user.getIdToken();
-          console.log('Firebase client auth ID token:', token);
-        } catch (error) {
-          console.warn('Unable to retrieve Firebase auth token', error);
-        }
-
-        runSync('auth-ready');
-        return;
-      }
-
-      if (isSigningIn) {
-        return;
-      }
-
-      isSigningIn = true;
-      signInAnonymously(auth)
-        .catch((error: unknown) => {
-          console.warn('Anonymous sign-in failed', error);
-        })
-        .finally(() => {
-          isSigningIn = false;
-        });
-    });
-
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     initDb()
@@ -170,6 +136,62 @@ export default function App() {
       netInfoUnsubscribe();
       clearInterval(intervalId);
     };
+  }, []);
+
+  useEffect(() => {
+    if (!authReady || showGoogleSignIn) {
+      return;
+    }
+
+    const auth = getAuth();
+    const uid = auth.currentUser?.uid;
+
+    if (!uid) {
+      return;
+    }
+
+    fetchUserSettings(uid)
+      .then((settings) => {
+        setNeedsOnboarding(!settings?.onboardingComplete);
+        setOnboardingChecked(true);
+      })
+      .catch((error: unknown) => {
+        console.warn('Failed to fetch user settings', error);
+        setNeedsOnboarding(false);
+        setOnboardingChecked(true);
+      });
+  }, [authReady, showGoogleSignIn]);
+
+  useEffect(() => {
+    const auth = getAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const hasGoogleProvider = user.providerData.some(
+          (provider) => provider.providerId === 'google.com'
+        );
+        setShowGoogleSignIn(false);
+        setAuthReady(true);
+        setGoogleError(null);
+
+        try {
+          const token = await user.getIdToken();
+          console.log('Firebase client auth ID token:', token);
+        } catch (error) {
+          console.warn('Unable to retrieve Firebase auth token', error);
+        }
+
+        runSync('auth-ready');
+        return;
+      }
+
+      // No user at all — show the sign-in screen and wait for an explicit choice.
+      // No automatic signInAnonymously here anymore.
+      setShowGoogleSignIn(true);
+      setAuthReady(true);
+    });
+
+    return unsubscribe;
   }, []);
 
   async function handleSave() {
@@ -218,23 +240,30 @@ export default function App() {
       }
 
       const auth = getAuth();
+      const credential = GoogleAuthProvider.credential(idToken, accessToken);
       const currentUser = auth.currentUser;
 
-      if (!currentUser) {
-        throw new Error('Unable to link credential: no authenticated user.');
+      if (currentUser) {
+        // Existing guest session — try to link it to preserve their entries.
+        try {
+          await linkWithCredential(currentUser, credential);
+        } catch (linkError: unknown) {
+          const err = linkError as { code?: string };
+          if (err.code === 'auth/credential-already-in-use') {
+            // This Google account already belongs to a different (older) account — sign into that instead.
+            await signInWithCredential(auth, credential);
+          } else {
+            throw linkError;
+          }
+        }
+      } else {
+        // No guest session at all — straightforward sign-in.
+        await signInWithCredential(auth, credential);
       }
-
-      const credential = GoogleAuthProvider.credential(idToken, accessToken);
-      await (currentUser as any).linkWithCredential(credential);
-      setShowGoogleSignIn(false);
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
       if (err.code === statusCodes.SIGN_IN_CANCELLED) {
         setGoogleError('Google sign-in was cancelled. Please try again.');
-      } else if (err.code === 'auth/credential-already-in-use') {
-        setGoogleError(
-          'This Google account is already linked to a different Daysumm account. Use another Google account or keep using your current anonymous session.'
-        );
       } else if (err.code === 'auth/provider-already-linked') {
         setGoogleError('This app is already connected to that Google account.');
       } else {
@@ -243,6 +272,38 @@ export default function App() {
       console.warn('Google sign-in/link error', error);
     } finally {
       setGoogleBusy(false);
+    }
+  }
+
+  async function handleContinueAsGuest() {
+    setGoogleBusy(true);
+    setGoogleError(null);
+    try {
+      await signInAnonymously(getAuth());
+    } catch (error: unknown) {
+      console.warn('Anonymous sign-in failed', error);
+      setGoogleError('Could not continue as guest. Please try again.');
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
+  async function handleRoleSelect(role: string) {
+    const auth = getAuth();
+    const uid = auth.currentUser?.uid;
+
+    if (!uid) {
+      console.warn('No authenticated user when completing onboarding');
+      return;
+    }
+
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    try {
+      await completeOnboarding(uid, role, timezone);
+      setNeedsOnboarding(false);
+    } catch (error) {
+      console.warn('Failed to save onboarding info', error);
     }
   }
 
@@ -261,8 +322,22 @@ export default function App() {
         isLoading={googleBusy}
         errorMessage={googleError ?? undefined}
         onContinue={handleGoogleLink}
+        onContinueAsGuest={handleContinueAsGuest}
       />
     );
+  }
+
+  if (!onboardingChecked) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#2563EB" />
+        <Text style={styles.loadingText}>Setting things up…</Text>
+      </View>
+    );
+  }
+
+  if (needsOnboarding) {
+    return <RoleSelectionScreen onSelect={handleRoleSelect} />;
   }
 
   if (screenMode === 'entries') {
