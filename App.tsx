@@ -24,6 +24,7 @@ import {
   type LocalEntry,
 } from './lib/db/entries';
 import { EntryListScreen } from './lib/screens/EntryListScreen';
+import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -32,10 +33,10 @@ export default function App() {
   const [text, setText] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [entries, setEntries] = useState<LocalEntry[]>([]);
-  const [showEntryList, setShowEntryList] = useState(false);
   const [entriesRefreshVersion, setEntriesRefreshVersion] = useState(0);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const wasOnlineRef = useRef<boolean | null>(null);
+  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice'>('capture');
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -174,11 +175,24 @@ export default function App() {
 
   const canSave = text.trim().length > 0;
 
-  if (showEntryList) {
+  if (screenMode === 'entries') {
     return (
       <EntryListScreen
-        onBack={() => setShowEntryList(false)}
+        onBack={() => setScreenMode('capture')}
         refreshKey={entriesRefreshVersion}
+      />
+    );
+  }
+
+  if (screenMode === 'voice') {
+    return (
+      <VoiceCaptureScreen
+        onBack={() => setScreenMode('capture')}
+        onSaved={async () => {
+          await refreshEntries();
+          await runSync('voice-save');
+          setScreenMode('capture');
+        }}
       />
     );
   }
@@ -206,9 +220,16 @@ export default function App() {
           <Pressable
             accessibilityRole="button"
             style={styles.secondaryButton}
-            onPress={() => setShowEntryList(true)}
+            onPress={() => setScreenMode('entries')}
           >
             <Text style={styles.secondaryButtonText}>View Entries</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.secondaryButton}
+            onPress={() => setScreenMode('voice')}
+          >
+            <Text style={styles.secondaryButtonText}>🎤 Voice</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"

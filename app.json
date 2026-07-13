@@ -27,7 +27,13 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@react-native-firebase/messaging",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "DaySumm needs your microphone to capture voice entries."
+        }
+      ]
     ],
     "extra": {
       "eas": {

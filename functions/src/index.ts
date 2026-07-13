@@ -8,6 +8,7 @@ initializeApp();
 
 const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
+const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
 
 const openRouterModels = [
   'google/gemini-2.5-flash-lite',
@@ -210,3 +211,51 @@ export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (r
     };
   }
 });
+
+export const transcribeAudio = onCall(
+  { secrets: [GROQ_API_KEY] },
+  async (request) => {
+    const uid = request.auth?.uid;
+
+    if (!uid) {
+      throw new HttpsError('unauthenticated', 'Authentication is required to transcribe audio.');
+    }
+
+    const { audioBase64, mimeType } = request.data as {
+      audioBase64?: string;
+      mimeType?: string;
+    };
+
+    if (!audioBase64) {
+      throw new HttpsError('invalid-argument', 'audioBase64 is required.');
+    }
+
+    const audioBuffer = Buffer.from(audioBase64, 'base64');
+
+    const form = new FormData();
+    form.append(
+      'file',
+      new Blob([audioBuffer], { type: mimeType || 'audio/m4a' }),
+      'entry.m4a',
+    );
+    form.append('model', 'whisper-large-v3-turbo');
+    form.append('response_format', 'json');
+    // No `language` field — lets Whisper auto-detect, which is what gives you multilingual support
+
+    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${GROQ_API_KEY.value()}`,
+      },
+      body: form,
+    });
+
+    if (!response.ok) {
+      const details = await response.text();
+      throw new HttpsError('internal', `Groq transcription failed: ${details}`);
+    }
+
+    const result = (await response.json()) as { text: string };
+    return { text: result.text };
+  },
+);
