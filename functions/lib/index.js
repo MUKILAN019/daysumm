@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { getMessaging } from 'firebase-admin/messaging';
 import { DateTime } from 'luxon';
 import { z } from 'zod';
 initializeApp();
@@ -16,6 +17,7 @@ const openRouterModels = [
     'google/gemini-3-flash-preview',
     'openai/gpt-5-nano',
 ];
+const messaging = getMessaging();
 const DigestSchema = z.object({
     headline: z.string(),
     highlights: z.array(z.string()),
@@ -143,6 +145,7 @@ async function buildAndStoreDigestForUser(uid, apiKey) {
     const settings = (settingsSnapshot.exists ? settingsSnapshot.data() : undefined);
     const role = settings?.role?.trim() || 'user';
     const timezone = settings?.timezone?.trim() || 'UTC';
+    const fcmToken = settings?.fcmToken;
     const entryText = entries
         .map((entry) => (typeof entry.text === 'string' ? entry.text.trim() : '').trim())
         .filter(Boolean)
@@ -157,9 +160,8 @@ async function buildAndStoreDigestForUser(uid, apiKey) {
         console.warn(`Digest generation failed for uid ${uid}`, error);
         digest = degradedDigest;
     }
-    // Store the result — this is new: previously the callable only returned the digest.
     const dateKey = DateTime.now().setZone(timezone).toFormat('yyyy-LL-dd');
-    await db.collection('digestRecords').add({
+    const digestRecordRef = await db.collection('digestRecords').add({
         uid,
         dateKey,
         generatedAt: new Date(),
@@ -173,6 +175,41 @@ async function buildAndStoreDigestForUser(uid, apiKey) {
         dateKey,
         digestGeneratedAt: new Date(),
     }, { merge: true });
+    // --- Push notification (Day 23) ---
+    if (fcmToken) {
+        try {
+            const decisionsCount = digest.decisions.length;
+            const actionItemsCount = digest.actionItems.length;
+            await messaging.send({
+                token: fcmToken,
+                notification: {
+                    title: 'Your digest is ready',
+                    body: `${decisionsCount} decision${decisionsCount === 1 ? '' : 's'} · ${actionItemsCount} action item${actionItemsCount === 1 ? '' : 's'}`,
+                },
+                data: {
+                    digestRecordId: digestRecordRef.id,
+                    dateKey,
+                },
+                android: {
+                    priority: 'high',
+                },
+            });
+            console.log(`Push sent to uid ${uid} for digest ${digestRecordRef.id}`);
+        }
+        catch (pushError) {
+            const err = pushError;
+            console.warn(`Push send failed for uid ${uid}`, pushError);
+            const isDeadToken = err.code === 'messaging/registration-token-not-registered' ||
+                err.code === 'messaging/invalid-registration-token';
+            if (isDeadToken) {
+                console.log(`Clearing dead fcmToken for uid ${uid}`);
+                await db.collection('userSettings').doc(uid).set({ fcmToken: null }, { merge: true });
+            }
+        }
+    }
+    else {
+        console.log(`No fcmToken for uid ${uid} — digest stored, push skipped`);
+    }
     return digest;
 }
 export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
