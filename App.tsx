@@ -33,6 +33,7 @@ import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
 import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
 import { NotificationPermissionScreen } from './lib/screens/NotificationPermissionScreen';
 import { requestNotificationPermission } from './lib/permissions/requestNotificationPermission';
+import { syncFcmToken, subscribeToTokenRefresh } from './lib/notifications/fcmToken';
 import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
 import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
 import { syncEntries } from './lib/sync/queue';
@@ -198,6 +199,31 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    if (!authReady || showGoogleSignIn) {
+      return;
+    }
+
+    const auth = getAuth();
+    const uid = auth.currentUser?.uid;
+
+    if (!uid) {
+      return;
+    }
+
+    fetchUserSettings(uid)
+      .then((settings) => syncFcmToken(uid, settings?.fcmToken))
+      .catch((error: unknown) => {
+        console.warn('Failed to sync FCM token on launch', error);
+      });
+
+    const unsubscribeRefresh = subscribeToTokenRefresh(uid);
+
+    return () => {
+      unsubscribeRefresh();
+    };
+  }, [authReady, showGoogleSignIn]);
+
   async function handleSave() {
     const trimmedText = text.trim();
 
@@ -308,6 +334,10 @@ export default function App() {
       console.warn('Missing uid or pending role when completing onboarding');
       setShowNotificationStep(false);
       return;
+    }
+
+    if (granted) {
+      await syncFcmToken(uid, null); // first-time grant, nothing stored yet
     }
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;

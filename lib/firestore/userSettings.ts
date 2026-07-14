@@ -31,3 +31,12 @@ export async function completeOnboarding(
     { merge: true },
   );
 }
+
+export async function updateFcmToken(uid: string, fcmToken: string): Promise<void> {
+  const db = getFirestore();
+  await setDoc(
+    doc(db, 'userSettings', uid),
+    { fcmToken, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}

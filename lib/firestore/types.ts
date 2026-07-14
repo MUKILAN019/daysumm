@@ -40,4 +40,5 @@ export interface UserSettings {
   role?: string;
   timezone?: string;
   onboardingComplete?: boolean;
+  fcmToken?: string;
 }
