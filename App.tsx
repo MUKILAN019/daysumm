@@ -31,6 +31,8 @@ import {
 import { EntryListScreen } from './lib/screens/EntryListScreen';
 import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
 import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
+import { NotificationPermissionScreen } from './lib/screens/NotificationPermissionScreen';
+import { requestNotificationPermission } from './lib/permissions/requestNotificationPermission';
 import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
 import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
 import { syncEntries } from './lib/sync/queue';
@@ -51,6 +53,8 @@ export default function App() {
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [pendingRole, setPendingRole] = useState<string | null>(null);
+  const [showNotificationStep, setShowNotificationStep] = useState(false);
   const wasOnlineRef = useRef<boolean | null>(null);
 
   async function loadEntries() {
@@ -289,21 +293,33 @@ export default function App() {
   }
 
   async function handleRoleSelect(role: string) {
+    setPendingRole(role);
+    setShowNotificationStep(true);
+  }
+
+  async function handleNotificationStepContinue() {
+    const granted = await requestNotificationPermission();
+    console.log(`Notification permission ${granted ? 'granted' : 'denied'}`);
+
     const auth = getAuth();
     const uid = auth.currentUser?.uid;
 
-    if (!uid) {
-      console.warn('No authenticated user when completing onboarding');
+    if (!uid || !pendingRole) {
+      console.warn('Missing uid or pending role when completing onboarding');
+      setShowNotificationStep(false);
       return;
     }
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     try {
-      await completeOnboarding(uid, role, timezone);
+      await completeOnboarding(uid, pendingRole, timezone);
       setNeedsOnboarding(false);
     } catch (error) {
       console.warn('Failed to save onboarding info', error);
+    } finally {
+      setShowNotificationStep(false);
+      setPendingRole(null);
     }
   }
 
@@ -336,8 +352,12 @@ export default function App() {
     );
   }
 
-  if (needsOnboarding) {
+  if (needsOnboarding && !showNotificationStep) {
     return <RoleSelectionScreen onSelect={handleRoleSelect} />;
+  }
+
+  if (showNotificationStep) {
+    return <NotificationPermissionScreen onContinue={handleNotificationStepContinue} />;
   }
 
   if (screenMode === 'entries') {
