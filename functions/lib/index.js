@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { DateTime } from 'luxon';
 import { z } from 'zod';
 initializeApp();
 const db = getFirestore();
@@ -112,13 +113,15 @@ async function getValidatedDigest(apiKey, systemPrompt, userPrompt) {
             }
         }
     }
+    console.warn('Falling back to degraded digest', lastError);
     return degradedDigest;
 }
-export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) {
-        throw new HttpsError('unauthenticated', 'Authentication is required to generate a digest.');
-    }
+/**
+ * Shared core: builds, validates, and stores a digest for a single uid.
+ * Used by BOTH the client-facing `generateDigest` callable AND `digestDispatcher`,
+ * so the prompt/OpenRouter/Zod logic lives in exactly one place.
+ */
+async function buildAndStoreDigestForUser(uid, apiKey) {
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
@@ -146,14 +149,89 @@ export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (r
         .join('\n- ');
     const systemPrompt = `You are an expert executive assistant. Create a concise, polished daily digest for a user with the role "${role}" in timezone "${timezone}". Use the provided entries to produce a professional summary in this exact structure and style:\n\nheadline: One clear sentence that captures the day\nhighlights: 3 short bullet points with the most meaningful achievements, progress, or important moments\nactionItems: 2-3 short bullet points with concrete next steps\ndecisions: 1-3 short bullet points for decisions made or confirmed\nblockers: 0-3 short bullet points for anything that needs attention\nstatusUpdate: One concise sentence summarizing overall progress\n\nRules:\n- Keep the tone professional, helpful, and concise\n- Prefer clear business-style phrasing\n- If there are no entries, return a calm, professional empty-state summary\n- Return ONLY raw JSON matching the schema below\n- Do not include markdown fences or any preamble\n- The JSON shape must be exactly: {"headline":"string","highlights":["string"],"actionItems":["string"],"decisions":["string"],"blockers":["string"],"statusUpdate":"string"}`;
     const userPrompt = `Today's entries:\n- ${entryText || 'No entries captured yet.'}`;
+    let digest;
     try {
-        const digest = await getValidatedDigest(OPENROUTER_API_KEY.value(), systemPrompt, userPrompt);
+        digest = await getValidatedDigest(apiKey, systemPrompt, userPrompt);
+    }
+    catch (error) {
+        console.warn(`Digest generation failed for uid ${uid}`, error);
+        digest = degradedDigest;
+    }
+    // Store the result — this is new: previously the callable only returned the digest.
+    const dateKey = DateTime.now().setZone(timezone).toFormat('yyyy-LL-dd');
+    await db.collection('digestRecords').add({
+        uid,
+        dateKey,
+        generatedAt: new Date(),
+        ...digest,
+    });
+    await db
+        .collection('dailyUsage')
+        .doc(`${uid}_${dateKey}`)
+        .set({
+        uid,
+        dateKey,
+        digestGeneratedAt: new Date(),
+    }, { merge: true });
+    return digest;
+}
+export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', 'Authentication is required to generate a digest.');
+    }
+    try {
+        const digest = await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
         return { digest };
     }
     catch (error) {
-        return {
-            digest: degradedDigest,
-        };
+        console.warn(`generateDigest callable failed for uid ${uid}`, error);
+        return { digest: degradedDigest };
+    }
+});
+/**
+ * Scheduled dispatcher: every 10 minutes, finds users whose local time is
+ * currently ~4:50 PM and haven't received a digest yet today (in their own
+ * local date), then generates + stores a digest for each.
+ */
+export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secrets: [OPENROUTER_API_KEY] }, async () => {
+    const now = new Date().toISOString();
+    const userSettingsSnapshot = await db.collection('userSettings').get();
+    console.log(`digestDispatcher fired at ${now} — userSettings document count: ${userSettingsSnapshot.size}`);
+    for (const settingsDoc of userSettingsSnapshot.docs) {
+        const uid = settingsDoc.id;
+        const settings = settingsDoc.data();
+        const timezone = settings?.timezone;
+        if (!timezone) {
+            continue; // not onboarded yet — nothing to match against
+        }
+        try {
+            const localNow = DateTime.now().setZone(timezone);
+            if (!localNow.isValid) {
+                console.warn(`Invalid timezone "${timezone}" for uid ${uid} — skipping`);
+                continue;
+            }
+            const minutesSinceMidnight = localNow.hour * 60 + localNow.minute;
+            const windowStart = 16 * 60 + 45; // 4:45 PM
+            const windowEnd = 16 * 60 + 55; // 4:55 PM
+            const isDue = minutesSinceMidnight >= windowStart && minutesSinceMidnight <= windowEnd;
+            if (!isDue) {
+                continue;
+            }
+            const dateKey = localNow.toFormat('yyyy-LL-dd');
+            const dailyUsageDoc = await db.collection('dailyUsage').doc(`${uid}_${dateKey}`).get();
+            if (dailyUsageDoc.exists && dailyUsageDoc.data()?.digestGeneratedAt) {
+                console.log(`uid ${uid} already has a digest for ${dateKey} — skipping`);
+                continue;
+            }
+            console.log(`uid ${uid} is due for a digest (local time ${localNow.toFormat('HH:mm')}, zone ${timezone})`);
+            await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
+            console.log(`Digest generated for uid ${uid}`);
+        }
+        catch (error) {
+            // One user's failure must not stop the batch.
+            console.warn(`Failed processing uid ${uid} in digestDispatcher`, error);
+        }
     }
 });
 export const transcribeAudio = onCall({ secrets: [GROQ_API_KEY] }, async (request) => {
@@ -170,7 +248,6 @@ export const transcribeAudio = onCall({ secrets: [GROQ_API_KEY] }, async (reques
     form.append('file', new Blob([audioBuffer], { type: mimeType || 'audio/m4a' }), 'entry.m4a');
     form.append('model', 'whisper-large-v3-turbo');
     form.append('response_format', 'json');
-    // No `language` field — lets Whisper auto-detect, which is what gives you multilingual support
     const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
         method: 'POST',
         headers: {
@@ -184,10 +261,4 @@ export const transcribeAudio = onCall({ secrets: [GROQ_API_KEY] }, async (reques
     }
     const result = (await response.json());
     return { text: result.text };
-});
-export const digestDispatcher = onSchedule('every 10 minutes', async (event) => {
-    const now = new Date().toISOString();
-    const userSettingsSnapshot = await db.collection('userSettings').get();
-    const userCount = userSettingsSnapshot.size;
-    console.log(`digestDispatcher fired at ${now} — userSettings document count: ${userCount}`);
 });
