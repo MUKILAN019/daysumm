@@ -36,6 +36,10 @@ import { requestNotificationPermission } from './lib/permissions/requestNotifica
 import { syncFcmToken, subscribeToTokenRefresh } from './lib/notifications/fcmToken';
 import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
 import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
+import messaging from '@react-native-firebase/messaging';
+import { DigestViewScreen } from './lib/screens/DigestViewScreen';
+import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
+import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -50,13 +54,15 @@ export default function App() {
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice'>('capture');
+  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest'>('capture');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [showNotificationStep, setShowNotificationStep] = useState(false);
   const wasOnlineRef = useRef<boolean | null>(null);
+  const [openedDigestRecordId, setOpenedDigestRecordId] = useState<string | null>(null);
+  const [showForegroundBanner, setShowForegroundBanner] = useState(false);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -223,6 +229,45 @@ export default function App() {
       unsubscribeRefresh();
     };
   }, [authReady, showGoogleSignIn]);
+
+  useEffect(() => {
+    // Case: app was backgrounded, user tapped the notification
+    const unsubscribeOpenedApp = messaging().onNotificationOpenedApp((remoteMessage) => {
+      const digestRecordId = extractDigestRecordId(remoteMessage);
+      if (digestRecordId) {
+        setOpenedDigestRecordId(digestRecordId);
+        setScreenMode('digest');
+      }
+    });
+
+    // Case: app was fully killed, tapping the notification launched it fresh
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        const digestRecordId = extractDigestRecordId(remoteMessage);
+        if (digestRecordId) {
+          setOpenedDigestRecordId(digestRecordId);
+          setScreenMode('digest');
+        }
+      })
+      .catch((error: unknown) => {
+        console.warn('Failed to read initial notification', error);
+      });
+
+    // Case: app already open in the foreground when the push arrives
+    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+      const digestRecordId = extractDigestRecordId(remoteMessage);
+      if (digestRecordId) {
+        setOpenedDigestRecordId(digestRecordId);
+        setShowForegroundBanner(true);
+      }
+    });
+
+    return () => {
+      unsubscribeOpenedApp();
+      unsubscribeForeground();
+    };
+  }, []);
 
   async function handleSave() {
     const trimmedText = text.trim();
@@ -412,75 +457,97 @@ export default function App() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Capture</Text>
-        <Text style={styles.subtitle}>Jot the work note now. Clean digest later.</Text>
-      </View>
-
-      <TextInput
-        multiline
-        placeholder="What did you just finish, decide, or promise?"
-        placeholderTextColor="#6B7280"
-        style={styles.input}
-        textAlignVertical="top"
-        value={text}
-        onChangeText={setText}
+  if (screenMode === 'digest' && openedDigestRecordId) {
+    return (
+      <DigestViewScreen
+        digestRecordId={openedDigestRecordId}
+        onBack={() => {
+          setScreenMode('capture');
+          setOpenedDigestRecordId(null);
+        }}
       />
+    );
+  }
 
-      <View style={styles.actionRow}>
-        <Text style={styles.savedMessage}>{savedMessage}</Text>
-        <View style={styles.buttonRow}>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.secondaryButton}
-            onPress={() => setScreenMode('entries')}
-          >
-            <Text style={styles.secondaryButtonText}>View Entries</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.secondaryButton}
-            onPress={() => setScreenMode('voice')}
-          >
-            <Text style={styles.secondaryButtonText}>🎤 Voice</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            disabled={!canSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              !canSave && styles.saveButtonDisabled,
-              pressed && canSave && styles.saveButtonPressed,
-            ]}
-            onPress={handleSave}
-          >
-            <Text style={styles.saveButtonText}>Save</Text>
-          </Pressable>
+  return (
+    <>
+      {showForegroundBanner && (
+        <DigestReadyBanner
+          onPress={() => {
+            setShowForegroundBanner(false);
+            setScreenMode('digest');
+          }}
+        />
+      )}
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Capture</Text>
+          <Text style={styles.subtitle}>Jot the work note now. Clean digest later.</Text>
         </View>
-      </View>
 
-      <View style={styles.debugPanel}>
-        <Text style={styles.debugTitle}>Recent local entries ({entries.length})</Text>
-        <ScrollView style={styles.entryList} contentContainerStyle={styles.entryListContent}>
-          {entries.length === 0 ? (
-            <Text style={styles.emptyText}>No local entries yet.</Text>
-          ) : (
-            entries.slice(0, 5).map((entry) => (
-              <View key={entry.localId} style={styles.entryItem}>
-                <Text style={styles.entryText}>{entry.text}</Text>
-                <Text style={styles.entryMeta}>
-                  {entry.source} · {entry.synced ? 'synced' : 'local only'}
-                </Text>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </View>
+        <TextInput
+          multiline
+          placeholder="What did you just finish, decide, or promise?"
+          placeholderTextColor="#6B7280"
+          style={styles.input}
+          textAlignVertical="top"
+          value={text}
+          onChangeText={setText}
+        />
 
-      <StatusBar style="auto" />
-    </View>
+        <View style={styles.actionRow}>
+          <Text style={styles.savedMessage}>{savedMessage}</Text>
+          <View style={styles.buttonRow}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.secondaryButton}
+              onPress={() => setScreenMode('entries')}
+            >
+              <Text style={styles.secondaryButtonText}>View Entries</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.secondaryButton}
+              onPress={() => setScreenMode('voice')}
+            >
+              <Text style={styles.secondaryButtonText}>🎤 Voice</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={!canSave}
+              style={({ pressed }) => [
+                styles.saveButton,
+                !canSave && styles.saveButtonDisabled,
+                pressed && canSave && styles.saveButtonPressed,
+              ]}
+              onPress={handleSave}
+            >
+              <Text style={styles.saveButtonText}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.debugPanel}>
+          <Text style={styles.debugTitle}>Recent local entries ({entries.length})</Text>
+          <ScrollView style={styles.entryList} contentContainerStyle={styles.entryListContent}>
+            {entries.length === 0 ? (
+              <Text style={styles.emptyText}>No local entries yet.</Text>
+            ) : (
+              entries.slice(0, 5).map((entry) => (
+                <View key={entry.localId} style={styles.entryItem}>
+                  <Text style={styles.entryText}>{entry.text}</Text>
+                  <Text style={styles.entryMeta}>
+                    {entry.source} · {entry.synced ? 'synced' : 'local only'}
+                  </Text>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        </View>
+
+        <StatusBar style="auto" />
+      </View>
+    </>
   );
 }
 
