@@ -19,7 +19,9 @@
       "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "package": "com.mukilan19.daysumm",
-      "permissions": ["android.permission.POST_NOTIFICATIONS"]
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,6 +35,20 @@
         "expo-audio",
         {
           "microphonePermission": "DaySumm needs your microphone to capture voice entries."
+        }
+      ],
+      [
+       "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "DaySummWidget",
+              "label": "DaySumm",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "description": "See your entry count at a glance."
+            }
+          ]
         }
       ]
     ],
