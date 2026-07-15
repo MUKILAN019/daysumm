@@ -299,3 +299,11 @@ export const transcribeAudio = onCall({ secrets: [GROQ_API_KEY] }, async (reques
     const result = (await response.json());
     return { text: result.text };
 });
+export const triggerDigestForUser = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', 'Sign in required.');
+    }
+    await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
+    return { triggered: true };
+});

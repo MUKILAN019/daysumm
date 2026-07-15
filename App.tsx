@@ -40,6 +40,7 @@ import messaging from '@react-native-firebase/messaging';
 import { DigestViewScreen } from './lib/screens/DigestViewScreen';
 import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -398,6 +399,17 @@ export default function App() {
     }
   }
 
+  async function handleDebugTriggerDigest() {
+    try {
+      const functions = getFunctions();
+      const callable = httpsCallable(functions, 'triggerDigestForUser');
+      await callable({});
+      console.log('Debug digest trigger fired');
+    } catch (error) {
+      console.warn('Debug digest trigger failed', error);
+    }
+  }
+
   if (!authReady) {
     return (
       <View style={styles.loadingContainer}>
@@ -511,6 +523,13 @@ export default function App() {
               onPress={() => setScreenMode('voice')}
             >
               <Text style={styles.secondaryButtonText}>🎤 Voice</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.secondaryButton}
+              onPress={handleDebugTriggerDigest}
+            >
+              <Text style={styles.secondaryButtonText}>🐞 Debug Digest</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
