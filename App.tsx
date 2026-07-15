@@ -42,6 +42,7 @@ import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
+import { refreshWidgetData } from './lib/widgets/refreshWidget';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -124,6 +125,8 @@ export default function App() {
 
       if (previousAppState !== 'active' && nextAppState === 'active') {
         runSync('foreground');
+        const uid = getAuth().currentUser?.uid;
+        refreshWidgetData(uid);
       }
     });
 
@@ -284,6 +287,8 @@ export default function App() {
       setSavedMessage('Saved locally');
 
       await runSync('save');
+      const uid = getAuth().currentUser?.uid;
+      await refreshWidgetData(uid);
 
       setTimeout(() => {
         setSavedMessage('');
@@ -463,6 +468,8 @@ export default function App() {
         onSaved={async () => {
           await refreshEntries();
           await runSync('voice-save');
+          const uid = getAuth().currentUser?.uid;
+          await refreshWidgetData(uid);
           setScreenMode('capture');
         }}
       />
@@ -531,18 +538,20 @@ export default function App() {
             >
               <Text style={styles.secondaryButtonText}>🐞 Debug Digest</Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canSave}
-              style={({ pressed }) => [
-                styles.saveButton,
-                !canSave && styles.saveButtonDisabled,
-                pressed && canSave && styles.saveButtonPressed,
-              ]}
-              onPress={handleSave}
-            >
-              <Text style={styles.saveButtonText}>Save</Text>
-            </Pressable>
+            <View style={styles.saveButtonContainer}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={!canSave}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  !canSave && styles.saveButtonDisabled,
+                  pressed && canSave && styles.saveButtonPressed,
+                ]}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Save</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
 
@@ -604,11 +613,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   actionRow: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
   },
   savedMessage: {
     flex: 1,
@@ -620,6 +625,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   secondaryButton: {
     minWidth: 112,
@@ -636,13 +642,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   saveButton: {
-    minWidth: 96,
+    width: 120,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: '#2563EB',
-    paddingHorizontal: 18,
   },
   saveButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -654,6 +659,9 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  saveButtonContainer: {
+    alignItems: 'flex-end',
   },
   debugPanel: {
     flex: 1,

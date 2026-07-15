@@ -70,6 +70,13 @@ export async function initDb() {
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS widget_cache (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      todayEntryCount INTEGER NOT NULL DEFAULT 0,
+      currentStreak INTEGER NOT NULL DEFAULT 0,
+      lastEntryPreview TEXT NOT NULL DEFAULT ''
+    );
   `);
 }
 
@@ -156,6 +163,26 @@ interface SettingRow {
   value: string;
 }
 
+export interface WidgetCacheData {
+  todayEntryCount: number;
+  currentStreak: number;
+  lastEntryPreview: string;
+}
+
+interface WidgetCacheRow {
+  todayEntryCount: number;
+  currentStreak: number;
+  lastEntryPreview: string;
+}
+
+interface CountRow {
+  count: number;
+}
+
+interface LatestEntryRow {
+  text: string;
+}
+
 async function getSetting(key: string): Promise<string | null> {
   await initDb();
 
@@ -192,4 +219,88 @@ export async function getHasSeenSampleDigest() {
 
 export async function markSampleDigestSeen() {
   await setSetting('seenSampleDigest', '1');
+}
+
+export async function setWidgetCache(data: WidgetCacheData) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      INSERT INTO widget_cache (
+        id,
+        todayEntryCount,
+        currentStreak,
+        lastEntryPreview
+      )
+      VALUES (1, ?, ?, ?)
+      ON CONFLICT(id)
+      DO UPDATE SET
+        todayEntryCount = excluded.todayEntryCount,
+        currentStreak = excluded.currentStreak,
+        lastEntryPreview = excluded.lastEntryPreview
+    `,
+    data.todayEntryCount,
+    data.currentStreak,
+    data.lastEntryPreview,
+  );
+}
+
+export async function getWidgetCache(): Promise<WidgetCacheData> {
+  await initDb();
+
+  const db = await getDb();
+
+  const row = await db.getFirstAsync<WidgetCacheRow>(`
+    SELECT
+      todayEntryCount,
+      currentStreak,
+      lastEntryPreview
+    FROM widget_cache
+    WHERE id = 1
+  `);
+
+  return (
+    row ?? {
+      todayEntryCount: 0,
+      currentStreak: 0,
+      lastEntryPreview: '',
+    }
+  );
+}
+
+export async function getTodayEntryCount(): Promise<number> {
+  await initDb();
+
+  const db = await getDb();
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const row = await db.getFirstAsync<CountRow>(
+    `
+      SELECT COUNT(*) AS count
+      FROM entries
+      WHERE createdAt >= ?
+    `,
+    startOfDay.toISOString(),
+  );
+
+  return row?.count ?? 0;
+}
+
+export async function getLatestEntryText(): Promise<string> {
+  await initDb();
+
+  const db = await getDb();
+
+  const row = await db.getFirstAsync<LatestEntryRow>(`
+    SELECT text
+    FROM entries
+    ORDER BY createdAt DESC
+    LIMIT 1
+  `);
+
+  return row?.text ?? '';
 }
