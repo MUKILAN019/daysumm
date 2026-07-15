@@ -1,5 +1,6 @@
 {
   "expo": {
+    "scheme": "daysumm",
     "name": "DaySumm",
     "slug": "DaySumm",
     "version": "1.0.0",

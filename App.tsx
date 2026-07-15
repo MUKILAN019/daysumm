@@ -43,6 +43,7 @@ import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
+import { Linking } from 'react-native';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -270,6 +271,30 @@ export default function App() {
     return () => {
       unsubscribeOpenedApp();
       unsubscribeForeground();
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleDeepLinkUrl(url: string | null) {
+      if (url === 'daysumm://voice-capture') {
+        setScreenMode('voice');
+      }
+    }
+
+    // Cold start: app was fully closed, launched by tapping the widget
+    Linking.getInitialURL()
+      .then(handleDeepLinkUrl)
+      .catch((error: unknown) => {
+        console.warn('Failed to read initial URL', error);
+      });
+
+    // App already running (foreground or backgrounded): widget tap fires this event
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleDeepLinkUrl(url);
+    });
+
+    return () => {
+      subscription.remove();
     };
   }, []);
 

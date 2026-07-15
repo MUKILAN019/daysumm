@@ -16,17 +16,19 @@ export function DaySummWidget({
     lastEntryPreview.length > 40 ? `${lastEntryPreview.slice(0, 40)}…` : lastEntryPreview;
 
   return (
-    <FlexWidget
-      style={{
-        height: 'match_parent',
-        width: 'match_parent',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        backgroundColor: '#2563EB',
-        borderRadius: 16,
-        padding: 12,
-      }}
-    >
+  <FlexWidget
+    clickAction="OPEN_URI"
+    clickActionData={{ uri: 'daysumm://voice-capture' }}
+    style={{
+      height: 'match_parent',
+      width: 'match_parent',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      backgroundColor: '#2563EB',
+      borderRadius: 16,
+      padding: 12,
+    }}
+  >
       <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <TextWidget
           text={`${todayEntryCount} today`}
