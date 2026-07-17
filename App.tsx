@@ -47,6 +47,7 @@ import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
 import { StreakBadge } from './lib/components/StreakBadge';
 import { fetchCurrentStreak } from './lib/firestore/userStats';
+import { configureRevenueCat, logInRevenueCatUser } from './lib/purchases/revenueCat';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -195,6 +196,12 @@ export default function App() {
         setShowGoogleSignIn(false);
         setAuthReady(true);
         setGoogleError(null);
+
+        try {
+          configureRevenueCat(user.uid);
+        } catch (error) {
+          console.warn('Failed to sync RevenueCat identity', error);
+        }
 
         try {
           const token = await user.getIdToken();
