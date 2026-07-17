@@ -45,6 +45,8 @@ import { syncEntries } from './lib/sync/queue';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
 import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
+import { StreakBadge } from './lib/components/StreakBadge';
+import { fetchCurrentStreak } from './lib/firestore/userStats';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -67,6 +69,7 @@ export default function App() {
   const wasOnlineRef = useRef<boolean | null>(null);
   const [openedDigestRecordId, setOpenedDigestRecordId] = useState<string | null>(null);
   const [showForegroundBanner, setShowForegroundBanner] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -129,6 +132,7 @@ export default function App() {
         runSync('foreground');
         const uid = getAuth().currentUser?.uid;
         refreshWidgetData(uid);
+        refreshStreak();
       }
     });
 
@@ -171,6 +175,7 @@ export default function App() {
       .then((settings) => {
         setNeedsOnboarding(!settings?.onboardingComplete);
         setOnboardingChecked(true);
+        refreshStreak();
       })
       .catch((error: unknown) => {
         console.warn('Failed to fetch user settings', error);
@@ -441,6 +446,17 @@ export default function App() {
     }
   }
 
+  async function refreshStreak() {
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) return;
+    try {
+      const streak = await fetchCurrentStreak(uid);
+      setCurrentStreak(streak);
+    } catch (error) {
+      console.warn('Failed to refresh streak', error);
+    }
+  }
+
   if (!authReady) {
     return (
       <View style={styles.loadingContainer}>
@@ -540,7 +556,10 @@ export default function App() {
       )}
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Capture</Text>
+          <View style={styles.headerTopRow}>
+            <Text style={styles.title}>Capture</Text>
+            <StreakBadge currentStreak={currentStreak} />
+          </View>
           <Text style={styles.subtitle}>Jot the work note now. Clean digest later.</Text>
         </View>
 
@@ -636,6 +655,11 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: 6,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: {
     color: '#111827',

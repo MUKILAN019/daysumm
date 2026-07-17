@@ -239,6 +239,12 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
         digestGeneratedAt: new Date(),
         digestRecordId,
     }, { merge: true });
+    try {
+        await updateStreakForUser(uid, dateKey, timezone);
+    }
+    catch (error) {
+        console.warn(`Failed to update streak for uid ${uid}`, error);
+    }
     if (options.sendPush && fcmToken) {
         try {
             const decisionsCount = digest.decisions.length;
@@ -272,6 +278,28 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
         console.log(`Push skipped for uid ${uid} (manual regenerate, sendPush disabled)`);
     }
     return digest;
+}
+async function updateStreakForUser(uid, dateKey, timezone) {
+    const userStatsRef = db.collection('userStats').doc(uid);
+    await db.runTransaction(async (transaction) => {
+        const userStatsDoc = await transaction.get(userStatsRef);
+        const data = userStatsDoc.exists
+            ? userStatsDoc.data()
+            : undefined;
+        const lastEntryDate = data?.lastEntryDate;
+        if (lastEntryDate === dateKey) {
+            // Already counted for this day (e.g. a same-day manual regenerate) — no-op.
+            return;
+        }
+        // Yesterday, computed in THIS USER'S timezone — not server UTC, not device time.
+        const yesterday = DateTime.fromFormat(dateKey, 'yyyy-LL-dd', { zone: timezone })
+            .minus({ days: 1 })
+            .toFormat('yyyy-LL-dd');
+        const previousStreak = data?.currentStreak ?? 0;
+        const newStreak = lastEntryDate === yesterday ? previousStreak + 1 : 1;
+        const longestStreak = Math.max(data?.longestStreak ?? 0, newStreak);
+        transaction.set(userStatsRef, { uid, currentStreak: newStreak, longestStreak, lastEntryDate: dateKey }, { merge: true });
+    });
 }
 export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
     const uid = request.auth?.uid;

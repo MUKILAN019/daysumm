@@ -304,3 +304,12 @@ export async function getLatestEntryText(): Promise<string> {
 
   return row?.text ?? '';
 }
+
+export async function getHasSeenMilestone(milestone: number): Promise<boolean> {
+  const value = await getSetting(`seenMilestone_${milestone}`);
+  return value === '1';
+}
+
+export async function markMilestoneSeen(milestone: number): Promise<void> {
+  await setSetting(`seenMilestone_${milestone}`, '1');
+}
