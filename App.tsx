@@ -43,6 +43,7 @@ import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
+import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -57,7 +58,7 @@ export default function App() {
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest'>('capture');
+  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest' | 'history'>('capture');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -513,6 +514,20 @@ export default function App() {
     );
   }
 
+  if (screenMode === 'history') {
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) {
+      setScreenMode('capture');
+      return null;
+    }
+    return (
+      <DigestHistoryScreen
+        uid={uid}
+        onBack={() => setScreenMode('capture')}
+      />
+    );
+  }
+
   return (
     <>
       {showForegroundBanner && (
@@ -577,6 +592,13 @@ export default function App() {
                 <Text style={styles.saveButtonText}>Save</Text>
               </Pressable>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.secondaryButton}
+              onPress={() => setScreenMode('history')}
+            >
+              <Text style={styles.secondaryButtonText}>📅 History</Text>
+            </Pressable>
           </View>
         </View>
 
