@@ -48,6 +48,8 @@ import { Linking } from 'react-native';
 import { StreakBadge } from './lib/components/StreakBadge';
 import { fetchCurrentStreak } from './lib/firestore/userStats';
 import { configureRevenueCat } from './lib/purchases/revenueCat';
+import { PaywallScreen } from './lib/screens/PaywallScreen';
+import { hasProEntitlementCached } from './lib/purchases/checkEntitlement';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -61,7 +63,7 @@ export default function App() {
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest' | 'history'>('capture');
+  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest' | 'history' | 'paywall'>('capture');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -71,6 +73,9 @@ export default function App() {
   const [openedDigestRecordId, setOpenedDigestRecordId] = useState<string | null>(null);
   const [showForegroundBanner, setShowForegroundBanner] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isPro, setIsPro] = useState(false);
+
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -177,6 +182,7 @@ export default function App() {
         setNeedsOnboarding(!settings?.onboardingComplete);
         setOnboardingChecked(true);
         refreshStreak();
+        hasProEntitlementCached().then(setIsPro);
       })
       .catch((error: unknown) => {
         console.warn('Failed to fetch user settings', error);
@@ -506,6 +512,7 @@ export default function App() {
       <EntryListScreen
         onBack={() => setScreenMode('capture')}
         refreshKey={entriesRefreshVersion}
+        onUpgradePress={() => setScreenMode('paywall')}
       />
     );
   }
@@ -547,6 +554,21 @@ export default function App() {
       <DigestHistoryScreen
         uid={uid}
         onBack={() => setScreenMode('capture')}
+        onUpgradePress={() => setScreenMode('paywall')}
+        isPro={isPro}
+      />
+    );
+  }
+
+  if (screenMode === 'paywall') {
+    return (
+      <PaywallScreen
+        role={userRole}
+        onBack={() => setScreenMode('capture')}
+        onPurchaseSuccess={() => {
+          setIsPro(true);
+          setScreenMode('capture');
+        }}
       />
     );
   }

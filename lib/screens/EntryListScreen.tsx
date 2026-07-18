@@ -36,15 +36,17 @@ const sampleDigest: Digest = {
 interface EntryListScreenProps {
   onBack: () => void;
   refreshKey: number;
+  onUpgradePress: () => void;
 }
 
-export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
+export function EntryListScreen({ onBack, refreshKey, onUpgradePress }: EntryListScreenProps) {
   const [entries, setEntries] = useState<LocalEntry[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [digest, setDigest] = useState<Digest | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showSampleDigest, setShowSampleDigest] = useState(false);
+  const [isLimitError, setIsLimitError] = useState(false);
 
   async function loadEntries() {
     const localEntries = await getAllEntries();
@@ -77,14 +79,16 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
       await markSampleDigestSeen();
       setShowSampleDigest(false);
     } catch (error: unknown) {
-      const err = error as { code?: string };
-      if (err.code === 'functions/resource-exhausted') {
-        setErrorMessage("You've used your 3 free digests today — upgrade for unlimited.");
-      } else {
-        console.warn('Digest generation failed', error);
-        setErrorMessage('We could not generate a digest right now.');
-      }
-    } finally {
+        const err = error as { code?: string };
+        if (err.code === 'functions/resource-exhausted') {
+          setErrorMessage("You've used your 3 free digests today — upgrade for unlimited.");
+          setIsLimitError(true);
+        } else {
+          console.warn('Digest generation failed', error);
+          setErrorMessage('We could not generate a digest right now.');
+          setIsLimitError(false);
+        }
+      } finally {
       setIsGenerating(false);
     }
   }
@@ -128,9 +132,15 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
         ) : errorMessage ? (
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{errorMessage}</Text>
-            <Pressable accessibilityRole="button" onPress={handleGenerateNow} style={styles.retryButton}>
-              <Text style={styles.retryButtonText}>Try again</Text>
-            </Pressable>
+            {isLimitError ? (
+              <Pressable accessibilityRole="button" onPress={onUpgradePress} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Upgrade to Pro</Text>
+              </Pressable>
+            ) : (
+              <Pressable accessibilityRole="button" onPress={handleGenerateNow} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>Try again</Text>
+              </Pressable>
+            )}
           </View>
         ) : null}
       </View>

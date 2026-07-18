@@ -7,7 +7,9 @@ import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digest
 interface DigestHistoryScreenProps {
   uid: string;
   onBack: () => void;
+  onUpgradePress: () => void;
   maxDaysBack?: number;
+  isPro?: boolean;
 }
 
 function formatDateKey(dateKey: string): string {
@@ -19,10 +21,11 @@ function getTodayDateKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function DigestHistoryScreen({ uid, onBack, maxDaysBack = 30 }: DigestHistoryScreenProps) {
+export function DigestHistoryScreen({ uid, onBack, onUpgradePress, maxDaysBack = 30, isPro = false }: DigestHistoryScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [digestsByDate, setDigestsByDate] = useState<Record<string, DigestHistoryEntry>>({});
   const [selectedDateKey, setSelectedDateKey] = useState(getTodayDateKey());
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -48,6 +51,14 @@ export function DigestHistoryScreen({ uid, onBack, maxDaysBack = 30 }: DigestHis
       isCancelled = true;
     };
   }, [uid, maxDaysBack]);
+
+  function handleDatePress(dateKey: string, indexFromToday: number) {
+  if (!isPro && indexFromToday >= 3) {
+    setShowUpgradePrompt(true);
+    return;
+  }
+  setSelectedDateKey(dateKey);
+}
 
   // Build the strip: today first, going backward — matches how people scan a
   // recent history (most relevant on the left), independent of what has data.
@@ -78,25 +89,35 @@ export function DigestHistoryScreen({ uid, onBack, maxDaysBack = 30 }: DigestHis
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dateStrip}
       >
-        {dateStrip.map((dateKey) => {
+        {dateStrip.map((dateKey, index) => {
           const isSelected = dateKey === selectedDateKey;
           const hasDigest = Boolean(digestsByDate[dateKey]);
+          const isLocked = !isPro && index >= 3;
 
           return (
             <Pressable
               key={dateKey}
               accessibilityRole="button"
-              onPress={() => setSelectedDateKey(dateKey)}
-              style={[styles.dateChip, isSelected && styles.dateChipSelected]}
+              onPress={() => handleDatePress(dateKey, index)}
+              style={[styles.dateChip, isSelected && styles.dateChipSelected, isLocked && styles.dateChipLocked]}
             >
               <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
                 {formatDateKey(dateKey)}
               </Text>
-              {hasDigest && <View style={[styles.dot, isSelected && styles.dotSelected]} />}
+              {isLocked ? <Text style={styles.lockIcon}>🔒</Text> : hasDigest && <View style={[styles.dot, isSelected && styles.dotSelected]} />}
             </Pressable>
           );
         })}
       </ScrollView>
+
+      {showUpgradePrompt && (
+        <View style={styles.upgradeBanner}>
+          <Text style={styles.upgradeBannerText}>Pro unlocks 30 days of history</Text>
+          <Pressable accessibilityRole="button" onPress={onUpgradePress} style={styles.upgradeBannerButton}>
+            <Text style={styles.upgradeBannerButtonText}>Upgrade</Text>
+          </Pressable>
+        </View>
+      )}
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
         {isLoading ? (
@@ -142,6 +163,20 @@ const styles = StyleSheet.create({
   dateChipTextSelected: { color: '#2563EB' },
   dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#D1D5DB' },
   dotSelected: { backgroundColor: '#2563EB' },
+  dateChipLocked: { opacity: 0.5 },
+  lockIcon: { fontSize: 11 },
+  upgradeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    padding: 12,
+    marginHorizontal: 20,
+  },
+  upgradeBannerText: { fontSize: 13, fontWeight: '600', color: '#92400E', flex: 1 },
+  upgradeBannerButton: { backgroundColor: '#2563EB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  upgradeBannerButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
   content: { flex: 1 },
   contentInner: { paddingHorizontal: 20, paddingBottom: 24 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
