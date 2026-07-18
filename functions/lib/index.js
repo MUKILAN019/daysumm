@@ -11,6 +11,7 @@ initializeApp();
 const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
+const REVENUECAT_SECRET_API_KEY = defineSecret('REVENUECAT_SECRET_API_KEY');
 const openRouterModels = [
     'google/gemini-2.5-flash-lite',
     'openai/gpt-5-mini',
@@ -124,7 +125,7 @@ async function getValidatedDigest(apiKey, systemPrompt, userPrompt) {
  * Used by BOTH the client-facing `generateDigest` callable AND `digestDispatcher`,
  * so the prompt/OpenRouter/Zod logic lives in exactly one place.
  */
-async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenerate: false, sendPush: true }) {
+async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenerate: false, sendPush: true, enforceFreeLimit: false }) {
     const settingsSnapshot = await db.collection('userSettings').doc(uid).get();
     const settings = (settingsSnapshot.exists ? settingsSnapshot.data() : undefined);
     const role = settings?.role?.trim() || 'user';
@@ -167,6 +168,15 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
         const dailyUsageDoc = await dailyUsageRef.get();
         existingDigestRecordId = dailyUsageDoc.data()?.digestRecordId;
         console.log(`Manual regenerate requested for uid ${uid} on ${dateKey}`);
+        if (options.enforceFreeLimit) {
+            const currentDigestCount = dailyUsageDoc.data()?.digestCount ?? 0;
+            if (currentDigestCount >= 3) {
+                const isPro = await checkIsProEntitled(uid, options.revenueCatSecretKey);
+                if (!isPro) {
+                    throw new HttpsError('resource-exhausted', "You've used your 3 free digests today — upgrade for unlimited.");
+                }
+            }
+        }
     }
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
@@ -232,13 +242,22 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
         });
         digestRecordId = newRecordRef.id;
     }
-    await dailyUsageRef.set({
+    const dailyUsageUpdate = {
         uid,
         dateKey,
         status: 'complete',
         digestGeneratedAt: new Date(),
         digestRecordId,
-    }, { merge: true });
+    };
+    if (options.allowRegenerate) {
+        // Only manual "Generate now" calls count toward the free-tier daily cap —
+        // the automatic 4:50 PM digest is the core product moment and is never
+        // gated or counted here.
+        const dailyUsageDoc = await dailyUsageRef.get();
+        const currentCount = dailyUsageDoc.data()?.digestCount ?? 0;
+        dailyUsageUpdate.digestCount = currentCount + 1;
+    }
+    await dailyUsageRef.set(dailyUsageUpdate, { merge: true });
     try {
         await updateStreakForUser(uid, dateKey, timezone);
     }
@@ -301,22 +320,18 @@ async function updateStreakForUser(uid, dateKey, timezone) {
         transaction.set(userStatsRef, { uid, currentStreak: newStreak, longestStreak, lastEntryDate: dateKey }, { merge: true });
     });
 }
-export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY] }, async (request) => {
+export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY, REVENUECAT_SECRET_API_KEY] }, async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
         throw new HttpsError('unauthenticated', 'Authentication is required to generate a digest.');
     }
-    try {
-        const digest = await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value(), {
-            allowRegenerate: true,
-            sendPush: false,
-        });
-        return { digest };
-    }
-    catch (error) {
-        console.warn(`generateDigest callable failed for uid ${uid}`, error);
-        return { digest: degradedDigest };
-    }
+    const digest = await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value(), {
+        allowRegenerate: true,
+        sendPush: false,
+        enforceFreeLimit: true,
+        revenueCatSecretKey: REVENUECAT_SECRET_API_KEY.value(),
+    });
+    return { digest };
 });
 /**
  * Scheduled dispatcher: every 10 minutes, finds users whose local time is
@@ -399,3 +414,31 @@ export const triggerDigestForUser = onCall({ secrets: [OPENROUTER_API_KEY] }, as
     await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
     return { triggered: true };
 });
+async function checkIsProEntitled(uid, secretApiKey) {
+    try {
+        const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`, {
+            headers: {
+                Authorization: `Bearer ${secretApiKey}`,
+                accept: 'application/json',
+            },
+        });
+        if (!response.ok) {
+            console.warn(`RevenueCat subscriber lookup failed for uid ${uid}: ${response.status}`);
+            return false; // fail closed — treat lookup failure as non-pro rather than granting unlimited access
+        }
+        const data = (await response.json());
+        const proEntitlement = data.subscriber?.entitlements?.pro;
+        if (!proEntitlement) {
+            return false;
+        }
+        // No expires_date means a non-expiring (e.g. lifetime/promotional) entitlement.
+        if (!proEntitlement.expires_date) {
+            return true;
+        }
+        return new Date(proEntitlement.expires_date).getTime() > Date.now();
+    }
+    catch (error) {
+        console.warn(`Error checking RevenueCat entitlement for uid ${uid}`, error);
+        return false; // fail closed
+    }
+}

@@ -76,9 +76,14 @@ export function EntryListScreen({ onBack, refreshKey }: EntryListScreenProps) {
       setDigest(nextDigest);
       await markSampleDigestSeen();
       setShowSampleDigest(false);
-    } catch (error) {
-      console.warn('Digest generation failed', error);
-      setErrorMessage('We could not generate a digest right now.');
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      if (err.code === 'functions/resource-exhausted') {
+        setErrorMessage("You've used your 3 free digests today — upgrade for unlimited.");
+      } else {
+        console.warn('Digest generation failed', error);
+        setErrorMessage('We could not generate a digest right now.');
+      }
     } finally {
       setIsGenerating(false);
     }
