@@ -1,7 +1,9 @@
 import React from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Share as ShareIcon } from 'lucide-react-native';
 
 import type { Digest } from '../functions/generateDigest';
+import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 
 interface DigestCardProps {
   digest: Digest;
@@ -59,6 +61,7 @@ export function DigestCard({ digest }: DigestCardProps) {
       <View style={styles.headerRow}>
         <Text style={styles.headline}>{digest.headline}</Text>
         <Pressable accessibilityRole="button" onPress={handleShare} style={styles.shareButton}>
+          <ShareIcon size={16} color={Colors.PrimaryDeep} />
           <Text style={styles.shareButtonText}>Share</Text>
         </Pressable>
       </View>
@@ -68,9 +71,10 @@ export function DigestCard({ digest }: DigestCardProps) {
           <Text style={styles.sectionTitle}>{section.title}</Text>
           {section.items.length > 0 ? (
             section.items.map((item) => (
-              <Text key={item} style={styles.bulletItem}>
-                • {item}
-              </Text>
+              <View key={item} style={styles.bulletRow}>
+                <View style={styles.bulletPoint} />
+                <Text style={styles.bulletItem}>{item}</Text>
+              </View>
             ))
           ) : (
             <Text style={styles.emptyText}>None</Text>
@@ -88,63 +92,73 @@ export function DigestCard({ digest }: DigestCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    gap: 12,
+    gap: Spacing.md,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    borderColor: Colors.Border,
+    borderRadius: Radii.card,
+    backgroundColor: Colors.Card,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: Spacing.md,
   },
   headline: {
     flex: 1,
-    color: '#111827',
-    fontSize: 18,
-    fontWeight: '700',
+    ...Typography.SectionHeader,
+    color: Colors.TextPrimary,
   },
   shareButton: {
-    minHeight: 36,
-    paddingHorizontal: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
+    gap: 6,
+    minHeight: 36,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radii.button,
+    backgroundColor: Colors.PrimaryTint,
   },
   shareButtonText: {
-    color: '#2563EB',
-    fontSize: 13,
-    fontWeight: '700',
+    ...Typography.Secondary,
+    fontWeight: '600',
+    color: Colors.PrimaryDeep,
   },
   section: {
     gap: 6,
   },
   sectionTitle: {
-    color: '#4B5563',
-    fontSize: 13,
-    fontWeight: '700',
+    ...Typography.Label,
+    color: Colors.TextMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  bulletPoint: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.Primary,
+    marginTop: 8, // align with first line of text
   },
   bulletItem: {
-    color: '#111827',
-    fontSize: 14,
+    flex: 1,
+    ...Typography.Body,
+    color: Colors.TextPrimary,
     lineHeight: 20,
   },
   emptyText: {
-    color: '#6B7280',
-    fontSize: 14,
+    ...Typography.Body,
+    color: Colors.TextSecondary,
   },
   statusText: {
-    color: '#111827',
-    fontSize: 14,
+    ...Typography.Body,
+    color: Colors.TextPrimary,
     lineHeight: 20,
   },
 });

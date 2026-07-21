@@ -24,13 +24,14 @@ import {
 
 import {
   getAllEntries,
+  getHasSeenSampleDigest,
   initDb,
   insertEntry,
   type LocalEntry,
 } from './lib/db/entries';
-import { EntryListScreen } from './lib/screens/EntryListScreen';
 import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
-import { VoiceCaptureScreen } from './lib/screens/VoiceCaptureScreen';
+import { HomeScreen } from './lib/screens/HomeScreen';
+import { TextCaptureScreen } from './lib/screens/TextCaptureScreen';
 import { NotificationPermissionScreen } from './lib/screens/NotificationPermissionScreen';
 import { requestNotificationPermission } from './lib/permissions/requestNotificationPermission';
 import { syncFcmToken, subscribeToTokenRefresh } from './lib/notifications/fcmToken';
@@ -50,6 +51,12 @@ import { fetchCurrentStreak } from './lib/firestore/userStats';
 import { configureRevenueCat } from './lib/purchases/revenueCat';
 import { PaywallScreen } from './lib/screens/PaywallScreen';
 import { hasProEntitlementCached } from './lib/purchases/checkEntitlement';
+import { BottomTabBar, type TabName } from './lib/components/BottomTabBar';
+import { SettingsScreen } from './lib/screens/SettingsScreen';
+import { markSampleDigestSeen } from './lib/db/entries';
+import { transcribeAudio } from './lib/functions/transcribeAudio';
+import { DigestScreen } from './lib/screens/DigestScreen';
+import { generateDigest, type Digest } from './lib/functions/generateDigest';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -63,7 +70,8 @@ export default function App() {
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [screenMode, setScreenMode] = useState<'capture' | 'entries' | 'voice' | 'digest' | 'history' | 'paywall'>('capture');
+  const [screenMode, setScreenMode] = useState<'capture' | 'digest' | 'paywall'>('capture');
+  const [activeTab, setActiveTab] = useState<TabName>('write');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -75,6 +83,13 @@ export default function App() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isPro, setIsPro] = useState(false);
+
+  // ── Today's Digest state (Generate Now flow) ──────────────────
+  const [digest, setDigest] = useState<Digest | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [digestError, setDigestError] = useState<string | null>(null);
+  const [isLimitError, setIsLimitError] = useState(false);
+  const [showSampleDigest, setShowSampleDigest] = useState(false);
 
 
   async function loadEntries() {
@@ -123,7 +138,13 @@ export default function App() {
 
   useEffect(() => {
     initDb()
-      .then(refreshEntries)
+      .then(async () => {
+        await refreshEntries();
+        const hasSeenSample = await getHasSeenSampleDigest();
+        if (!hasSeenSample) {
+          setShowSampleDigest(true);
+        }
+      })
       .catch((error: unknown) => {
         console.warn('SQLite initialization failed', error);
       });
@@ -296,7 +317,8 @@ export default function App() {
   useEffect(() => {
     function handleDeepLinkUrl(url: string | null) {
       if (url === 'daysumm://voice-capture') {
-        setScreenMode('voice');
+        setActiveTab('voice');
+        setScreenMode('capture');
       }
     }
 
@@ -448,14 +470,29 @@ export default function App() {
     }
   }
 
-  async function handleDebugTriggerDigest() {
+
+  async function handleGenerateNow() {
+    setIsGenerating(true);
+    setDigestError(null);
+    setIsLimitError(false);
+
     try {
-      const functions = getFunctions();
-      const callable = httpsCallable(functions, 'triggerDigestForUser');
-      await callable({});
-      console.log('Debug digest trigger fired');
-    } catch (error) {
-      console.warn('Debug digest trigger failed', error);
+      const nextDigest = await generateDigest();
+      setDigest(nextDigest);
+      await markSampleDigestSeen();
+      setShowSampleDigest(false);
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      if (err.code === 'functions/resource-exhausted') {
+        setDigestError("You've used your 3 free digests today — upgrade for unlimited.");
+        setIsLimitError(true);
+      } else {
+        console.warn('Digest generation failed', error);
+        setDigestError('Could not generate a digest right now. Try again.');
+        setIsLimitError(false);
+      }
+    } finally {
+      setIsGenerating(false);
     }
   }
 
@@ -507,31 +544,6 @@ export default function App() {
     return <NotificationPermissionScreen onContinue={handleNotificationStepContinue} />;
   }
 
-  if (screenMode === 'entries') {
-    return (
-      <EntryListScreen
-        onBack={() => setScreenMode('capture')}
-        refreshKey={entriesRefreshVersion}
-        onUpgradePress={() => setScreenMode('paywall')}
-      />
-    );
-  }
-
-  if (screenMode === 'voice') {
-    return (
-      <VoiceCaptureScreen
-        onBack={() => setScreenMode('capture')}
-        onSaved={async () => {
-          await refreshEntries();
-          await runSync('voice-save');
-          const uid = getAuth().currentUser?.uid;
-          await refreshWidgetData(uid);
-          setScreenMode('capture');
-        }}
-      />
-    );
-  }
-
   if (screenMode === 'digest' && openedDigestRecordId) {
     return (
       <DigestViewScreen
@@ -544,21 +556,6 @@ export default function App() {
     );
   }
 
-  if (screenMode === 'history') {
-    const uid = getAuth().currentUser?.uid;
-    if (!uid) {
-      setScreenMode('capture');
-      return null;
-    }
-    return (
-      <DigestHistoryScreen
-        uid={uid}
-        onBack={() => setScreenMode('capture')}
-        onUpgradePress={() => setScreenMode('paywall')}
-        isPro={isPro}
-      />
-    );
-  }
 
   if (screenMode === 'paywall') {
     return (
@@ -573,8 +570,105 @@ export default function App() {
     );
   }
 
+  // Helper to switch tabs and keep screenMode in sync
+  function handleTabPress(tab: TabName) {
+    setActiveTab(tab);
+    setScreenMode('capture'); // reset screen mode on tab change
+  }
+
+  const userName = getAuth().currentUser?.displayName || 'User';
+
+  async function handleRecordFinished(uri: string) {
+    try {
+      const text = await transcribeAudio(uri);
+      const trimmedText = text.trim();
+      if (!trimmedText) {
+        console.warn('No speech detected in recording.');
+        return;
+      }
+      await insertEntry(trimmedText, 'voice');
+      await refreshEntries();
+      await runSync('voice-save');
+      const uid = getAuth().currentUser?.uid;
+      await refreshWidgetData(uid);
+    } catch (error) {
+      console.warn('Voice transcription/save failed', error);
+      alert('Transcription failed. Please try again.');
+    }
+  }
+
+  // Render the tab-specific content area
+  function renderTabContent() {
+    if (activeTab === 'profile') {
+      return (
+        <SettingsScreen
+          currentStreak={currentStreak}
+          isPro={isPro}
+          onUpgradePress={() => setScreenMode('paywall')}
+        />
+      );
+    }
+
+    if (activeTab === 'history') {
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) {
+        return (
+          <View style={styles.centeredMessage}>
+            <Text style={styles.centeredMessageText}>Sign in to view history.</Text>
+          </View>
+        );
+      }
+      return (
+        <DigestHistoryScreen
+          uid={uid}
+          onUpgradePress={() => setScreenMode('paywall')}
+          isPro={isPro}
+        />
+      );
+    }
+
+    if (activeTab === 'write') {
+      return (
+        <TextCaptureScreen
+          currentStreak={currentStreak}
+          onSave={async (newText) => {
+            await insertEntry(newText, 'text');
+            await refreshEntries();
+            await runSync('save');
+            const uid = getAuth().currentUser?.uid;
+            await refreshWidgetData(uid);
+          }}
+        />
+      );
+    }
+
+    if (activeTab === 'digest') {
+      return (
+        <DigestScreen
+          currentStreak={currentStreak}
+          digest={digest}
+          isGeneratingDigest={isGenerating}
+          digestError={digestError}
+          isLimitError={isLimitError}
+          onGenerateDigest={handleGenerateNow}
+          onUpgradePress={() => setScreenMode('paywall')}
+        />
+      );
+    }
+
+    // Default: Voice (Home)
+    return (
+      <HomeScreen
+        userName={userName}
+        currentStreak={currentStreak}
+        entries={entries}
+        onRecordFinished={handleRecordFinished}
+      />
+    );
+  }
+
   return (
-    <>
+    <View style={styles.container}>
       {showForegroundBanner && (
         <DigestReadyBanner
           onPress={() => {
@@ -583,111 +677,48 @@ export default function App() {
           }}
         />
       )}
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <Text style={styles.title}>Capture</Text>
-            <StreakBadge currentStreak={currentStreak} />
-          </View>
-          <Text style={styles.subtitle}>Jot the work note now. Clean digest later.</Text>
-        </View>
 
-        <TextInput
-          multiline
-          placeholder="What did you just finish, decide, or promise?"
-          placeholderTextColor="#6B7280"
-          style={styles.input}
-          textAlignVertical="top"
-          value={text}
-          onChangeText={setText}
-        />
-
-        <View style={styles.actionRow}>
-          <Text style={styles.savedMessage}>{savedMessage}</Text>
-          <View style={styles.buttonRow}>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.secondaryButton}
-              onPress={() => setScreenMode('entries')}
-            >
-              <Text style={styles.secondaryButtonText}>View Entries</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.secondaryButton}
-              onPress={() => setScreenMode('voice')}
-            >
-              <Text style={styles.secondaryButtonText}>🎤 Voice</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.secondaryButton}
-              onPress={handleDebugTriggerDigest}
-            >
-              <Text style={styles.secondaryButtonText}>🐞 Debug Digest</Text>
-            </Pressable>
-            <View style={styles.saveButtonContainer}>
-              <Pressable
-                accessibilityRole="button"
-                disabled={!canSave}
-                style={({ pressed }) => [
-                  styles.saveButton,
-                  !canSave && styles.saveButtonDisabled,
-                  pressed && canSave && styles.saveButtonPressed,
-                ]}
-                onPress={handleSave}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </Pressable>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.secondaryButton}
-              onPress={() => setScreenMode('history')}
-            >
-              <Text style={styles.secondaryButtonText}>📅 History</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <View style={styles.debugPanel}>
-          <Text style={styles.debugTitle}>Recent local entries ({entries.length})</Text>
-          <ScrollView style={styles.entryList} contentContainerStyle={styles.entryListContent}>
-            {entries.length === 0 ? (
-              <Text style={styles.emptyText}>No local entries yet.</Text>
-            ) : (
-              entries.slice(0, 5).map((entry) => (
-                <View key={entry.localId} style={styles.entryItem}>
-                  <Text style={styles.entryText}>{entry.text}</Text>
-                  <Text style={styles.entryMeta}>
-                    {entry.source} · {entry.synced ? 'synced' : 'local only'}
-                  </Text>
-                </View>
-              ))
-            )}
-          </ScrollView>
-        </View>
-
-        <StatusBar style="auto" />
+      {/* Main content area */}
+      <View style={styles.contentArea}>
+        {renderTabContent()}
       </View>
-    </>
+
+      {/* Bottom tab bar */}
+      <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
+
+      <StatusBar style="auto" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // ── Root shells ──────────────────────────────────────────────
   container: {
     flex: 1,
-    gap: 18,
     backgroundColor: '#F7F8FA',
+  },
+  contentArea: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+
+  // ── Capture tab (home) ────────────────────────────────────────
+  captureScroll: {
+    flex: 1,
+    backgroundColor: '#F7F8FA',
+  },
+  captureContent: {
     paddingHorizontal: 20,
-    paddingTop: 72,
+    paddingTop: 64,
+    paddingBottom: 40,
+    gap: 16,
   },
   header: {
-    gap: 6,
+    marginBottom: 4,
   },
   headerTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   title: {
@@ -696,112 +727,271 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   subtitle: {
-    color: '#4B5563',
-    fontSize: 16,
-    lineHeight: 22,
+    color: '#6B7280',
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 2,
+  },
+
+  // Input card with floating mic
+  inputCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 56, // room for mic button
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   input: {
-    minHeight: 180,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    minHeight: 140,
     color: '#111827',
-    fontSize: 17,
+    fontSize: 16,
     lineHeight: 24,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
   },
-  actionRow: {
-    gap: 12,
-  },
-  savedMessage: {
-    flex: 1,
-    color: '#047857',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  secondaryButton: {
-    minWidth: 112,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 12,
-  },
-  secondaryButtonText: {
-    color: '#111827',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  saveButton: {
-    width: 120,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
+  micFloatButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  saveButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  saveButtonPressed: {
+  micFloatButtonPressed: {
     backgroundColor: '#1D4ED8',
   },
-  saveButtonText: {
+  micFloatIcon: {
+    fontSize: 20,
+  },
+
+  // Save CTA
+  saveCta: {
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveCtaDisabled: {
+    backgroundColor: '#E5E7EB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveCtaPressed: {
+    backgroundColor: '#1D4ED8',
+  },
+  saveCtaText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
-  saveButtonContainer: {
-    alignItems: 'flex-end',
+  saveCtaTextDisabled: {
+    color: '#9CA3AF',
   },
-  debugPanel: {
-    flex: 1,
-    minHeight: 180,
-    gap: 10,
+  savedMessage: {
+    color: '#047857',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  debugTitle: {
+
+  // ── Today's Digest section ────────────────────────────────────
+  digestSection: {
+    gap: 12,
+  },
+  digestSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  digestSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#111827',
-    fontSize: 17,
+  },
+  digestSectionSub: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  generateButton: {
+    height: 38,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  generateButtonPressed: {
+    backgroundColor: '#1D4ED8',
+  },
+  generateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
-  entryList: {
-    flex: 1,
-  },
-  entryListContent: {
-    gap: 8,
-    paddingBottom: 24,
-  },
-  emptyText: {
-    color: '#6B7280',
-    fontSize: 15,
-  },
-  entryItem: {
-    gap: 5,
+  skeletonCard: {
+    gap: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  skeletonHeadline: {
+    height: 18,
+    width: '70%',
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+  },
+  skeletonLine: {
+    height: 11,
+    width: '100%',
+    borderRadius: 6,
+    backgroundColor: '#F3F4F6',
+  },
+  sampleBanner: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  sampleBannerText: {
+    fontSize: 14,
+    color: '#1D4ED8',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  digestErrorCard: {
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 14,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  digestErrorText: {
+    color: '#B91C1C',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  digestErrorButton: {
+    alignSelf: 'flex-start',
+    height: 36,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#DC2626',
+  },
+  digestErrorButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  digestEmptyState: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderStyle: 'dashed',
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  digestEmptyText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 19,
+  },
+
+  // Recent entries preview
+  recentSection: {
+    gap: 10,
+  },
+  recentTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  emptyState: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+  },
+  entryItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 4,
   },
   entryText: {
     color: '#111827',
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 14,
+    lineHeight: 20,
   },
   entryMeta: {
-    color: '#6B7280',
-    fontSize: 12,
+    color: '#9CA3AF',
+    fontSize: 11,
     fontWeight: '600',
+  },
+
+  // ── Shared utility ────────────────────────────────────────────
+  centeredMessage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  centeredMessageText: {
+    color: '#6B7280',
+    fontSize: 15,
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,

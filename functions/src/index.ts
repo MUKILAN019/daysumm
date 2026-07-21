@@ -534,18 +534,6 @@ export const transcribeAudio = onCall(
   },
 );
 
-export const triggerDigestForUser = onCall(
-  { secrets: [OPENROUTER_API_KEY] },
-  async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) {
-      throw new HttpsError('unauthenticated', 'Sign in required.');
-    }
-
-    await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
-    return { triggered: true };
-  },
-);
 
 async function checkIsProEntitled(uid: string, secretApiKey: string): Promise<boolean> {
   try {

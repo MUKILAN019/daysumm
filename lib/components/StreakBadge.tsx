@@ -1,13 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Flame } from 'lucide-react-native';
 
 interface StreakBadgeProps {
   currentStreak: number;
 }
 
 export function StreakBadge({ currentStreak }: StreakBadgeProps) {
+  if (currentStreak === 0) return null;
+
   return (
     <View style={styles.badge}>
-      <Text style={styles.text}>{currentStreak > 0 ? `🔥 ${currentStreak}` : '🔥 0'}</Text>
+      <Flame size={16} color="#EAB308" style={{ marginRight: 4 }} />
+      <Text style={styles.text}>{currentStreak}</Text>
     </View>
   );
 }
@@ -15,10 +19,14 @@ export function StreakBadge({ currentStreak }: StreakBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 20,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#FEF9C3',
+    borderWidth: 1,
+    borderColor: '#FEF08A',
   },
-  text: { fontSize: 14, fontWeight: '700', color: '#92400E' },
+  text: { fontSize: 13, fontWeight: '700', color: '#A16207' },
 });

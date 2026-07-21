@@ -1,48 +1,84 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-
-import { DigestCard } from '../components/DigestCard';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Image,
+  Modal,
+} from 'react-native';
+import { ChevronLeft, ChevronRight, Mic, FileText } from 'lucide-react-native';
+import { Colors, Typography, Spacing, Radii, Elevation } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
+import { DigestCard } from '../components/DigestCard';
 
 interface DigestHistoryScreenProps {
   uid: string;
-  onBack: () => void;
   onUpgradePress: () => void;
   maxDaysBack?: number;
   isPro?: boolean;
 }
 
-function formatDateKey(dateKey: string): string {
-  const date = new Date(`${dateKey}T00:00:00`);
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+const WEEKDAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function toDateKey(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 function getTodayDateKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function DigestHistoryScreen({ uid, onBack, onUpgradePress, maxDaysBack = 30, isPro = false }: DigestHistoryScreenProps) {
+function parseDateKey(dateKey: string): { year: number; month: number; day: number } {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return { year: y, month: m - 1, day: d };
+}
+
+function daysAgo(dateKey: string): number {
+  const todayMs = new Date(getTodayDateKey() + 'T00:00:00').getTime();
+  const targetMs = new Date(dateKey + 'T00:00:00').getTime();
+  return Math.round((todayMs - targetMs) / 86_400_000);
+}
+
+export function DigestHistoryScreen({
+  uid,
+  onUpgradePress,
+  maxDaysBack = 30, // actually 3 for free, infinite for pro based on specs, but using isPro to enforce
+  isPro = false,
+}: DigestHistoryScreenProps) {
+  const today = new Date();
+  const todayKey = getTodayDateKey();
+
   const [isLoading, setIsLoading] = useState(true);
   const [digestsByDate, setDigestsByDate] = useState<Record<string, DigestHistoryEntry>>({});
-  const [selectedDateKey, setSelectedDateKey] = useState(getTodayDateKey());
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(todayKey);
+  const [showPaywallSheet, setShowPaywallSheet] = useState(false);
+
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
 
   useEffect(() => {
     let isCancelled = false;
     setIsLoading(true);
 
-    fetchDigestHistory(uid, maxDaysBack)
-      .then((entries) => {
+    Promise.all([
+      fetchDigestHistory(uid, isPro ? 365 : 3),
+    ])
+      .then(([historyEntries]) => {
         if (isCancelled) return;
         const map: Record<string, DigestHistoryEntry> = {};
-        for (const entry of entries) {
+        for (const entry of historyEntries) {
           map[entry.dateKey] = entry;
         }
         setDigestsByDate(map);
       })
-      .catch((error: unknown) => {
-        console.warn('Failed to fetch digest history', error);
-      })
+      .catch((error) => console.warn('Failed to fetch history', error))
       .finally(() => {
         if (!isCancelled) setIsLoading(false);
       });
@@ -50,143 +86,358 @@ export function DigestHistoryScreen({ uid, onBack, onUpgradePress, maxDaysBack =
     return () => {
       isCancelled = true;
     };
-  }, [uid, maxDaysBack]);
+  }, [uid, isPro]);
 
-  function handleDatePress(dateKey: string, indexFromToday: number) {
-  if (!isPro && indexFromToday >= 3) {
-    setShowUpgradePrompt(true);
-    return;
-  }
-  setSelectedDateKey(dateKey);
-}
+  // Calendar logic
+  const oldestAllowedKey = useMemo(() => {
+    if (isPro) return '2000-01-01'; // basically infinite
+    const d = new Date(todayKey + 'T00:00:00');
+    d.setDate(d.getDate() - 3); // 3 days ago max for free
+    return d.toISOString().slice(0, 10);
+  }, [isPro, todayKey]);
 
-  // Build the strip: today first, going backward — matches how people scan a
-  // recent history (most relevant on the left), independent of what has data.
-  const dateStrip = useMemo(() => {
-    const dates: string[] = [];
-    const today = new Date();
-    for (let i = 0; i < maxDaysBack; i += 1) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      dates.push(date.toISOString().slice(0, 10));
+  const calendarGrid = useMemo(() => {
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [viewYear, viewMonth]);
+
+  const currentViewMonthStart = toDateKey(viewYear, viewMonth, 1);
+  const canGoBack = isPro || currentViewMonthStart > oldestAllowedKey.slice(0, 8) + '01';
+  const canGoForward = viewYear < today.getFullYear() || viewMonth < today.getMonth();
+
+  function handlePrevMonth() {
+    if (!isPro && !canGoBack) {
+      setShowPaywallSheet(true);
+      return;
     }
-    return dates;
-  }, [maxDaysBack]);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  }
 
-  const selectedDigest = digestsByDate[selectedDateKey];
+  function handleNextMonth() {
+    if (!canGoForward) return;
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  }
+
+  function handleDayPress(day: number) {
+    const dateKey = toDateKey(viewYear, viewMonth, day);
+    const ago = daysAgo(dateKey);
+    if (ago < 0) return; // future
+    if (!isPro && ago > 3) {
+      setShowPaywallSheet(true);
+      return;
+    }
+    setSelectedDateKey(dateKey);
+  }
+
+  const selectedDigest = useMemo(() => {
+    if (!selectedDateKey) return null;
+    return digestsByDate[selectedDateKey] || null;
+  }, [selectedDateKey, digestsByDate]);
+
+  // Day styling
+  function getDayStyle(day: number | null) {
+    if (!day) return null;
+    const dateKey = toDateKey(viewYear, viewMonth, day);
+    const isToday = dateKey === todayKey;
+    const isSelected = dateKey === selectedDateKey;
+    const isFuture = daysAgo(dateKey) < 0;
+    const isLocked = !isPro && daysAgo(dateKey) > 3;
+    const hasData = Boolean(digestsByDate[dateKey]);
+
+    const dateObj = new Date(viewYear, viewMonth, day);
+    const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
+
+    let bg = 'transparent';
+    let text = isWeekend ? Colors.TextSecondary : Colors.TextPrimary;
+
+    if (isFuture || isLocked) {
+      text = '#CBD5E1'; // muted for locked/future
+    } else if (hasData) {
+      bg = Colors.PrimaryTint;
+      text = Colors.PrimaryDeep;
+    }
+
+    if (isSelected) {
+      bg = Colors.PrimaryTint;
+      text = Colors.PrimaryDeep;
+    }
+
+    if (isToday) {
+      bg = Colors.Primary;
+      text = Colors.Background;
+    }
+
+    return { bg, text, isLocked };
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-        <Text style={styles.title}>History</Text>
+      {/* Calendar Header */}
+      <View style={styles.calendarHeader}>
+        <View style={styles.monthTitleRow}>
+          <Text style={styles.monthTitle}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
+          {isPro && <View style={styles.proBadge}><Text style={styles.proBadgeText}>PRO</Text></View>}
+        </View>
+        <View style={styles.navRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handlePrevMonth}
+            style={({ pressed }) => [
+              styles.navBtn,
+              pressed && styles.navBtnPressed,
+            ]}
+          >
+            <ChevronLeft size={24} color={!isPro && !canGoBack ? '#CBD5E1' : Colors.TextPrimary} />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleNextMonth}
+            disabled={!canGoForward}
+            style={({ pressed }) => [
+              styles.navBtn,
+              pressed && styles.navBtnPressed,
+            ]}
+          >
+            <ChevronRight size={24} color={canGoForward ? Colors.TextPrimary : '#CBD5E1'} />
+          </Pressable>
+        </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.dateStrip}
-      >
-        {dateStrip.map((dateKey, index) => {
-          const isSelected = dateKey === selectedDateKey;
-          const hasDigest = Boolean(digestsByDate[dateKey]);
-          const isLocked = !isPro && index >= 3;
+      {/* Weekdays */}
+      <View style={styles.weekdaysRow}>
+        {WEEKDAY_LABELS.map(w => <Text key={w} style={styles.weekdayText}>{w}</Text>)}
+      </View>
 
+      {/* Grid */}
+      <View style={styles.grid}>
+        {calendarGrid.map((day, idx) => {
+          if (!day) return <View key={`empty-${idx}`} style={styles.dayCell} />;
+          const style = getDayStyle(day);
           return (
             <Pressable
-              key={dateKey}
-              accessibilityRole="button"
-              onPress={() => handleDatePress(dateKey, index)}
-              style={[styles.dateChip, isSelected && styles.dateChipSelected, isLocked && styles.dateChipLocked]}
+              key={`day-${day}`}
+              onPress={() => handleDayPress(day)}
+              style={[styles.dayCell, { backgroundColor: style?.bg }]}
             >
-              <Text style={[styles.dateChipText, isSelected && styles.dateChipTextSelected]}>
-                {formatDateKey(dateKey)}
-              </Text>
-              {isLocked ? <Text style={styles.lockIcon}>🔒</Text> : hasDigest && <View style={[styles.dot, isSelected && styles.dotSelected]} />}
+              <Text style={[styles.dayText, { color: style?.text }]}>{day}</Text>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
-      {showUpgradePrompt && (
-        <View style={styles.upgradeBanner}>
-          <Text style={styles.upgradeBannerText}>Pro unlocks 30 days of history</Text>
-          <Pressable accessibilityRole="button" onPress={onUpgradePress} style={styles.upgradeBannerButton}>
-            <Text style={styles.upgradeBannerButtonText}>Upgrade</Text>
-          </Pressable>
-        </View>
-      )}
-
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
+      {/* Digest View */}
+      <ScrollView style={styles.entriesScroll} contentContainerStyle={styles.entriesContent}>
         {isLoading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color="#2563EB" />
-          </View>
+          <ActivityIndicator color={Colors.Primary} />
         ) : selectedDigest ? (
           <DigestCard digest={selectedDigest} />
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No digest for this day.</Text>
-            <Text style={styles.emptyStateSubtext}>
-              You may not have used the app that day, or the digest hasn't generated yet.
-            </Text>
+          <View style={styles.emptyEntries}>
+            <Text style={styles.emptyEntriesText}>No digest for this day</Text>
           </View>
         )}
       </ScrollView>
+
+      {/* Paywall Sheet Modal */}
+      <Modal visible={showPaywallSheet} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.paywallSheet}>
+            <Image source={require('../../assets/owl-face.png')} style={[styles.watermark, { opacity: 0.05 }]} />
+            <Text style={styles.paywallTitle}>Unlock full history</Text>
+            <View style={styles.paywallFeatures}>
+              <Text style={styles.paywallFeatureText}>• View your entire entry history</Text>
+              <Text style={styles.paywallFeatureText}>• Search past days</Text>
+              <Text style={styles.paywallFeatureText}>• Unlimited daily digests</Text>
+            </View>
+            <Pressable
+              style={styles.proButton}
+              onPress={() => {
+                setShowPaywallSheet(false);
+                onUpgradePress();
+              }}
+            >
+              <Text style={styles.proButtonText}>Upgrade to Pro</Text>
+            </Pressable>
+            <Pressable
+              style={styles.closeModalButton}
+              onPress={() => setShowPaywallSheet(false)}
+            >
+              <Text style={styles.closeModalText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8FA', paddingTop: 56, gap: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
-  backButton: { paddingVertical: 6, paddingHorizontal: 8 },
-  backButtonText: { color: '#2563EB', fontSize: 15, fontWeight: '700' },
-  title: { color: '#111827', fontSize: 24, fontWeight: '700' },
-  dateStrip: { paddingHorizontal: 20, gap: 8 },
-  dateChip: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    minWidth: 84,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#FFFFFF',
+  container: {
+    flex: 1,
+    backgroundColor: Colors.Background,
   },
-  dateChipSelected: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
-  dateChipText: { fontSize: 13, fontWeight: '600', color: '#4B5563' },
-  dateChipTextSelected: { color: '#2563EB' },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#D1D5DB' },
-  dotSelected: { backgroundColor: '#2563EB' },
-  dateChipLocked: { opacity: 0.5 },
-  lockIcon: { fontSize: 11 },
-  upgradeBanner: {
+  calendarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    padding: 12,
-    marginHorizontal: 20,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: 60,
+    marginBottom: Spacing.sm,
   },
-  upgradeBannerText: { fontSize: 13, fontWeight: '600', color: '#92400E', flex: 1 },
-  upgradeBannerButton: { backgroundColor: '#2563EB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  upgradeBannerButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  content: { flex: 1 },
-  contentInner: { paddingHorizontal: 20, paddingBottom: 24 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  emptyState: {
+  monthTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  monthTitle: {
+    fontFamily: Typography.SectionHeader.fontFamily,
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.TextPrimary,
+  },
+  proBadge: {
+    backgroundColor: Colors.ProGold,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  proBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.Background,
+  },
+  navRow: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  navBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
-    gap: 8,
-    paddingHorizontal: 24,
   },
-  emptyStateText: { fontSize: 16, fontWeight: '700', color: '#111827', textAlign: 'center' },
-  emptyStateSubtext: { fontSize: 14, color: '#6B7280', textAlign: 'center' },
+  navBtnPressed: {
+    backgroundColor: Colors.Surface,
+  },
+  weekdaysRow: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.xs,
+  },
+  weekdayText: {
+    flex: 1,
+    textAlign: 'center',
+    ...Typography.Label,
+    color: Colors.TextMuted,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.Divider,
+  },
+  dayCell: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999, // circle
+    marginVertical: 2,
+  },
+  dayText: {
+    ...Typography.Body,
+    fontWeight: '500',
+  },
+  entriesScroll: {
+    flex: 1,
+  },
+  entriesContent: {
+    padding: Spacing.screenPadding,
+    gap: Spacing.sm,
+  },
+  emptyEntries: {
+    padding: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyEntriesText: {
+    ...Typography.Secondary,
+    color: Colors.TextMuted,
+  },
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.4)',
+    justifyContent: 'flex-end',
+  },
+  paywallSheet: {
+    backgroundColor: Colors.Background,
+    borderTopLeftRadius: Radii.sheet,
+    borderTopRightRadius: Radii.sheet,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.lg,
+    paddingBottom: 40,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  watermark: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 200,
+    height: 200,
+  },
+  paywallTitle: {
+    ...Typography.ScreenTitle,
+    color: Colors.TextPrimary,
+    marginBottom: Spacing.md,
+  },
+  paywallFeatures: {
+    width: '100%',
+    gap: Spacing.xs,
+    marginBottom: Spacing.lg,
+  },
+  paywallFeatureText: {
+    ...Typography.Body,
+    color: Colors.TextSecondary,
+  },
+  proButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: Radii.button,
+    backgroundColor: Colors.ProGold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  proButtonText: {
+    ...Typography.Body,
+    fontWeight: '600',
+    color: Colors.Background,
+  },
+  closeModalButton: {
+    paddingVertical: Spacing.xs,
+  },
+  closeModalText: {
+    ...Typography.Secondary,
+    color: Colors.TextMuted,
+  },
 });

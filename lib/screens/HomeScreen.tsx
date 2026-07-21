@@ -1,0 +1,399 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  Platform,
+} from 'react-native';
+import { Mic, Square, Pause, Play, FileText } from 'lucide-react-native';
+import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from 'expo-audio';
+import { requestMicPermissionWithRationale } from '../permissions/requestMicPermission';
+import { LocalEntry } from '../db/entries';
+import { GlobalHeader } from '../components/GlobalHeader';
+import { StreakBadge } from '../components/StreakBadge';
+
+interface HomeScreenProps {
+  userName?: string;
+  currentStreak: number;
+  entries: LocalEntry[];
+  onRecordFinished: (uri: string) => Promise<void>;
+}
+
+function formatTime(millis: number) {
+  const totalSeconds = Math.floor(millis / 1000);
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+export function HomeScreen({
+  userName = 'User',
+  currentStreak,
+  entries,
+  onRecordFinished,
+}: HomeScreenProps) {
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(recorder);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isRecordingSessionActive, setIsRecordingSessionActive] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const isRecording = recorderState.isRecording;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const barsAnim = useRef([
+    new Animated.Value(0.2),
+    new Animated.Value(0.4),
+    new Animated.Value(0.6),
+    new Animated.Value(0.4),
+    new Animated.Value(0.2),
+  ]).current;
+
+  // Pulse animation for halo
+  useEffect(() => {
+    if (!isRecording) {
+      pulseAnim.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1400,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isRecording, pulseAnim]);
+
+  // Waveform animation
+  useEffect(() => {
+    if (!isRecording) {
+      barsAnim.forEach((anim) => anim.setValue(0.2));
+      return;
+    }
+
+    const animateBar = (anim: Animated.Value) => {
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: Math.random() * 0.8 + 0.2, // Random value between 0.2 and 1
+          duration: 200 + Math.random() * 200,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished && recorder.isRecording) {
+          animateBar(anim);
+        }
+      });
+    };
+
+    barsAnim.forEach(animateBar);
+  }, [isRecording, barsAnim, recorder.isRecording]);
+
+  const dateStr = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date());
+
+  async function handleMicPress() {
+    if (isRecordingSessionActive && !isPaused) {
+      handleStop();
+      return;
+    }
+    
+    if (isPaused) {
+      // Resume
+      recorder.record();
+      setIsPaused(false);
+      return;
+    }
+
+    // New session
+    const granted = await requestMicPermissionWithRationale();
+    if (!granted) {
+      alert('Microphone access is required to capture voice entries.');
+      return;
+    }
+    await recorder.prepareToRecordAsync();
+    recorder.record();
+    setIsRecordingSessionActive(true);
+    setIsPaused(false);
+  }
+
+  function handlePause() {
+    if (isRecording) {
+      recorder.pause();
+      setIsPaused(true);
+    }
+  }
+
+  async function handleStop() {
+    if (!isRecordingSessionActive) return;
+    setIsRecordingSessionActive(false);
+    setIsPaused(false);
+    await recorder.stop();
+    if (recorder.uri) {
+      setIsProcessing(true);
+      await onRecordFinished(recorder.uri);
+      setIsProcessing(false);
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <GlobalHeader 
+        title="Voice Capture" 
+        subtitle="Speak your thoughts aloud" 
+        rightAction={<StreakBadge currentStreak={currentStreak} />}
+      />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Mic Capture Area */}
+        <View style={styles.captureArea}>
+        <View style={styles.micContainer}>
+          <Animated.View
+            style={[
+              styles.micHalo,
+              {
+                transform: [{ scale: pulseAnim }],
+                opacity: isRecording ? 1 : 0,
+              },
+            ]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleMicPress}
+            style={({ pressed }) => [
+              styles.micButton,
+              pressed && !isRecording && styles.micButtonPressed,
+            ]}
+          >
+            <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
+          </Pressable>
+        </View>
+
+        {/* Waveform */}
+        <View style={styles.waveformContainer}>
+          {barsAnim.map((anim, i) => (
+            <Animated.View
+              key={i}
+              style={[
+                styles.waveformBar,
+                {
+                  transform: [{ scaleY: anim }],
+                },
+              ]}
+            />
+          ))}
+        </View>
+
+        {/* Timer & Controls */}
+        {isRecordingSessionActive ? (
+          <View style={styles.recordingControls}>
+            <Pressable style={styles.secondaryButton} onPress={isPaused ? handleMicPress : handlePause}>
+              {isPaused ? (
+                <Play size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+              ) : (
+                <Pause size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+              )}
+            </Pressable>
+            <Text style={styles.timerText}>{formatTime(recorderState.durationMillis)}</Text>
+            <Pressable style={styles.stopButton} onPress={handleStop}>
+              <Square size={16} strokeWidth={2.5} color={Colors.Background} fill={Colors.Background} />
+            </Pressable>
+          </View>
+        ) : (
+          <Text style={styles.hintText}>
+            {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous'}
+          </Text>
+        )}
+      </View>
+
+      {/* Recent Entries */}
+      <View style={styles.recentSection}>
+        <Text style={styles.recentTitle}>Recent</Text>
+        {entries.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Nothing saved yet — start above!</Text>
+          </View>
+        ) : (
+          entries.slice(0, 5).map((entry) => (
+            <View key={entry.localId} style={styles.entryItem}>
+              <View style={styles.entryIconWrapper}>
+                {entry.source === 'voice' ? (
+                  <Mic size={14} color={Colors.PrimaryDeep} />
+                ) : (
+                  <FileText size={14} color={Colors.PrimaryDeep} />
+                )}
+              </View>
+              <View style={styles.entryTextContent}>
+                <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
+                <Text style={styles.entryMeta}>
+                  {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+    </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.Background,
+  },
+  content: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    alignItems: 'center',
+  },
+  captureArea: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+    minHeight: 280,
+  },
+  micContainer: {
+    width: 120,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  micHalo: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.PrimaryTint,
+  },
+  micButton: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.Primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  micButtonPressed: {
+    backgroundColor: Colors.PrimaryDark,
+  },
+  waveformContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 32,
+    gap: 4,
+    marginBottom: Spacing.md,
+  },
+  waveformBar: {
+    width: 4,
+    height: 32,
+    borderRadius: 2,
+    backgroundColor: Colors.Primary,
+  },
+  recordingControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  secondaryButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.Surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stopButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.Danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerText: {
+    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.TextPrimary,
+    width: 70,
+    textAlign: 'center',
+  },
+  hintText: {
+    ...Typography.Secondary,
+    color: Colors.TextMuted,
+    marginTop: Spacing.xs,
+  },
+  recentSection: {
+    width: '100%',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  recentTitle: {
+    ...Typography.Label,
+    color: Colors.TextMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  emptyState: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    ...Typography.Secondary,
+    color: Colors.TextMuted,
+  },
+  entryItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.Card,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+    borderRadius: Radii.card,
+    padding: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  entryIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.PrimaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  entryTextContent: {
+    flex: 1,
+    gap: 2,
+  },
+  entryText: {
+    ...Typography.Body,
+    color: Colors.TextPrimary,
+    lineHeight: 20,
+  },
+  entryMeta: {
+    ...Typography.Label,
+    color: Colors.TextMuted,
+    marginTop: 2,
+  },
+});
