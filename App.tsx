@@ -216,6 +216,8 @@ export default function App() {
     const auth = getAuth();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setOnboardingChecked(false);
+      
       if (user) {
         const hasGoogleProvider = user.providerData.some(
           (provider) => provider.providerId === 'google.com'

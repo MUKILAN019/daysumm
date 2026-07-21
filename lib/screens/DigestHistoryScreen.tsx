@@ -9,8 +9,8 @@ import {
   Image,
   Modal,
 } from 'react-native';
-import { ChevronLeft, ChevronRight, Mic, FileText } from 'lucide-react-native';
-import { Colors, Typography, Spacing, Radii, Elevation } from '../theme/tokens';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react-native';
+import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
 
@@ -226,16 +226,17 @@ export function DigestHistoryScreen({
       {/* Grid */}
       <View style={styles.grid}>
         {calendarGrid.map((day, idx) => {
-          if (!day) return <View key={`empty-${idx}`} style={styles.dayCell} />;
+          if (!day) return <View key={`empty-${idx}`} style={styles.dayCellWrapper} />;
           const style = getDayStyle(day);
           return (
-            <Pressable
-              key={`day-${day}`}
-              onPress={() => handleDayPress(day)}
-              style={[styles.dayCell, { backgroundColor: style?.bg }]}
-            >
-              <Text style={[styles.dayText, { color: style?.text }]}>{day}</Text>
-            </Pressable>
+            <View key={`day-${day}`} style={styles.dayCellWrapper}>
+              <Pressable
+                onPress={() => handleDayPress(day)}
+                style={[styles.dayCell, { backgroundColor: style?.bg }]}
+              >
+                <Text style={[styles.dayText, { color: style?.text }]}>{day}</Text>
+              </Pressable>
+            </View>
           );
         })}
       </View>
@@ -255,8 +256,15 @@ export function DigestHistoryScreen({
 
       {/* Paywall Sheet Modal */}
       <Modal visible={showPaywallSheet} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.paywallSheet}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowPaywallSheet(false)}>
+          <Pressable style={styles.paywallSheet} onPress={(e) => e.stopPropagation()}>
+            <Pressable 
+              style={styles.closeIconWrapper} 
+              onPress={() => setShowPaywallSheet(false)}
+            >
+              <X size={24} color={Colors.TextSecondary} />
+            </Pressable>
+            
             <Image source={require('../../assets/owl-face.png')} style={[styles.watermark, { opacity: 0.05 }]} />
             <Text style={styles.paywallTitle}>Unlock full history</Text>
             <View style={styles.paywallFeatures}>
@@ -273,14 +281,8 @@ export function DigestHistoryScreen({
             >
               <Text style={styles.proButtonText}>Upgrade to Pro</Text>
             </Pressable>
-            <Pressable
-              style={styles.closeModalButton}
-              onPress={() => setShowPaywallSheet(false)}
-            >
-              <Text style={styles.closeModalText}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -354,13 +356,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.Divider,
   },
-  dayCell: {
+  dayCellWrapper: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 999, // circle
-    marginVertical: 2,
+    paddingVertical: 2,
+  },
+  dayCell: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16, // circle
   },
   dayText: {
     ...Typography.Body,
@@ -433,11 +440,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.Background,
   },
-  closeModalButton: {
-    paddingVertical: Spacing.xs,
-  },
-  closeModalText: {
-    ...Typography.Secondary,
-    color: Colors.TextMuted,
+  closeIconWrapper: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    zIndex: 10,
+    padding: 4,
   },
 });

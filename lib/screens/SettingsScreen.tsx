@@ -50,8 +50,9 @@ export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: Setting
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
       <GlobalHeader title="Profile" />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* User Summary */}
       <View style={styles.userSummary}>
@@ -102,7 +103,8 @@ export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: Setting
           <SettingsRow icon={LogOut} label={signOutBusy ? 'Signing out...' : 'Sign Out'} onPress={handleSignOut} destructive />
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -111,9 +113,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.Background,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.xxl,
   },
   userSummary: {
@@ -153,8 +158,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.Primary,
     borderRadius: Radii.card,
-    padding: Spacing.md,
-    marginBottom: Spacing.xl,
+    padding: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   proBannerContent: {
     flex: 1,
@@ -172,12 +177,12 @@ const styles = StyleSheet.create({
   },
   proButton: {
     backgroundColor: Colors.ProGold,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
     borderRadius: Radii.button,
   },
   proButtonText: {
-    ...Typography.Secondary,
+    ...Typography.Label,
     fontWeight: '700',
     color: Colors.Background,
   },

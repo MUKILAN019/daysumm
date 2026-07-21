@@ -27,73 +27,74 @@ export function DigestScreen({
   onUpgradePress,
 }: DigestScreenProps) {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <GlobalHeader 
-        title="Daily Digest" 
-        subtitle="Your summarized day" 
+    <View style={styles.container}>
+      <GlobalHeader
+        title="Daily Digest"
+        subtitle="Your summarized day"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.digestWrapper}>
+          <View style={styles.digestSectionHeader}>
+            <Text style={styles.digestSectionTitle}>Today's Summary</Text>
+            <Pressable
+              accessibilityRole="button"
+              disabled={isGeneratingDigest}
+              onPress={onGenerateDigest}
+              style={({ pressed }) => [
+                styles.generateButton,
+                isGeneratingDigest && styles.generateButtonDisabled,
+                pressed && !isGeneratingDigest && styles.generateButtonPressed,
+              ]}
+            >
+              {!isGeneratingDigest && !digest && <Wand2 size={16} color={Colors.Background} style={{ marginRight: 6 }} />}
+              <Text style={styles.generateButtonText}>
+                {isGeneratingDigest ? 'Generating…' : digest ? '↻ Refresh' : 'Generate'}
+              </Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.digestWrapper}>
-        <View style={styles.digestSectionHeader}>
-          <Text style={styles.digestSectionTitle}>Today's Summary</Text>
-          <Pressable
-            accessibilityRole="button"
-            disabled={isGeneratingDigest}
-            onPress={onGenerateDigest}
-            style={({ pressed }) => [
-              styles.generateButton,
-              isGeneratingDigest && styles.generateButtonDisabled,
-              pressed && !isGeneratingDigest && styles.generateButtonPressed,
-            ]}
-          >
-            {!isGeneratingDigest && !digest && <Wand2 size={16} color={Colors.Background} style={{ marginRight: 6 }} />}
-            <Text style={styles.generateButtonText}>
-              {isGeneratingDigest ? 'Generating…' : digest ? '↻ Refresh' : 'Generate'}
-            </Text>
-          </Pressable>
+          {isGeneratingDigest ? (
+            <View style={styles.skeletonCard}>
+              <View style={styles.skeletonHeadline} />
+              <View style={styles.skeletonLine} />
+              <View style={[styles.skeletonLine, { width: '85%' }]} />
+              <View style={[styles.skeletonLine, { width: '70%' }]} />
+              <View style={styles.skeletonLine} />
+            </View>
+          ) : digestError ? (
+            <View style={styles.digestErrorCard}>
+              <Text style={styles.digestErrorText}>{digestError}</Text>
+              {isLimitError ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onUpgradePress}
+                  style={styles.digestErrorButton}
+                >
+                  <Text style={styles.digestErrorButtonText}>Upgrade to Pro</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onGenerateDigest}
+                  style={styles.digestErrorButton}
+                >
+                  <Text style={styles.digestErrorButtonText}>Try again</Text>
+                </Pressable>
+              )}
+            </View>
+          ) : digest ? (
+            <DigestCard digest={digest} />
+          ) : (
+            <View style={styles.digestEmptyState}>
+              <Text style={styles.digestEmptyText}>
+                Log some entries in the Write or Voice tab, then generate your daily summary here.
+              </Text>
+            </View>
+          )}
         </View>
-
-        {isGeneratingDigest ? (
-          <View style={styles.skeletonCard}>
-            <View style={styles.skeletonHeadline} />
-            <View style={styles.skeletonLine} />
-            <View style={[styles.skeletonLine, { width: '85%' }]} />
-            <View style={[styles.skeletonLine, { width: '70%' }]} />
-            <View style={styles.skeletonLine} />
-          </View>
-        ) : digestError ? (
-          <View style={styles.digestErrorCard}>
-            <Text style={styles.digestErrorText}>{digestError}</Text>
-            {isLimitError ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={onUpgradePress}
-                style={styles.digestErrorButton}
-              >
-                <Text style={styles.digestErrorButtonText}>Upgrade to Pro</Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={onGenerateDigest}
-                style={styles.digestErrorButton}
-              >
-                <Text style={styles.digestErrorButtonText}>Try again</Text>
-              </Pressable>
-            )}
-          </View>
-        ) : digest ? (
-          <DigestCard digest={digest} />
-        ) : (
-          <View style={styles.digestEmptyState}>
-            <Text style={styles.digestEmptyText}>
-              Log some entries in the Write or Voice tab, then generate your daily summary here.
-            </Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -102,9 +103,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.Background,
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.xxl,
   },
   digestWrapper: {

@@ -66,26 +66,39 @@ export function DigestCard({ digest }: DigestCardProps) {
         </Pressable>
       </View>
 
-      {sections.map((section) => (
-        <View key={section.title} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.title}</Text>
-          {section.items.length > 0 ? (
-            section.items.map((item) => (
+      {sections
+        .filter(
+          (s) =>
+            s.items.length > 0 &&
+            !(
+              s.items.length === 1 &&
+              (s.items[0].trim().toLowerCase() === 'none' ||
+                s.items[0].trim().toLowerCase() === 'null')
+            )
+        )
+        .map((section) => (
+          <View key={section.title} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            {section.items.map((item) => (
               <View key={item} style={styles.bulletRow}>
                 <View style={styles.bulletPoint} />
                 <Text style={styles.bulletItem}>{item}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>None</Text>
-          )}
-        </View>
-      ))}
+            ))}
+          </View>
+        ))}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Status update</Text>
-        <Text style={styles.statusText}>{digest.statusUpdate}</Text>
-      </View>
+      {digest.statusUpdate &&
+        digest.statusUpdate.trim().toLowerCase() !== 'none' &&
+        digest.statusUpdate.trim().toLowerCase() !== 'null' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Status update</Text>
+            <View style={styles.bulletRow}>
+              <View style={styles.bulletPoint} />
+              <Text style={styles.bulletItem}>{digest.statusUpdate}</Text>
+            </View>
+          </View>
+        )}
     </View>
   );
 }
@@ -114,14 +127,14 @@ const styles = StyleSheet.create({
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 36,
+    gap: 4,
+    minHeight: 32,
     paddingHorizontal: Spacing.sm,
     borderRadius: Radii.button,
     backgroundColor: Colors.PrimaryTint,
   },
   shareButtonText: {
-    ...Typography.Secondary,
+    ...Typography.Label,
     fontWeight: '600',
     color: Colors.PrimaryDeep,
   },
