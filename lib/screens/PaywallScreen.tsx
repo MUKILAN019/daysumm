@@ -8,6 +8,8 @@ import {
   View,
 } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
+import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { Crown, CheckCircle2 } from 'lucide-react-native';
 
 interface PaywallScreenProps {
   role: string | null;
@@ -99,20 +101,23 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.iconContainer}>
+          <Crown size={48} color={Colors.ProGold} />
+        </View>
         <Text style={styles.headline}>{getHeadlineForRole(role)}</Text>
         <Text style={styles.subheadline}>Upgrade to DaySumm Pro</Text>
 
         <View style={styles.featureList}>
           {PRO_FEATURES.map((feature) => (
             <View key={feature} style={styles.featureRow}>
-              <Text style={styles.featureCheck}>✓</Text>
+              <CheckCircle2 size={20} color={Colors.Primary} />
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
         </View>
 
         {isLoadingOffering ? (
-          <ActivityIndicator size="large" color="#2563EB" style={styles.loadingSpinner} />
+          <ActivityIndicator size="large" color={Colors.Primary} style={styles.loadingSpinner} />
         ) : packages.length === 0 ? (
           <Text style={styles.errorText}>
             {errorMessage ?? 'No plans available right now.'}
@@ -127,7 +132,11 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                   accessibilityRole="button"
                   disabled={purchasingPackageId !== null}
                   onPress={() => handlePurchase(pkg)}
-                  style={[styles.packageButton, isPurchasing && styles.packageButtonDisabled]}
+                  style={({ pressed }) => [
+                    styles.packageButton,
+                    pressed && styles.packageButtonPressed,
+                    isPurchasing && styles.packageButtonDisabled,
+                  ]}
                 >
                   {isPurchasing ? (
                     <ActivityIndicator color="#FFFFFF" />
@@ -152,28 +161,45 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8FA', paddingTop: 56 },
-  headerRow: { paddingHorizontal: 20 },
+  container: { flex: 1, backgroundColor: Colors.Background, paddingTop: 56 },
+  headerRow: { paddingHorizontal: Spacing.md },
   backButton: { paddingVertical: 6, paddingHorizontal: 8, alignSelf: 'flex-start' },
-  backButtonText: { color: '#2563EB', fontSize: 15, fontWeight: '700' },
-  content: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40, gap: 16 },
-  headline: { fontSize: 24, fontWeight: '700', color: '#111827', lineHeight: 32 },
-  subheadline: { fontSize: 15, color: '#6B7280', fontWeight: '600' },
-  featureList: { gap: 12, marginTop: 8 },
-  featureRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  featureCheck: { color: '#059669', fontSize: 16, fontWeight: '700' },
-  featureText: { flex: 1, fontSize: 15, color: '#111827', lineHeight: 21 },
-  packageList: { gap: 10, marginTop: 12 },
+  backButtonText: { color: Colors.Primary, fontSize: 16, fontWeight: '600' },
+  content: { paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.lg, paddingBottom: 64, gap: Spacing.lg },
+  iconContainer: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    backgroundColor: Colors.Card, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    alignSelf: 'center',
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+  },
+  headline: { ...Typography.ScreenTitle, color: Colors.TextPrimary, textAlign: 'center' },
+  subheadline: { ...Typography.Secondary, fontWeight: '700', color: Colors.ProGold, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 },
+  featureList: { gap: 16, marginTop: Spacing.md, backgroundColor: Colors.Card, padding: Spacing.lg, borderRadius: Radii.card, borderWidth: 1, borderColor: Colors.Border },
+  featureRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  featureText: { flex: 1, ...Typography.Body, color: Colors.TextPrimary },
+  packageList: { gap: 12, marginTop: Spacing.xl },
   packageButton: {
-    minHeight: 52,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
+    minHeight: 56,
+    borderRadius: Radii.button,
+    backgroundColor: Colors.Primary,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: Spacing.md,
+    shadowColor: Colors.PrimaryDeep,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
+  packageButtonPressed: { backgroundColor: Colors.PrimaryDeep },
   packageButtonDisabled: { opacity: 0.7 },
-  packageButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  loadingSpinner: { marginTop: 24 },
-  errorText: { color: '#B91C1C', fontSize: 14, textAlign: 'center', marginTop: 12 },
+  packageButtonText: { color: '#FFFFFF', ...Typography.Label, fontWeight: '700' },
+  loadingSpinner: { marginTop: Spacing.xxl },
+  errorText: { color: Colors.Danger, ...Typography.Secondary, textAlign: 'center', marginTop: Spacing.md },
 });

@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Text,
   View,
+  Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenTransition } from '../components/ScreenTransition';
 
 interface NotificationPermissionScreenProps {
-  onContinue: () => Promise<void>;
+  onContinue: (time: string) => Promise<void>;
 }
 
 /**
@@ -19,16 +21,38 @@ interface NotificationPermissionScreenProps {
  */
 export function NotificationPermissionScreen({ onContinue }: NotificationPermissionScreenProps) {
   const [isRequesting, setIsRequesting] = useState(false);
+  
+  // Default to 5:00 PM
+  const defaultDate = new Date();
+  defaultDate.setHours(17, 0, 0, 0);
+  const [date, setDate] = useState(defaultDate);
+  const [showPicker, setShowPicker] = useState(false);
 
   async function handleContinue() {
     if (isRequesting) return;
     setIsRequesting(true);
+    
+    // Format to HH:mm string
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const timeString = `${hours}:${minutes}`;
+    
     try {
-      await onContinue();
+      await onContinue(timeString);
     } finally {
       setIsRequesting(false);
     }
   }
+
+  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    setShowPicker(Platform.OS === 'ios');
+    setDate(currentDate);
+  };
+
+  const showTimepicker = () => {
+    setShowPicker(true);
+  };
 
   return (
     <ScreenTransition style={styles.container}>
@@ -59,6 +83,29 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
             <FeatureRow label="One quiet ping a day, right when your digest is ready" />
             <FeatureRow label="Never miss a summary of your work" />
             <FeatureRow label="Choose your own time anytime in settings" />
+          </View>
+          
+          <View style={styles.timePickerContainer}>
+            <Text style={styles.timePickerLabel}>Select preferred time:</Text>
+            {Platform.OS === 'android' ? (
+              <Pressable style={styles.timeDisplayButton} onPress={showTimepicker}>
+                 <Text style={styles.timeDisplayText}>
+                   {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                 </Text>
+              </Pressable>
+            ) : null}
+            
+            {(showPicker || Platform.OS === 'ios') && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={date}
+                mode="time"
+                is24Hour={false}
+                display="default"
+                onChange={onChange}
+                style={styles.datePicker}
+              />
+            )}
           </View>
         </View>
 
@@ -190,6 +237,32 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#374151',
     fontWeight: '500',
+  },
+  timePickerContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timePickerLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  timeDisplayButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  timeDisplayText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  datePicker: {
+    width: 100,
   },
   button: {
     width: '100%',

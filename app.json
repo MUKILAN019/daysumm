@@ -39,7 +39,7 @@
         }
       ],
       [
-       "react-native-android-widget",
+        "react-native-android-widget",
         {
           "widgets": [
             {
@@ -51,7 +51,8 @@
             }
           ]
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

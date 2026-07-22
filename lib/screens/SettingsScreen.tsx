@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
 import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
@@ -9,9 +9,17 @@ interface SettingsScreenProps {
   currentStreak: number;
   isPro: boolean;
   onUpgradePress: () => void;
+  onPersonalInformationPress: () => void;
+  onNotificationSettingsPress: () => void;
 }
 
-export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: SettingsScreenProps) {
+export function SettingsScreen({ 
+  currentStreak, 
+  isPro, 
+  onUpgradePress,
+  onPersonalInformationPress,
+  onNotificationSettingsPress
+}: SettingsScreenProps) {
   const auth = getAuth();
   const user = auth.currentUser;
   const isGuest = user ? user.isAnonymous : true;
@@ -29,6 +37,18 @@ export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: Setting
       console.warn('Sign out failed', error);
     } finally {
       setSignOutBusy(false);
+    }
+  }
+
+  function handlePersonalInfoPress() {
+    if (isGuest) {
+      Alert.alert(
+        'Looking Good!',
+        "Please don't lose your data. Log in with a Google account for seamless access and preserved data. Only users logged in with Google are allowed to edit personal information.",
+        [{ text: 'OK' }]
+      );
+    } else {
+      onPersonalInformationPress();
     }
   }
 
@@ -82,7 +102,7 @@ export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: Setting
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Account</Text>
         <View style={styles.card}>
-          <SettingsRow icon={User} label="Personal Information" />
+          <SettingsRow icon={User} label="Personal Information" onPress={handlePersonalInfoPress} />
           <View style={styles.divider} />
           <SettingsRow icon={Crown} label="Subscription" onPress={isPro ? undefined : onUpgradePress} />
         </View>
@@ -91,7 +111,7 @@ export function SettingsScreen({ currentStreak, isPro, onUpgradePress }: Setting
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Preferences</Text>
         <View style={styles.card}>
-          <SettingsRow icon={Bell} label="Notifications" />
+          <SettingsRow icon={Bell} label="Notifications" onPress={onNotificationSettingsPress} />
         </View>
       </View>
 

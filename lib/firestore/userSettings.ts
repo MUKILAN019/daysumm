@@ -18,6 +18,7 @@ export async function completeOnboarding(
   uid: string,
   role: string,
   timezone: string,
+  notificationTime: string = '17:00'
 ): Promise<void> {
   const db = getFirestore();
   await setDoc(
@@ -25,9 +26,28 @@ export async function completeOnboarding(
     {
       role,
       timezone,
+      notificationTime,
       onboardingComplete: true,
       updatedAt: serverTimestamp(),
     },
+    { merge: true },
+  );
+}
+
+export async function updateNotificationTime(uid: string, notificationTime: string): Promise<void> {
+  const db = getFirestore();
+  await setDoc(
+    doc(db, 'userSettings', uid),
+    { notificationTime, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export async function updateUserRole(uid: string, role: string): Promise<void> {
+  const db = getFirestore();
+  await setDoc(
+    doc(db, 'userSettings', uid),
+    { role, updatedAt: serverTimestamp() },
     { merge: true },
   );
 }

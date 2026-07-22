@@ -34,6 +34,8 @@ export interface DailyUsage {
   uid: string;
   date: string;
   digestCount: number;
+  pushSent?: boolean;
+  timeChangesAfterPush?: number;
 }
 
 export interface UserSettings {
@@ -41,4 +43,5 @@ export interface UserSettings {
   timezone?: string;
   onboardingComplete?: boolean;
   fcmToken?: string;
+  notificationTime?: string;
 }

@@ -343,6 +343,7 @@ export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secre
         const uid = settingsDoc.id;
         const settings = settingsDoc.data();
         const timezone = settings?.timezone;
+        const notificationTime = settings?.notificationTime || '17:00';
         if (!timezone) {
             continue; // not onboarded yet — nothing to match against
         }
@@ -352,9 +353,15 @@ export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secre
                 console.warn(`Invalid timezone "${timezone}" for uid ${uid} — skipping`);
                 continue;
             }
+            const [hourStr, minStr] = notificationTime.split(':');
+            const targetHour = parseInt(hourStr, 10);
+            const targetMin = parseInt(minStr, 10);
+            const targetMinutesSinceMidnight = targetHour * 60 + targetMin;
             const minutesSinceMidnight = localNow.hour * 60 + localNow.minute;
-            const windowStart = 16 * 60 + 45; // 4:45 PM
-            const windowEnd = 16 * 60 + 55; // 4:55 PM
+            // Window triggers 5-15 mins before target time (e.g. 16:45-16:55 for 17:00)
+            // This ensures the digest is processed and ready right as the push goes out
+            const windowStart = targetMinutesSinceMidnight - 15;
+            const windowEnd = targetMinutesSinceMidnight - 5;
             const isDue = minutesSinceMidnight >= windowStart && minutesSinceMidnight <= windowEnd;
             if (!isDue) {
                 continue;

@@ -57,6 +57,8 @@ import { markSampleDigestSeen } from './lib/db/entries';
 import { transcribeAudio } from './lib/functions/transcribeAudio';
 import { DigestScreen } from './lib/screens/DigestScreen';
 import { generateDigest, type Digest } from './lib/functions/generateDigest';
+import { PersonalInfoScreen } from './lib/screens/PersonalInfoScreen';
+import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsScreen';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -70,7 +72,7 @@ export default function App() {
   const [showGoogleSignIn, setShowGoogleSignIn] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [screenMode, setScreenMode] = useState<'capture' | 'digest' | 'paywall'>('capture');
+  const [screenMode, setScreenMode] = useState<'capture' | 'digest' | 'paywall' | 'personalInfo' | 'notificationSettings'>('capture');
   const [activeTab, setActiveTab] = useState<TabName>('write');
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
@@ -442,7 +444,7 @@ export default function App() {
     setShowNotificationStep(true);
   }
 
-  async function handleNotificationStepContinue() {
+  async function handleNotificationStepContinue(time: string) {
     const granted = await requestNotificationPermission();
     console.log(`Notification permission ${granted ? 'granted' : 'denied'}`);
 
@@ -462,7 +464,7 @@ export default function App() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     try {
-      await completeOnboarding(uid, pendingRole, timezone);
+      await completeOnboarding(uid, pendingRole, timezone, time);
       setNeedsOnboarding(false);
     } catch (error) {
       console.warn('Failed to save onboarding info', error);
@@ -572,6 +574,14 @@ export default function App() {
     );
   }
 
+  if (screenMode === 'personalInfo') {
+    return <PersonalInfoScreen onBack={() => setScreenMode('capture')} />;
+  }
+
+  if (screenMode === 'notificationSettings') {
+    return <NotificationSettingsScreen onBack={() => setScreenMode('capture')} />;
+  }
+
   // Helper to switch tabs and keep screenMode in sync
   function handleTabPress(tab: TabName) {
     setActiveTab(tab);
@@ -607,6 +617,8 @@ export default function App() {
           currentStreak={currentStreak}
           isPro={isPro}
           onUpgradePress={() => setScreenMode('paywall')}
+          onPersonalInformationPress={() => setScreenMode('personalInfo')}
+          onNotificationSettingsPress={() => setScreenMode('notificationSettings')}
         />
       );
     }

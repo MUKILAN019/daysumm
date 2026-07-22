@@ -39,9 +39,7 @@ service cloud.firestore {
     }
 
     match /dailyUsage/{usageId} {
-      allow create: if ownsIncomingUid();
-      allow read, delete: if ownsExistingUid();
-      allow update: if ownsExistingUid() && ownsIncomingUid();
+      allow read, write: if signedIn() && usageId.split('_')[0] == request.auth.uid;
     }
 
     match /{document=**} {
