@@ -11,6 +11,9 @@ import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { Crown, CheckCircle2 } from 'lucide-react-native';
 
+import { getAuth } from '@react-native-firebase/auth';
+import { CustomModal } from '../components/CustomModal';
+
 interface PaywallScreenProps {
   role: string | null;
   onBack: () => void;
@@ -42,6 +45,10 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   const [isLoadingOffering, setIsLoadingOffering] = useState(true);
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showGuestModal, setShowGuestModal] = useState(false);
+
+  const auth = getAuth();
+  const isGuest = auth.currentUser?.isAnonymous ?? true;
 
   useEffect(() => {
     let isCancelled = false;
@@ -68,6 +75,11 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   }, []);
 
   async function handlePurchase(pkg: PurchasesPackage) {
+    if (isGuest) {
+      setShowGuestModal(true);
+      return;
+    }
+
     setPurchasingPackageId(pkg.identifier);
     setErrorMessage(null);
 
@@ -156,6 +168,15 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
           <Text style={styles.errorText}>{errorMessage}</Text>
         ) : null}
       </ScrollView>
+
+      <CustomModal
+        visible={showGuestModal}
+        type="warning"
+        title="Login Required"
+        message="Please log in with a Google account to upgrade to Pro and unlock all features safely."
+        primaryButtonText="OK"
+        onPrimaryPress={() => setShowGuestModal(false)}
+      />
     </View>
   );
 }

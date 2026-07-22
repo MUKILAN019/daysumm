@@ -6,6 +6,7 @@ import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { fetchUserSettings, updateNotificationTime } from '../firestore/userSettings';
 import { fetchDailyUsage, updateDailyUsageForTimeChange } from '../firestore/dailyUsage';
+import { CustomModal, CustomModalType } from '../components/CustomModal';
 
 interface NotificationSettingsScreenProps {
   onBack: () => void;
@@ -18,6 +19,19 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentNotificationTime, setCurrentNotificationTime] = useState('17:00');
+  
+  // Custom Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as CustomModalType,
+  });
+
+  const showModal = (title: string, message: string, type: CustomModalType) => {
+    setModalConfig({ title, message, type });
+    setModalVisible(true);
+  };
   
   const defaultDate = new Date();
   defaultDate.setHours(17, 0, 0, 0);
@@ -69,17 +83,17 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
           
           // Block if within 20 mins of CURRENT scheduled time
           if (nowMins >= currentTargetMins - 20 && nowMins <= currentTargetMins) {
-            Alert.alert("Too Close to Digest Time", "You cannot change the notification time within 20 minutes of the scheduled delivery.");
+            showModal("Too Close to Digest Time", "You cannot change the notification time within 20 minutes of the scheduled delivery.", 'warning');
             return;
           }
         } else {
           if (user.isAnonymous) {
-            Alert.alert("Limit Reached", "Guest users cannot change the notification time after receiving a digest today. Please log in to unlock this feature.");
+            showModal("Limit Reached", "Guest users cannot change the notification time after receiving a digest today. Please log in to unlock this feature.", 'warning');
             return;
           }
           
           if (timeChangesAfterPush >= 1) {
-            Alert.alert("Limit Reached", "You can only change your notification time once per day after receiving a digest.");
+            showModal("Limit Reached", "You can only change your notification time once per day after receiving a digest.", 'warning');
             return;
           }
         }
@@ -94,11 +108,11 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
           await updateDailyUsageForTimeChange(user.uid, dateKey, timeChangesAfterPush + 1);
         }
         
-        Alert.alert('Success', 'Notification time updated successfully.');
+        showModal('Success', 'Notification time updated successfully.', 'success');
       }
     } catch (error) {
       console.warn('Failed to save notification time:', error);
-      Alert.alert('Error', 'Failed to update notification time. Please try again.');
+      showModal('Error', 'Failed to update notification time. Please try again.', 'warning');
     } finally {
       setSaving(false);
     }
@@ -131,23 +145,20 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               </Text>
               
               <View style={styles.timePickerContainer}>
-                {Platform.OS === 'android' ? (
-                  <Pressable style={styles.timeDisplayPill} onPress={showTimepicker}>
-                     <Text style={styles.timeDisplayText}>
-                       {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                     </Text>
-                  </Pressable>
-                ) : null}
+                <Pressable style={styles.timeDisplayPill} onPress={showTimepicker}>
+                   <Text style={styles.timeDisplayText}>
+                     {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                   </Text>
+                </Pressable>
                 
-                {(showPicker || Platform.OS === 'ios') && (
+                {showPicker && Platform.OS === 'android' && (
                   <DateTimePicker
                     testID="dateTimePicker"
                     value={date}
                     mode="time"
                     is24Hour={false}
-                    display="spinner"
+                    display="default"
                     onChange={onChange}
-                    style={styles.datePicker}
                   />
                 )}
               </View>
@@ -182,6 +193,35 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
           </View>
         )}
       </ScrollView>
+
+      <CustomModal
+        visible={modalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
+        primaryButtonText="OK"
+        onPrimaryPress={() => setModalVisible(false)}
+      />
+
+      {Platform.OS === 'ios' && (
+        <CustomModal
+          visible={showPicker}
+          title="Select Time"
+          type="info"
+          primaryButtonText="Confirm"
+          onPrimaryPress={() => setShowPicker(false)}
+        >
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={date}
+            mode="time"
+            is24Hour={false}
+            display="spinner"
+            onChange={onChange}
+            style={styles.datePicker}
+          />
+        </CustomModal>
+      )}
     </View>
   );
 }
@@ -245,7 +285,7 @@ const styles = StyleSheet.create({
   },
   datePicker: {
     width: '100%',
-    height: 120,
+    height: 200,
   },
   saveButton: {
     height: 52,

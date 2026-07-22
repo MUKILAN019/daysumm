@@ -4,6 +4,7 @@ import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
+import { CustomModal } from '../components/CustomModal';
 
 interface SettingsScreenProps {
   currentStreak: number;
@@ -27,6 +28,7 @@ export function SettingsScreen({
   const initial = displayName ? displayName[0].toUpperCase() : 'U';
 
   const [signOutBusy, setSignOutBusy] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   async function handleSignOut() {
     if (signOutBusy) return;
@@ -42,11 +44,7 @@ export function SettingsScreen({
 
   function handlePersonalInfoPress() {
     if (isGuest) {
-      Alert.alert(
-        'Looking Good!',
-        "Please don't lose your data. Log in with a Google account for seamless access and preserved data. Only users logged in with Google are allowed to edit personal information.",
-        [{ text: 'OK' }]
-      );
+      setShowGuestModal(true);
     } else {
       onPersonalInformationPress();
     }
@@ -124,6 +122,15 @@ export function SettingsScreen({
         </View>
       </View>
       </ScrollView>
+
+      <CustomModal
+        visible={showGuestModal}
+        type="warning"
+        title="Looking Good!"
+        message="Please don't lose your data. Log in with a Google account for seamless access and preserved data. Only users logged in with Google are allowed to edit personal information."
+        primaryButtonText="OK"
+        onPrimaryPress={() => setShowGuestModal(false)}
+      />
     </View>
   );
 }
