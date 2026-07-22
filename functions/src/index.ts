@@ -4,6 +4,7 @@ import { defineSecret } from 'firebase-functions/params';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getAuth } from 'firebase-admin/auth';
 import { DateTime } from 'luxon';
 import { z } from 'zod';
 import { createHash } from 'crypto';
@@ -578,3 +579,58 @@ async function checkIsProEntitled(uid: string, secretApiKey: string): Promise<bo
     return false; // fail closed
   }
 }
+
+export const cleanupGuestAccounts = onSchedule('every 1 hours', async () => {
+  const auth = getAuth();
+  const db = getFirestore();
+  const now = Date.now();
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+  let pageToken: string | undefined;
+  
+  do {
+    const listUsersResult = await auth.listUsers(1000, pageToken);
+    pageToken = listUsersResult.pageToken;
+
+    for (const user of listUsersResult.users) {
+      const isGuest = user.providerData.length === 0;
+      
+      if (isGuest && user.metadata.creationTime) {
+        const creationTime = new Date(user.metadata.creationTime).getTime();
+        if (now - creationTime > TWENTY_FOUR_HOURS) {
+          const uid = user.uid;
+          console.log(`Cleaning up expired guest account: ${uid}`);
+
+          // Delete collections by querying uid
+          const collectionsToQuery = ['entries', 'digestRecords', 'dailyUsage'];
+          for (const collectionName of collectionsToQuery) {
+            const snapshot = await db.collection(collectionName).where('uid', '==', uid).get();
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => {
+              batch.delete(doc.ref);
+            });
+            if (!snapshot.empty) {
+              await batch.commit();
+            }
+          }
+
+          // Delete documents where ID is uid
+          const collectionsById = ['userSettings', 'userStats'];
+          const batch = db.batch();
+          for (const collectionName of collectionsById) {
+            batch.delete(db.collection(collectionName).doc(uid));
+          }
+          await batch.commit();
+
+          // Finally, delete the user from Auth
+          try {
+            await auth.deleteUser(uid);
+            console.log(`Successfully deleted guest account ${uid}`);
+          } catch (error) {
+            console.error(`Failed to delete Auth user ${uid}`, error);
+          }
+        }
+      }
+    }
+  } while (pageToken);
+});

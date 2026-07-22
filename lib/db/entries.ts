@@ -71,8 +71,10 @@ export async function initDb() {
       value TEXT NOT NULL
     );
 
-    CREATE TABLE IF NOT EXISTS widget_cache (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
+    DROP TABLE IF EXISTS widget_cache;
+
+    CREATE TABLE IF NOT EXISTS widget_cache_v2 (
+      uid TEXT PRIMARY KEY NOT NULL,
       todayEntryCount INTEGER NOT NULL DEFAULT 0,
       currentStreak INTEGER NOT NULL DEFAULT 0,
       lastEntryPreview TEXT NOT NULL DEFAULT ''
@@ -80,12 +82,12 @@ export async function initDb() {
   `);
 }
 
-export async function insertEntry(text: string, source: EntrySource) {
+export async function insertEntry(text: string, source: EntrySource, uid: string) {
   await initDb();
 
   const db = await getDb();
   const entry: LocalEntry = {
-    uid: null,
+    uid,
     text,
     createdAt: new Date().toISOString(),
     source,
@@ -109,15 +111,23 @@ export async function insertEntry(text: string, source: EntrySource) {
   return entry;
 }
 
-export async function getAllEntries() {
+export async function getTodayEntries(uid: string) {
   await initDb();
 
   const db = await getDb();
+  
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT localId, uid, text, createdAt, source, synced
     FROM entries
+    WHERE uid = ? AND createdAt >= ?
     ORDER BY createdAt DESC
-  `);
+  `,
+  uid,
+  startOfDay.toISOString()
+  );
 
   return rows.map<LocalEntry>((row) => ({
     ...row,
@@ -125,16 +135,18 @@ export async function getAllEntries() {
   }));
 }
 
-export async function getUnsyncedEntries() {
+export async function getUnsyncedEntries(uid: string) {
   await initDb();
 
   const db = await getDb();
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT localId, uid, text, createdAt, source, synced
     FROM entries
-    WHERE synced = 0
+    WHERE synced = 0 AND uid = ?
     ORDER BY createdAt ASC
-  `);
+  `,
+  uid
+  );
 
   return rows.map<LocalEntry>((row) => ({
     ...row,
@@ -221,33 +233,34 @@ export async function markSampleDigestSeen() {
   await setSetting('seenSampleDigest', '1');
 }
 
-export async function setWidgetCache(data: WidgetCacheData) {
+export async function setWidgetCache(uid: string, data: WidgetCacheData) {
   await initDb();
 
   const db = await getDb();
 
   await db.runAsync(
     `
-      INSERT INTO widget_cache (
-        id,
+      INSERT INTO widget_cache_v2 (
+        uid,
         todayEntryCount,
         currentStreak,
         lastEntryPreview
       )
-      VALUES (1, ?, ?, ?)
-      ON CONFLICT(id)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(uid)
       DO UPDATE SET
         todayEntryCount = excluded.todayEntryCount,
         currentStreak = excluded.currentStreak,
         lastEntryPreview = excluded.lastEntryPreview
     `,
+    uid,
     data.todayEntryCount,
     data.currentStreak,
     data.lastEntryPreview,
   );
 }
 
-export async function getWidgetCache(): Promise<WidgetCacheData> {
+export async function getWidgetCache(uid: string): Promise<WidgetCacheData> {
   await initDb();
 
   const db = await getDb();
@@ -257,9 +270,9 @@ export async function getWidgetCache(): Promise<WidgetCacheData> {
       todayEntryCount,
       currentStreak,
       lastEntryPreview
-    FROM widget_cache
-    WHERE id = 1
-  `);
+    FROM widget_cache_v2
+    WHERE uid = ?
+  `, uid);
 
   return (
     row ?? {
@@ -270,7 +283,7 @@ export async function getWidgetCache(): Promise<WidgetCacheData> {
   );
 }
 
-export async function getTodayEntryCount(): Promise<number> {
+export async function getTodayEntryCount(uid: string): Promise<number> {
   await initDb();
 
   const db = await getDb();
@@ -282,15 +295,16 @@ export async function getTodayEntryCount(): Promise<number> {
     `
       SELECT COUNT(*) AS count
       FROM entries
-      WHERE createdAt >= ?
+      WHERE createdAt >= ? AND uid = ?
     `,
     startOfDay.toISOString(),
+    uid
   );
 
   return row?.count ?? 0;
 }
 
-export async function getLatestEntryText(): Promise<string> {
+export async function getLatestEntryText(uid: string): Promise<string> {
   await initDb();
 
   const db = await getDb();
@@ -298,9 +312,10 @@ export async function getLatestEntryText(): Promise<string> {
   const row = await db.getFirstAsync<LatestEntryRow>(`
     SELECT text
     FROM entries
+    WHERE uid = ?
     ORDER BY createdAt DESC
     LIMIT 1
-  `);
+  `, uid);
 
   return row?.text ?? '';
 }
@@ -312,4 +327,18 @@ export async function getHasSeenMilestone(milestone: number): Promise<boolean> {
 
 export async function markMilestoneSeen(milestone: number): Promise<void> {
   await setSetting(`seenMilestone_${milestone}`, '1');
+}
+
+export async function cleanupOldLocalEntries(): Promise<void> {
+  await initDb();
+  
+  const db = await getDb();
+  
+  // 24 hours ago
+  const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  
+  await db.runAsync(`
+    DELETE FROM entries
+    WHERE createdAt < ?
+  `, cutoffTime);
 }

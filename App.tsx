@@ -23,10 +23,11 @@ import {
 } from 'react-native';
 
 import {
-  getAllEntries,
+  getTodayEntries,
   getHasSeenSampleDigest,
   initDb,
   insertEntry,
+  cleanupOldLocalEntries,
   type LocalEntry,
 } from './lib/db/entries';
 import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
@@ -95,7 +96,12 @@ export default function App() {
 
 
   async function loadEntries() {
-    const localEntries = await getAllEntries();
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) {
+      setEntries([]);
+      return;
+    }
+    const localEntries = await getTodayEntries(uid);
 
     setEntries(localEntries);
     console.log('Local SQLite entries', localEntries);
@@ -141,6 +147,7 @@ export default function App() {
   useEffect(() => {
     initDb()
       .then(async () => {
+        await cleanupOldLocalEntries();
         await refreshEntries();
         const hasSeenSample = await getHasSeenSampleDigest();
         if (!hasSeenSample) {
@@ -221,6 +228,17 @@ export default function App() {
       setOnboardingChecked(false);
       
       if (user) {
+        const isGuest = user.isAnonymous || user.providerData.length === 0;
+        if (isGuest && user.metadata.creationTime) {
+          const creationDate = new Date(user.metadata.creationTime);
+          const ageHours = (Date.now() - creationDate.getTime()) / (1000 * 60 * 60);
+          if (ageHours > 24) {
+            console.log('Guest account expired (> 24 hours). Signing out.');
+            await auth.signOut();
+            return; // onAuthStateChanged will fire again with user=null
+          }
+        }
+
         const hasGoogleProvider = user.providerData.some(
           (provider) => provider.providerId === 'google.com'
         );
@@ -351,13 +369,15 @@ export default function App() {
     }
 
     try {
-      await insertEntry(trimmedText, 'text');
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) return;
+
+      await insertEntry(trimmedText, 'text', uid);
       await refreshEntries();
       setText('');
       setSavedMessage('Saved locally');
 
       await runSync('save');
-      const uid = getAuth().currentUser?.uid;
       await refreshWidgetData(uid);
 
       setTimeout(() => {
@@ -598,10 +618,13 @@ export default function App() {
         console.warn('No speech detected in recording.');
         return;
       }
-      await insertEntry(trimmedText, 'voice');
+      
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) return;
+
+      await insertEntry(trimmedText, 'voice', uid);
       await refreshEntries();
       await runSync('voice-save');
-      const uid = getAuth().currentUser?.uid;
       await refreshWidgetData(uid);
     } catch (error) {
       console.warn('Voice transcription/save failed', error);
@@ -646,10 +669,11 @@ export default function App() {
         <TextCaptureScreen
           currentStreak={currentStreak}
           onSave={async (newText) => {
-            await insertEntry(newText, 'text');
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) return;
+            await insertEntry(newText, 'text', uid);
             await refreshEntries();
             await runSync('save');
-            const uid = getAuth().currentUser?.uid;
             await refreshWidgetData(uid);
           }}
         />

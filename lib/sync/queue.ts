@@ -13,8 +13,8 @@ import {
 } from '../db/entries';
 import type { Entry } from '../firestore/types';
 
-export async function getPendingSyncEntries(): Promise<LocalEntry[]> {
-  return getUnsyncedEntries();
+export async function getPendingSyncEntries(uid: string): Promise<LocalEntry[]> {
+  return getUnsyncedEntries(uid);
 }
 
 export interface SyncEntriesResult {
@@ -49,7 +49,7 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     };
   }
 
-  const pendingEntries = await getPendingSyncEntries();
+  const pendingEntries = await getPendingSyncEntries(user.uid);
 
   if (pendingEntries.length === 0) {
     console.log('Sync skipped: no pending entries');

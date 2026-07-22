@@ -8,14 +8,16 @@ import { fetchCurrentStreak } from '../firestore/userStats';
 import { DaySummWidget } from './DaySummWidget';
 
 export async function refreshWidgetData(uid?: string): Promise<void> {
+  if (!uid) return;
+
   try {
     const [todayEntryCount, lastEntryPreview, currentStreak] = await Promise.all([
-      getTodayEntryCount(),
-      getLatestEntryText(),
-      uid ? fetchCurrentStreak(uid) : Promise.resolve(0),
+      getTodayEntryCount(uid),
+      getLatestEntryText(uid),
+      fetchCurrentStreak(uid),
     ]);
 
-    await setWidgetCache({ todayEntryCount, currentStreak, lastEntryPreview });
+    await setWidgetCache(uid, { todayEntryCount, currentStreak, lastEntryPreview });
 
     await requestWidgetUpdate({
       widgetName: 'DaySummWidget',
