@@ -120,6 +120,8 @@ export default function App() {
 
       if (!isOnline) {
         console.log(`Sync ${reason} skipped offline`);
+        await loadEntries();
+        setEntriesRefreshVersion((value) => value + 1);
         return;
       }
 
@@ -264,7 +266,11 @@ export default function App() {
       }
 
       // No user at all — show the sign-in screen and wait for an explicit choice.
-      // No automatic signInAnonymously here anymore.
+      setEntries([]);
+      setDigest(null);
+      setCurrentStreak(0);
+      setUserRole(null);
+      setIsPro(false);
       setShowGoogleSignIn(true);
       setAuthReady(true);
     });
