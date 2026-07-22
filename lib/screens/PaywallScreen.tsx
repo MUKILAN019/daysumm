@@ -48,7 +48,8 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   const [showGuestModal, setShowGuestModal] = useState(false);
 
   const auth = getAuth();
-  const isGuest = auth.currentUser?.isAnonymous ?? true;
+  const user = auth.currentUser;
+  const isGuest = user ? (user.isAnonymous || user.providerData.length === 0) : true;
 
   useEffect(() => {
     let isCancelled = false;

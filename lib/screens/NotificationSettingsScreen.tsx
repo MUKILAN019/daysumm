@@ -87,7 +87,8 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
             return;
           }
         } else {
-          if (user.isAnonymous) {
+          const isGuest = user.isAnonymous || user.providerData.length === 0;
+          if (isGuest) {
             showModal("Limit Reached", "Guest users cannot change the notification time after receiving a digest today. Please log in to unlock this feature.", 'warning');
             return;
           }

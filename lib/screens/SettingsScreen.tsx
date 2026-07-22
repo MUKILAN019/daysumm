@@ -23,7 +23,7 @@ export function SettingsScreen({
 }: SettingsScreenProps) {
   const auth = getAuth();
   const user = auth.currentUser;
-  const isGuest = user ? user.isAnonymous : true;
+  const isGuest = user ? (user.isAnonymous || user.providerData.length === 0) : true;
   const displayName = user?.displayName ?? (isGuest ? 'Guest User' : 'Anonymous');
   const initial = displayName ? displayName[0].toUpperCase() : 'U';
 
