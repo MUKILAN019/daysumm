@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Alert } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image } from 'react-native';
 import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';

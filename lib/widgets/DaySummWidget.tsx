@@ -62,6 +62,7 @@ export function DaySummWidget({
             fontWeight: '900',
             color: '#ECFDF5',
             letterSpacing: 0.8,
+            marginRight: 8,
           }}
         />
 
@@ -75,8 +76,6 @@ export function DaySummWidget({
               paddingHorizontal: 8,
               borderRadius: 12,
               backgroundColor: '#FEF9C3',
-              borderWidth: 1,
-              borderColor: '#FEF08A',
             }}
           >
             <SvgWidget
@@ -129,12 +128,12 @@ export function DaySummWidget({
       >
         {/* Character Image from assets (Duolingo feel) */}
         <ImageWidget
-          image={require('../../assets/owl-peek.png')}
-          imageWidth={56}
-          imageHeight={56}
+          image={require('../../assets/owl-professor-thinking.png')}
+          imageWidth={64}
+          imageHeight={64}
           style={{
-            width: 56,
-            height: 56,
+            width: 64,
+            height: 64,
           }}
         />
 
@@ -161,9 +160,9 @@ export function DaySummWidget({
                 : 'Start your daily summary'
             }
             style={{
-              fontSize: 11,
+              fontSize: 12,
               color: '#D1FAE5',
-              marginTop: 2,
+              marginTop: 4,
             }}
             maxLines={1}
             truncate="END"

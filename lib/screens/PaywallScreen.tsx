@@ -6,10 +6,11 @@ import {
   StyleSheet,
   Text,
   View,
+  Image,
 } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
-import { Crown, CheckCircle2 } from 'lucide-react-native';
+import { CheckCircle2 } from 'lucide-react-native';
 
 import { getAuth } from '@react-native-firebase/auth';
 import { CustomModal } from '../components/CustomModal';
@@ -46,6 +47,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -88,7 +90,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
       const { customerInfo } = await Purchases.purchasePackage(pkg);
 
       if (customerInfo.entitlements.active['pro']) {
-        onPurchaseSuccess();
+        setShowSuccessModal(true);
       }
     } catch (error: unknown) {
       const err = error as { userCancelled?: boolean; message?: string };
@@ -115,7 +117,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconContainer}>
-          <Crown size={48} color={Colors.ProGold} />
+          <Image source={require('../../assets/owl-king.png')} style={styles.mascotIcon} resizeMode="contain" />
         </View>
         <Text style={styles.headline}>{getHeadlineForRole(role)}</Text>
         <Text style={styles.subheadline}>Upgrade to DaySumm Pro</Text>
@@ -178,6 +180,25 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         primaryButtonText="OK"
         onPrimaryPress={() => setShowGuestModal(false)}
       />
+
+      {/* Success Modal */}
+      <CustomModal
+        visible={showSuccessModal}
+        type="success"
+        title="Welcome to Pro!"
+        message="Your account has been upgraded successfully. Enjoy unlimited daily digests and full history!"
+        primaryButtonText="Let's Go"
+        onPrimaryPress={() => {
+          setShowSuccessModal(false);
+          onPurchaseSuccess();
+        }}
+      >
+        <Image 
+          source={require('../../assets/owl-smiley-cheer.png')} 
+          style={styles.successMascot} 
+          resizeMode="contain" 
+        />
+      </CustomModal>
     </View>
   );
 }
@@ -189,16 +210,14 @@ const styles = StyleSheet.create({
   backButtonText: { color: Colors.Primary, fontSize: 16, fontWeight: '600' },
   content: { paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.lg, paddingBottom: 64, gap: Spacing.lg },
   iconContainer: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
-    backgroundColor: Colors.Card, 
     alignItems: 'center', 
     justifyContent: 'center', 
     alignSelf: 'center',
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.Border,
+    marginBottom: Spacing.md,
+  },
+  mascotIcon: {
+    width: 120,
+    height: 120,
   },
   headline: { ...Typography.ScreenTitle, color: Colors.TextPrimary, textAlign: 'center' },
   subheadline: { ...Typography.Secondary, fontWeight: '700', color: Colors.ProGold, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 1 },
@@ -224,4 +243,10 @@ const styles = StyleSheet.create({
   packageButtonText: { color: '#FFFFFF', ...Typography.Label, fontWeight: '700' },
   loadingSpinner: { marginTop: Spacing.xxl },
   errorText: { color: Colors.Danger, ...Typography.Secondary, textAlign: 'center', marginTop: Spacing.md },
+  successMascot: {
+    width: 120,
+    height: 120,
+    alignSelf: 'center',
+    marginVertical: Spacing.md,
+  },
 });

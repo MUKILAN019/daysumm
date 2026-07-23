@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, Text, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Pressable, Image } from 'react-native';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
@@ -36,7 +36,9 @@ export function DigestScreen({
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.digestWrapper}>
           <View style={styles.digestSectionHeader}>
-            <Text style={styles.digestSectionTitle}>Today's Summary</Text>
+            <View style={styles.digestSectionTitleRow}>
+              <Text style={styles.digestSectionTitle}>Today's Summary</Text>
+            </View>
             <Pressable
               accessibilityRole="button"
               disabled={isGeneratingDigest}
@@ -87,6 +89,11 @@ export function DigestScreen({
             <DigestCard digest={digest} />
           ) : (
             <View style={styles.digestEmptyState}>
+              <Image 
+                source={require('../../assets/owl-sitting-waiting.png')} 
+                style={styles.digestEmptyMascot} 
+                resizeMode="contain" 
+              />
               <Text style={styles.digestEmptyText}>
                 Log some entries in the Write or Voice tab, then generate your daily summary here.
               </Text>
@@ -120,6 +127,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.md,
+  },
+  digestSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   digestSectionTitle: {
     ...Typography.SectionHeader,
@@ -203,6 +215,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 32,
     alignItems: 'center',
+    gap: Spacing.md,
+  },
+  digestEmptyMascot: {
+    width: 100,
+    height: 100,
+    opacity: 0.8,
   },
   digestEmptyText: {
     ...Typography.Secondary,

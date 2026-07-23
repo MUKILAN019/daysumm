@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform, Image } from 'react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -140,6 +140,9 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
           <View style={styles.form}>
             
             <View style={styles.card}>
+              <View style={styles.cardHeaderIcon}>
+                <Image source={require('../../assets/owl-bell.png')} style={styles.mascotIcon} resizeMode="contain" />
+              </View>
               <Text style={styles.cardTitle}>Daily Digest Time</Text>
               <Text style={styles.cardSubtitle}>
                 Choose when you want to receive your daily digest push notification.
@@ -254,6 +257,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+  },
+  cardHeaderIcon: {
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  mascotIcon: {
+    width: 120,
+    height: 120,
   },
   cardTitle: {
     ...Typography.SectionHeader,

@@ -64,11 +64,13 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             onChangeText={setText}
             textAlignVertical="top"
           />
-          <Image
-            source={require('../../assets/owl-peek.png')}
-            style={styles.owlWatermark}
-            resizeMode="contain"
-          />
+          {!text ? (
+            <Image
+              source={require('../../assets/owl-invite-write.png')}
+              style={styles.owlWatermark}
+              resizeMode="contain"
+            />
+          ) : null}
           <Text style={styles.charCounter}>{text.length} chars</Text>
         </View>
 
@@ -156,9 +158,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -10,
     left: -10,
-    width: 120,
-    height: 96,
-    opacity: 0.6,
+    width: 140,
+    height: 140,
+    opacity: 0.15,
     zIndex: 1,
   },
   bottomSection: {

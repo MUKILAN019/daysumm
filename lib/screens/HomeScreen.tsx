@@ -8,6 +8,7 @@ import {
   View,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { Mic, Square, Pause, Play, FileText } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
@@ -225,9 +226,12 @@ export function HomeScreen({
 
       {/* Recent Entries */}
       <View style={styles.recentSection}>
-        <Text style={styles.recentTitle}>Recent</Text>
+        <View style={styles.recentHeaderRow}>
+          <Text style={styles.recentTitle}>Recent</Text>
+        </View>
         {entries.length === 0 ? (
           <View style={styles.emptyState}>
+            <Image source={require('../../assets/owl-sitting-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
             <Text style={styles.emptyStateText}>Nothing saved yet — start above!</Text>
           </View>
         ) : (
@@ -356,9 +360,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  recentHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   emptyState: {
     paddingVertical: Spacing.xl,
     alignItems: 'center',
+    gap: Spacing.md,
+  },
+  emptyStateImage: {
+    width: 100,
+    height: 100,
+    opacity: 0.8,
   },
   emptyStateText: {
     ...Typography.Secondary,

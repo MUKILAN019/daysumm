@@ -249,6 +249,11 @@ export function DigestHistoryScreen({
           <DigestCard digest={selectedDigest} />
         ) : (
           <View style={styles.emptyEntries}>
+            <Image 
+              source={require('../../assets/owl-sitting-waiting.png')} 
+              style={styles.emptyHistoryMascot} 
+              resizeMode="contain" 
+            />
             <Text style={styles.emptyEntriesText}>No digest for this day</Text>
           </View>
         )}
@@ -265,7 +270,7 @@ export function DigestHistoryScreen({
               <X size={24} color={Colors.TextSecondary} />
             </Pressable>
             
-            <Image source={require('../../assets/owl-face.png')} style={[styles.watermark, { opacity: 0.05 }]} />
+            <Image source={require('../../assets/owl-smiley-cheer.png')} style={[styles.watermark, { opacity: 0.1 }]} resizeMode="contain" />
             <Text style={styles.paywallTitle}>Unlock full history</Text>
             <View style={styles.paywallFeatures}>
               <Text style={styles.paywallFeatureText}>• View your entire entry history</Text>
@@ -383,6 +388,14 @@ const styles = StyleSheet.create({
   emptyEntries: {
     padding: Spacing.xl,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+  },
+  emptyHistoryMascot: {
+    width: 120,
+    height: 120,
+    opacity: 0.8,
   },
   emptyEntriesText: {
     ...Typography.Secondary,
