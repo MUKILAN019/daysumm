@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { ScreenTransition } from '../components/ScreenTransition';
 
 interface GoogleSignInScreenProps {
   onContinue: () => void;
@@ -53,7 +52,7 @@ export function GoogleSignInScreen({
   errorMessage,
 }: GoogleSignInScreenProps) {
   return (
-    <ScreenTransition style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.hero}>
         <View style={styles.mascotHalo}>
           <Image
@@ -104,7 +103,7 @@ export function GoogleSignInScreen({
 
         {isLoading ? <ActivityIndicator color="#FFFFFF" style={styles.spinner} /> : null}
       </View>
-    </ScreenTransition>
+    </View>
   );
 }
 
