@@ -1,7 +1,6 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, ViewStyle, TextStyle } from 'react-native';
+import { Modal, View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
-import { ShieldAlert, AlertCircle, CheckCircle2 } from 'lucide-react-native';
 
 export type CustomModalType = 'info' | 'warning' | 'success';
 
@@ -28,18 +27,6 @@ export function CustomModal({
   onSecondaryPress,
   children,
 }: CustomModalProps) {
-  
-  const getIcon = () => {
-    switch (type) {
-      case 'warning':
-        return <ShieldAlert size={36} color={Colors.ProGold} />;
-      case 'success':
-        return <CheckCircle2 size={36} color={Colors.Primary} />;
-      default:
-        return <AlertCircle size={36} color={Colors.PrimaryDeep} />;
-    }
-  };
-
   return (
     <Modal
       transparent
@@ -49,40 +36,49 @@ export function CustomModal({
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <View style={styles.iconContainer}>
-            {getIcon()}
+          {/* Teal header band with owl mascot */}
+          <View style={styles.headerBand}>
+            <View style={styles.headerBandInner} />
+            <Image
+              source={require('../../assets/owl-modal-friendly.png')}
+              style={styles.mascot}
+              resizeMode="contain"
+            />
           </View>
-          
-          <Text style={styles.title}>{title}</Text>
-          {message ? <Text style={styles.message}>{message}</Text> : null}
-          
-          {children && <View style={styles.childrenContainer}>{children}</View>}
-          
-          <View style={styles.buttonContainer}>
-            {secondaryButtonText && onSecondaryPress && (
+
+          <View style={styles.body}>
+            <Text style={styles.title}>{title}</Text>
+            {message ? <Text style={styles.message}>{message}</Text> : null}
+
+            {children ? <View style={styles.childrenContainer}>{children}</View> : null}
+
+            <View style={styles.buttonContainer}>
+              {secondaryButtonText && onSecondaryPress && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.secondaryButton,
+                    pressed && styles.secondaryButtonPressed,
+                  ]}
+                  onPress={onSecondaryPress}
+                >
+                  <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                    {secondaryButtonText}
+                  </Text>
+                </Pressable>
+              )}
               <Pressable
                 style={({ pressed }) => [
                   styles.button,
-                  styles.secondaryButton,
-                  pressed && styles.secondaryButtonPressed
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                  type === 'warning' && styles.primaryButtonWarning,
                 ]}
-                onPress={onSecondaryPress}
+                onPress={onPrimaryPress}
               >
-                <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                  {secondaryButtonText}
-                </Text>
+                <Text style={styles.buttonText}>{primaryButtonText}</Text>
               </Pressable>
-            )}
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.primaryButton,
-                pressed && styles.primaryButtonPressed
-              ]}
-              onPress={onPrimaryPress}
-            >
-              <Text style={styles.buttonText}>{primaryButtonText}</Text>
-            </Pressable>
+            </View>
           </View>
         </View>
       </View>
@@ -90,10 +86,12 @@ export function CustomModal({
   );
 }
 
+const MASCOT_SIZE = 104;
+
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
@@ -101,26 +99,44 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: Colors.Card,
     borderRadius: Radii.sheet,
-    padding: Spacing.xl,
-    paddingTop: 32,
     width: '100%',
     maxWidth: 360,
-    alignItems: 'center',
-    shadowColor: Colors.TextPrimary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 10,
+    overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    elevation: 14,
   },
-  iconContainer: {
-    marginBottom: Spacing.lg,
-    padding: Spacing.sm,
-    backgroundColor: Colors.Surface,
-    borderRadius: 999,
+  headerBand: {
+    height: 88,
+    backgroundColor: Colors.PrimaryTint,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  headerBandInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: Colors.PrimaryTint,
+  },
+  mascot: {
+    width: MASCOT_SIZE,
+    height: MASCOT_SIZE,
+    marginBottom: -MASCOT_SIZE / 2,
+    zIndex: 2,
+  },
+  body: {
+    paddingTop: MASCOT_SIZE / 2 + Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    alignItems: 'center',
   },
   title: {
     ...Typography.ScreenTitle,
-    fontSize: 22,
+    fontSize: 20,
     color: Colors.TextPrimary,
     marginBottom: Spacing.sm,
     textAlign: 'center',
@@ -130,7 +146,7 @@ const styles = StyleSheet.create({
     color: Colors.TextSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   childrenContainer: {
     width: '100%',
@@ -144,7 +160,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    height: 52,
+    height: 50,
     borderRadius: Radii.button,
     justifyContent: 'center',
     alignItems: 'center',
@@ -155,8 +171,13 @@ const styles = StyleSheet.create({
   primaryButtonPressed: {
     backgroundColor: Colors.PrimaryDeep,
   },
+  primaryButtonWarning: {
+    backgroundColor: Colors.ProGold,
+  },
   secondaryButton: {
     backgroundColor: Colors.Surface,
+    borderWidth: 1,
+    borderColor: Colors.Border,
   },
   secondaryButtonPressed: {
     backgroundColor: Colors.Border,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlexWidget, TextWidget, ImageWidget, SvgWidget } from 'react-native-android-widget';
-import { flameSvg, micSvg } from './widgetSvgs';
+import { flameSvg } from './widgetSvgs';
 
 interface DaySummWidgetProps {
   todayEntryCount: number;
@@ -11,11 +11,7 @@ interface DaySummWidgetProps {
 export function DaySummWidget({
   todayEntryCount,
   currentStreak,
-  lastEntryPreview,
 }: DaySummWidgetProps) {
-  const truncatedPreview =
-    lastEntryPreview.length > 50 ? `${lastEntryPreview.slice(0, 50)}…` : lastEntryPreview;
-
   return (
     <FlexWidget
       clickAction="OPEN_URI"
@@ -24,130 +20,66 @@ export function DaySummWidget({
         height: 'match_parent',
         width: 'match_parent',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         backgroundGradient: {
-          from: '#10B981',
+          from: '#0F766E',
           to: '#059669',
-          orientation: 'TL_BR',
+          orientation: 'TOP_BOTTOM',
         },
         borderRadius: 24,
-        padding: 16,
+        padding: 14,
       }}
     >
-      {/* Top Brand & Streak Row */}
+      {/* Top: Streak badge (borderless, prominent focus) */}
       <FlexWidget
         style={{
           flexDirection: 'row',
-          justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
+        <SvgWidget svg={flameSvg} style={{ width: 22, height: 22 }} />
         <TextWidget
-          text="DaySumm"
+          text={currentStreak > 0 ? String(currentStreak) : '0'}
           style={{
-            fontSize: 13,
+            fontSize: 20,
             fontWeight: '900',
-            color: '#ECFDF5',
-            letterSpacing: 0.8,
-            marginRight: 8,
+            color: '#FBBF24',
+            marginLeft: 6,
           }}
         />
-
-        {/* Streak Badge matching the App UI/UX */}
-        {currentStreak > 0 ? (
-          <FlexWidget
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: 3,
-              paddingHorizontal: 8,
-              borderRadius: 12,
-              backgroundColor: '#FEF9C3',
-            }}
-          >
-            <SvgWidget
-              svg={flameSvg}
-              style={{
-                width: 12,
-                height: 12,
-              }}
-            />
-            <TextWidget
-              text={String(currentStreak)}
-              style={{
-                fontSize: 11,
-                fontWeight: '700',
-                color: '#A16207',
-                marginLeft: 4,
-              }}
-            />
-          </FlexWidget>
-        ) : (
-          <FlexWidget
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingVertical: 3,
-              paddingHorizontal: 8,
-              borderRadius: 12,
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-            }}
-          >
-            <TextWidget
-              text="No Streak"
-              style={{
-                fontSize: 10,
-                fontWeight: '700',
-                color: '#ECFDF5',
-              }}
-            />
-          </FlexWidget>
-        )}
       </FlexWidget>
 
-      {/* Middle Content Row: Image + Text Stats */}
+      {/* Main Content: Big Owl hero + tagline */}
       <FlexWidget
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          marginVertical: 10,
+          justifyContent: 'space-between',
+          marginTop: 16,
         }}
       >
-        {/* Character Image from assets (Duolingo feel) */}
-        <ImageWidget
-          image={require('../../assets/owl-professor-thinking.png')}
-          imageWidth={64}
-          imageHeight={64}
-          style={{
-            width: 64,
-            height: 64,
-          }}
-        />
-
-        {/* Dynamic today's entries counter */}
         <FlexWidget
           style={{
             flex: 1,
-            marginLeft: 12,
             flexDirection: 'column',
+            paddingRight: 8,
           }}
         >
           <TextWidget
-            text={`${todayEntryCount} ${todayEntryCount === 1 ? 'entry' : 'entries'} today`}
+            text="Tap and speak"
             style={{
-              fontSize: 15,
-              fontWeight: 'bold',
+              fontSize: 18,
+              fontWeight: '900',
               color: '#FFFFFF',
+              lineHeight: 22,
             }}
+            maxLines={2}
           />
           <TextWidget
-            text={
-              todayEntryCount > 0
-                ? (truncatedPreview || 'Captured thoughts')
-                : 'Start your daily summary'
-            }
+            text={todayEntryCount > 0 ? 'Keep the streak alive' : "Don't let it break!"}
             style={{
-              fontSize: 12,
+              fontSize: 11,
+              fontWeight: '600',
               color: '#D1FAE5',
               marginTop: 4,
             }}
@@ -155,36 +87,12 @@ export function DaySummWidget({
             truncate="END"
           />
         </FlexWidget>
-      </FlexWidget>
 
-      {/* Bottom High-Contrast Interactive Highlight Capture Button */}
-      <FlexWidget
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 20,
-          paddingVertical: 8,
-          paddingHorizontal: 12,
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <SvgWidget
-          svg={micSvg}
-          style={{
-            width: 14,
-            height: 14,
-          }}
-        />
-        <TextWidget
-          text={todayEntryCount === 0 ? 'TAP TO CAPTURE DAY' : 'ADD NEW ENTRY'}
-          style={{
-            fontSize: 11,
-            fontWeight: '900',
-            color: '#047857',
-            letterSpacing: 0.8,
-            marginLeft: 6,
-          }}
+        <ImageWidget
+          image={require('../../assets/owl-widget-cheer.png')}
+          imageWidth={90}
+          imageHeight={90}
+          style={{ width: 90, height: 90 }}
         />
       </FlexWidget>
     </FlexWidget>
