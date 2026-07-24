@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+
+import { GlobalHeader } from '../components/GlobalHeader';
 
 import { DigestCard } from '../components/DigestCard';
 import { fetchDigestRecordById } from '../firestore/digestRecords';
 import type { Digest } from '../functions/generateDigest';
+import { Colors, Spacing, Radii } from '../theme/tokens';
 
 interface DigestViewScreenProps {
   digestRecordId: string;
@@ -49,34 +52,29 @@ export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenPro
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-        <Text style={styles.title}>Digest</Text>
-      </View>
+      <GlobalHeader title="Digest" onBack={onBack} />
 
-      {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563EB" />
-        </View>
-      ) : errorMessage ? (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      ) : digest ? (
-        <DigestCard digest={digest} />
-      ) : null}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {isLoading ? (
+          <View style={styles.centered}>
+            <ActivityIndicator size="large" color={Colors.Primary} />
+          </View>
+        ) : errorMessage ? (
+          <View style={styles.centered}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : digest ? (
+          <DigestCard digest={digest} />
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8FA', paddingHorizontal: 20, paddingTop: 56, gap: 16 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backButton: { paddingVertical: 6, paddingHorizontal: 8 },
-  backButtonText: { color: '#2563EB', fontSize: 15, fontWeight: '700' },
-  title: { color: '#111827', fontSize: 24, fontWeight: '700' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText: { color: '#B91C1C', fontSize: 15, textAlign: 'center' },
+  container: { flex: 1, backgroundColor: Colors.Background },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.sm, paddingBottom: Spacing.xxl },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: Spacing.xxl },
+  errorText: { color: Colors.Danger, fontSize: 15, textAlign: 'center' },
 });

@@ -60,6 +60,7 @@ import { DigestScreen } from './lib/screens/DigestScreen';
 import { generateDigest, type Digest } from './lib/functions/generateDigest';
 import { PersonalInfoScreen } from './lib/screens/PersonalInfoScreen';
 import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsScreen';
+import { fetchTodayDigest } from './lib/firestore/fetchTodayDigest';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
@@ -89,6 +90,7 @@ export default function App() {
 
   // ── Today's Digest state (Generate Now flow) ──────────────────
   const [digest, setDigest] = useState<Digest | null>(null);
+  const [digestRefreshVersion, setDigestRefreshVersion] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [digestError, setDigestError] = useState<string | null>(null);
   const [isLimitError, setIsLimitError] = useState(false);
@@ -171,6 +173,7 @@ export default function App() {
         const uid = getAuth().currentUser?.uid;
         refreshWidgetData(uid);
         refreshStreak();
+        refreshTodayDigest();
       }
     });
 
@@ -214,6 +217,7 @@ export default function App() {
         setNeedsOnboarding(!settings?.onboardingComplete);
         setOnboardingChecked(true);
         refreshStreak();
+        refreshTodayDigest();
         hasProEntitlementCached().then(setIsPro);
       })
       .catch((error: unknown) => {
@@ -333,6 +337,8 @@ export default function App() {
       if (digestRecordId) {
         setOpenedDigestRecordId(digestRecordId);
         setShowForegroundBanner(true);
+        // Refresh the digest state so the Digest tab shows the latest content
+        refreshTodayDigest();
       }
     });
 
@@ -509,6 +515,7 @@ export default function App() {
     try {
       const nextDigest = await generateDigest();
       setDigest(nextDigest);
+      setDigestRefreshVersion(v => v + 1);
       await markSampleDigestSeen();
       setShowSampleDigest(false);
     } catch (error: unknown) {
@@ -534,6 +541,20 @@ export default function App() {
       setCurrentStreak(streak);
     } catch (error) {
       console.warn('Failed to refresh streak', error);
+    }
+  }
+
+  async function refreshTodayDigest() {
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) return;
+    try {
+      const todayDigest = await fetchTodayDigest(uid);
+      if (todayDigest) {
+        setDigest(todayDigest);
+        setDigestRefreshVersion(v => v + 1);
+      }
+    } catch (error) {
+      console.warn('Failed to refresh today digest', error);
     }
   }
 
@@ -666,6 +687,8 @@ export default function App() {
           uid={uid}
           onUpgradePress={() => setScreenMode('paywall')}
           isPro={isPro}
+          refreshKey={digestRefreshVersion}
+          todayDigest={digest}
         />
       );
     }

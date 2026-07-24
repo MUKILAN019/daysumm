@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
   headline: {
     flex: 1,
     ...Typography.SectionHeader,
+    fontWeight: '700',
     color: Colors.TextPrimary,
   },
   shareButton: {

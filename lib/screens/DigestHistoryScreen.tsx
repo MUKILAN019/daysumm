@@ -13,12 +13,15 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
+import type { Digest } from '../functions/generateDigest';
 
 interface DigestHistoryScreenProps {
   uid: string;
   onUpgradePress: () => void;
   maxDaysBack?: number;
   isPro?: boolean;
+  refreshKey?: number;
+  todayDigest?: Digest | null;
 }
 
 const WEEKDAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -51,6 +54,8 @@ export function DigestHistoryScreen({
   onUpgradePress,
   maxDaysBack = 30, // actually 3 for free, infinite for pro based on specs, but using isPro to enforce
   isPro = false,
+  refreshKey = 0,
+  todayDigest = null,
 }: DigestHistoryScreenProps) {
   const today = new Date();
   const todayKey = getTodayDateKey();
@@ -86,7 +91,7 @@ export function DigestHistoryScreen({
     return () => {
       isCancelled = true;
     };
-  }, [uid, isPro]);
+  }, [uid, isPro, refreshKey]);
 
   // Calendar logic
   const oldestAllowedKey = useMemo(() => {
@@ -146,8 +151,12 @@ export function DigestHistoryScreen({
 
   const selectedDigest = useMemo(() => {
     if (!selectedDateKey) return null;
+    // If viewing today and we have a fresh todayDigest from the parent, prefer it
+    if (selectedDateKey === todayKey && todayDigest) {
+      return todayDigest as DigestHistoryEntry;
+    }
     return digestsByDate[selectedDateKey] || null;
-  }, [selectedDateKey, digestsByDate]);
+  }, [selectedDateKey, digestsByDate, todayKey, todayDigest]);
 
   // Day styling
   function getDayStyle(day: number | null) {
@@ -420,7 +429,7 @@ const styles = StyleSheet.create({
   },
   watermark: {
     position: 'absolute',
-    top: -20,
+    top: 12,
     right: -20,
     width: 200,
     height: 200,

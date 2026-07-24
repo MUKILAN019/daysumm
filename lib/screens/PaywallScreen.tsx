@@ -11,6 +11,7 @@ import {
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { CheckCircle2 } from 'lucide-react-native';
+import { GlobalHeader } from '../components/GlobalHeader';
 
 import { getAuth } from '@react-native-firebase/auth';
 import { CustomModal } from '../components/CustomModal';
@@ -109,11 +110,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
-        <Pressable accessibilityRole="button" onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
-        </Pressable>
-      </View>
+      <GlobalHeader title="Upgrade to Pro" onBack={onBack} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconContainer}>
@@ -204,10 +201,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.Background, paddingTop: 56 },
-  headerRow: { paddingHorizontal: Spacing.md },
-  backButton: { paddingVertical: 6, paddingHorizontal: 8, alignSelf: 'flex-start' },
-  backButtonText: { color: Colors.Primary, fontSize: 16, fontWeight: '600' },
+  container: { flex: 1, backgroundColor: Colors.Background },
   content: { paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.lg, paddingBottom: 64, gap: Spacing.lg },
   iconContainer: { 
     alignItems: 'center', 

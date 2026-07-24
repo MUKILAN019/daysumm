@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image, Linking } from 'react-native';
 import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
@@ -48,6 +48,10 @@ export function SettingsScreen({
     } else {
       onPersonalInformationPress();
     }
+  }
+
+  function handleContactUs() {
+    Linking.openURL('mailto:mukilan192004@gmail.com?subject=DaySumm%20Feedback');
   }
 
   function SettingsRow({ icon: Icon, label, onPress, destructive = false }: any) {
@@ -116,7 +120,7 @@ export function SettingsScreen({
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Support</Text>
         <View style={styles.card}>
-          <SettingsRow icon={Mail} label="Contact Us" />
+          <SettingsRow icon={Mail} label="Contact Us" onPress={handleContactUs} />
           <View style={styles.divider} />
           <SettingsRow icon={LogOut} label={signOutBusy ? 'Signing out...' : 'Sign Out'} onPress={handleSignOut} destructive />
         </View>
