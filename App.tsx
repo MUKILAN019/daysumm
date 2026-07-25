@@ -44,7 +44,7 @@ import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
-import { updateEntryClassification } from './lib/db/entries';
+import { updateEntryClassification, updateEntryText, updateEntryTextAndTags, markEntryUserCorrected } from './lib/db/entries';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
 import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
@@ -62,6 +62,8 @@ import { generateDigest, type Digest } from './lib/functions/generateDigest';
 import { PersonalInfoScreen } from './lib/screens/PersonalInfoScreen';
 import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsScreen';
 import { fetchTodayDigest } from './lib/firestore/fetchTodayDigest';
+import { EntryDetailSheet, type EntryDetailSaveParams } from './lib/components/EntryDetailSheet';
+import { translateText } from './lib/functions/translateText';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 60 * 1000; // 60-second debounce for entry-save syncs
@@ -98,6 +100,9 @@ export default function App() {
   const [digestError, setDigestError] = useState<string | null>(null);
   const [isLimitError, setIsLimitError] = useState(false);
   const [showSampleDigest, setShowSampleDigest] = useState(false);
+  
+  // ── Entry Detail Sheet state ───────────────────────────────────────
+  const [selectedEntry, setSelectedEntry] = useState<LocalEntry | null>(null);
 
 
   async function loadEntries() {
@@ -764,24 +769,7 @@ export default function App() {
         currentStreak={currentStreak}
         entries={entries}
         onRecordFinished={handleRecordFinished}
-        onConfirmTag={async (localId) => {
-          const entry = entries.find((e) => e.localId === localId);
-          if (entry && entry.tags) {
-            const uid = getAuth().currentUser?.uid;
-            if (!uid) return;
-            await updateEntryClassification(
-              localId,
-              uid,
-              entry.tags,
-              1.0,
-              entry.classifierVersion ?? 1,
-              entry.textEn,
-              true
-            );
-            await refreshEntries();
-            scheduleDebouncedSync('correction');
-          }
-        }}
+        onEntryPress={(entry) => setSelectedEntry(entry)}
       />
     );
   }
@@ -796,6 +784,59 @@ export default function App() {
           }}
         />
       )}
+
+      <EntryDetailSheet
+        entry={selectedEntry}
+        visible={!!selectedEntry}
+        onClose={() => setSelectedEntry(null)}
+        onSave={async (params: EntryDetailSaveParams) => {
+          const uid = getAuth().currentUser?.uid;
+          if (!uid) return;
+
+          const { localId, newText, newTags, didTextChange, didUserSetTags } = params;
+
+          if (didTextChange && didUserSetTags) {
+            // Case A: Text changed + User set tags. Translate text, update tags.
+            // Fast optimistic update
+            await updateEntryTextAndTags(localId, uid, newText, newTags);
+            await refreshEntries();
+
+            // Background translation
+            try {
+              const textEn = await translateText(newText);
+              await updateEntryTextAndTags(localId, uid, newText, newTags, textEn);
+            } catch (err) {
+              console.warn('Translate failed in Case A', err);
+            }
+            scheduleDebouncedSync('edit-case-a');
+          } else if (didTextChange && !didUserSetTags) {
+            // Case B: Text changed, tags untouched. Clear tags and textEn, re-classify.
+            await updateEntryText(localId, uid, newText);
+            scheduleDebouncedSync('edit-case-b');
+          } else if (!didTextChange && didUserSetTags) {
+            // Case C: Tags changed, text untouched. Update tags locally.
+            const entry = entries.find(e => e.localId === localId);
+            const currentClassifierVersion = entry?.classifierVersion ?? 1;
+            const currentTextEn = entry?.textEn;
+            await updateEntryClassification(
+              localId,
+              uid,
+              newTags,
+              1.0, // Confidence is 1.0 because user set it
+              currentClassifierVersion,
+              currentTextEn,
+              true,
+              false
+            );
+            scheduleDebouncedSync('edit-case-c');
+          } else if (!didTextChange && !didUserSetTags) {
+            // Case D: No-op Save. User looked and said it's fine.
+            await markEntryUserCorrected(localId, uid);
+            scheduleDebouncedSync('edit-case-noop');
+          }
+          await refreshEntries();
+        }}
+      />
 
       {/* Main content area */}
       <View style={styles.contentArea}>

@@ -18,6 +18,7 @@ export interface LocalEntry {
   confidence?: number;
   classifierVersion?: number;
   userCorrected?: boolean;
+  needsReview?: boolean;
 }
 
 interface EntryRow {
@@ -32,6 +33,7 @@ interface EntryRow {
   confidence: number | null;
   classifierVersion: number | null;
   userCorrected: number | null;
+  needsReview: number | null;
 }
 
 export function mapEntryRowToLocalEntry(row: EntryRow): LocalEntry {
@@ -43,6 +45,7 @@ export function mapEntryRowToLocalEntry(row: EntryRow): LocalEntry {
     confidence: row.confidence ?? undefined,
     classifierVersion: row.classifierVersion ?? undefined,
     userCorrected: row.userCorrected === 1,
+    needsReview: row.needsReview === 1,
   };
 }
 
@@ -120,6 +123,9 @@ export async function initDb() {
   }
   if (!columnNames.includes('userCorrected')) {
     await db.execAsync(`ALTER TABLE entries ADD COLUMN userCorrected INTEGER DEFAULT 0;`);
+  }
+  if (!columnNames.includes('needsReview')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN needsReview INTEGER DEFAULT 0;`);
   }
 }
 
@@ -215,19 +221,87 @@ export async function updateEntryClassification(
   classifierVersion: number,
   textEn?: string,
   userCorrected = false,
+  needsReview = false,
 ) {
   await initDb();
   const db = await getDb();
 
+  // For background classifications (userCorrected = false), we only update if the user
+  // hasn't already corrected the entry manually. This prevents stale in-flight
+  // classifications from overwriting user edits.
+  const whereClause = userCorrected 
+    ? 'WHERE localId = ? AND uid = ?' 
+    : 'WHERE localId = ? AND uid = ? AND userCorrected = 0';
+
   await db.runAsync(
     `
       UPDATE entries
-      SET tags = ?, confidence = ?, classifierVersion = ?, userCorrected = ?, synced = 0${textEn ? ', textEn = ?' : ''}
+      SET tags = ?, confidence = ?, classifierVersion = ?, userCorrected = ?, needsReview = ?, synced = 0${textEn ? ', textEn = ?' : ''}
+      ${whereClause}
+    `,
+    ...(textEn 
+      ? [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, needsReview ? 1 : 0, textEn, localId, uid] 
+      : [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, needsReview ? 1 : 0, localId, uid])
+  );
+}
+
+export async function updateEntryText(
+  localId: string,
+  uid: string,
+  newText: string
+) {
+  await initDb();
+  const db = await getDb();
+
+  // Clears classification data (Case B)
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET text = ?, tags = NULL, confidence = NULL, textEn = NULL, classifierVersion = NULL, userCorrected = 0, needsReview = 0, synced = 0
+      WHERE localId = ? AND uid = ?
+    `,
+    newText,
+    localId,
+    uid
+  );
+}
+
+export async function updateEntryTextAndTags(
+  localId: string,
+  uid: string,
+  newText: string,
+  tags: string[],
+  textEn?: string
+) {
+  await initDb();
+  const db = await getDb();
+
+  // Updates text and sets user tags (Case A). Confidence is 1.0. User corrected, so no review needed.
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET text = ?, tags = ?, confidence = 1.0, userCorrected = 1, needsReview = 0, synced = 0${textEn ? ', textEn = ?' : ''}
       WHERE localId = ? AND uid = ?
     `,
     ...(textEn 
-      ? [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, textEn, localId, uid] 
-      : [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, localId, uid])
+      ? [newText, JSON.stringify(tags), textEn, localId, uid]
+      : [newText, JSON.stringify(tags), localId, uid])
+  );
+}
+
+export async function markEntryUserCorrected(localId: string, uid: string) {
+  await initDb();
+  const db = await getDb();
+
+  // No-op save: User confirmed entry is fine as-is.
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET userCorrected = 1, needsReview = 0, synced = 0
+      WHERE localId = ? AND uid = ?
+    `,
+    localId,
+    uid
   );
 }
 

@@ -555,6 +555,46 @@ Return ONLY a JSON object with a "results" array. Shape:
         throw new HttpsError('internal', 'Classification parsing failed.');
     }
 });
+export const translateText = onCall({ secrets: [GROQ_API_KEY] }, async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', 'Authentication is required.');
+    }
+    const { text } = request.data;
+    if (!text || text.trim().length === 0) {
+        return { textEn: '' };
+    }
+    const systemPrompt = `Translate the following text to English. Return ONLY the translation, nothing else. Do not add any introductory or concluding text. If the text is already in English, return it exactly as is.`;
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${GROQ_API_KEY.value()}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            model: 'llama-3.1-8b-instant',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: text }
+            ],
+            temperature: 0.1,
+        }),
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Groq translation failed', errorText);
+        throw new HttpsError('internal', 'Translation failed.');
+    }
+    const data = (await response.json());
+    try {
+        const translation = data.choices[0].message.content.trim();
+        return { textEn: translation };
+    }
+    catch (e) {
+        console.error('Failed to parse translation', e);
+        throw new HttpsError('internal', 'Translation parsing failed.');
+    }
+});
 async function checkIsProEntitled(uid, secretApiKey) {
     try {
         const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(uid)}`, {

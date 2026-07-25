@@ -87,6 +87,7 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
         ...(entry.confidence != null && { confidence: entry.confidence }),
         ...(entry.classifierVersion != null && { classifierVersion: entry.classifierVersion }),
         ...(entry.userCorrected != null && { userCorrected: entry.userCorrected }),
+        ...(entry.needsReview != null && { needsReview: entry.needsReview }),
       };
 
       await setDoc(doc(db, 'entries', entry.localId), firestoreEntry);
@@ -123,13 +124,25 @@ async function classifyPendingEntriesBatch(uid: string) {
     if (Array.isArray(results)) {
       for (const res of results) {
         if (res && res.localId && res.tags) {
+          const originalEntry = entriesToClassify.find(e => e.localId === res.localId);
+          const text = originalEntry ? originalEntry.text.toLowerCase() : '';
+          
+          const hedgeWords = ['maybe', 'not sure', 'might', 'i think', 'i guess', 'probably', "can't remember", 'either way'];
+          const hasHedgeWord = hedgeWords.some(word => text.includes(word));
+          const hasMultipleTags = Array.isArray(res.tags) && res.tags.length > 1;
+          const isVeryShort = text.split(/\s+/).length <= 2;
+          
+          const needsReview = hasHedgeWord || hasMultipleTags || isVeryShort;
+
           await updateEntryClassification(
             res.localId,
             uid,
             res.tags,
             res.confidence ?? 0,
             res.classifierVersion ?? 1,
-            res.textEn
+            res.textEn,
+            false,
+            needsReview
           );
         }
       }

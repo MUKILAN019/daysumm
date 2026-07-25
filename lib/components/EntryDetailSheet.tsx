@@ -1,0 +1,641 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { Mic, FileText, X, Sparkles } from 'lucide-react-native';
+import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import type { LocalEntry } from '../db/entries';
+
+const TAG_OPTIONS: { key: string; label: string }[] = [
+  { key: 'highlight', label: 'Done' },
+  { key: 'actionItem', label: 'To-do' },
+  { key: 'blocker', label: 'Blocked' },
+  { key: 'decision', label: 'Decision' },
+  { key: 'note', label: 'Note' },
+];
+
+function getConfidencePhrase(confidence?: number): string | null {
+  if (confidence === undefined || confidence === null) return null;
+  if (confidence < 0.6) return 'Not sure — worth a quick check';
+  if (confidence <= 0.85) return 'Fairly confident';
+  return 'Confident';
+}
+
+function getConfidenceColor(confidence?: number): string {
+  if (confidence === undefined || confidence === null) return Colors.TextMuted;
+  if (confidence < 0.6) return Colors.Warning;
+  if (confidence <= 0.85) return Colors.Info;
+  return Colors.Success;
+}
+
+export interface EntryDetailSaveParams {
+  localId: string;
+  newText: string;
+  newTags: string[];
+  didTextChange: boolean;
+  didUserSetTags: boolean;
+}
+
+interface EntryDetailSheetProps {
+  entry: LocalEntry | null;
+  visible: boolean;
+  onClose: () => void;
+  onSave: (params: EntryDetailSaveParams) => Promise<void>;
+}
+
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const MASCOT_SIZE = 108;
+
+export function EntryDetailSheet({
+  entry,
+  visible,
+  onClose,
+  onSave,
+}: EntryDetailSheetProps) {
+  const [editText, setEditText] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [didUserSetTags, setDidUserSetTags] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [emptyError, setEmptyError] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+
+  const originalTextRef = useRef('');
+  const originalTagsRef = useRef<string[]>([]);
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+
+  useEffect(() => {
+    if (entry && visible) {
+      const text = entry.text ?? '';
+      const tags = entry.tags ?? [];
+      setEditText(text);
+      setSelectedTags([...tags]);
+      setDidUserSetTags(false);
+      setIsSaving(false);
+      setEmptyError(false);
+      setIsFocused(false);
+      originalTextRef.current = text;
+      originalTagsRef.current = [...tags];
+
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [entry, visible, slideAnim]);
+
+  function handleClose() {
+    Animated.timing(slideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => onClose());
+  }
+
+  function toggleTag(tagKey: string) {
+    setDidUserSetTags(true);
+    setSelectedTags((prev) =>
+      prev.includes(tagKey)
+        ? prev.filter((t) => t !== tagKey)
+        : [...prev, tagKey]
+    );
+  }
+
+  async function handleSave() {
+    const trimmed = editText.trim();
+    if (!trimmed) {
+      setEmptyError(true);
+      return;
+    }
+    setEmptyError(false);
+
+    const didTextChange = trimmed !== originalTextRef.current;
+    const tagsMatch =
+      selectedTags.length === originalTagsRef.current.length &&
+      selectedTags.every((t) => originalTagsRef.current.includes(t));
+
+    // Proceed to save even if nothing changed, so we can mark it as userCorrected.
+
+    setIsSaving(true);
+    try {
+      await onSave({
+        localId: entry!.localId,
+        newText: trimmed,
+        newTags: [...selectedTags],
+        didTextChange,
+        didUserSetTags,
+      });
+      handleClose();
+    } catch (error) {
+      console.warn('Entry detail save failed', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (!entry || !visible) return null;
+
+  const confidencePhrase = getConfidencePhrase(entry.confidence);
+  const confidenceColor = getConfidenceColor(entry.confidence);
+  const timestamp = new Date(entry.createdAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const dateStr = new Date(entry.createdAt).toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+  });
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={handleClose}
+    >
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdropTap} onPress={handleClose} />
+
+        <Animated.View
+          style={[styles.sheetWrap, { transform: [{ translateY: slideAnim }] }]}
+        >
+          {/* Floating mascot seated on top-right edge of the sheet */}
+          <View pointerEvents="none" style={styles.mascotWrap}>
+            {/* <View style={styles.mascotGlow} /> */}
+            <Image
+              source={require('../../assets/owl-modal-friendly.png')}
+              style={styles.mascot}
+              resizeMode="contain"
+            />
+          </View>
+
+          <View style={styles.sheet}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              style={styles.keyboardView}
+            >
+              {/* Teal accent band with drag handle */}
+              <View style={styles.topBand}>
+                <View style={styles.handle} />
+              </View>
+
+              <ScrollView
+                style={styles.scrollContent}
+                contentContainerStyle={styles.scrollContentInner}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Header: source pill + close */}
+                <View style={styles.header}>
+                  <View style={styles.sourcePill}>
+                    {entry.source === 'voice' ? (
+                      <Mic size={13} color={Colors.PrimaryDeep} strokeWidth={2} />
+                    ) : (
+                      <FileText size={13} color={Colors.PrimaryDeep} strokeWidth={2} />
+                    )}
+                    <Text style={styles.sourcePillText}>
+                      {entry.source === 'voice' ? 'Voice' : 'Text'}
+                    </Text>
+                    <View style={styles.dot} />
+                    <Text style={styles.sourcePillMeta}>
+                      {dateStr} · {timestamp}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={handleClose}
+                    style={styles.closeButton}
+                    hitSlop={10}
+                  >
+                    <X size={18} color={Colors.TextSecondary} strokeWidth={2.2} />
+                  </Pressable>
+                </View>
+
+                {/* Section label */}
+                <Text style={styles.sectionLabel}>Your entry</Text>
+
+                {/* Editable text field */}
+                <View
+                  style={[
+                    styles.textInputContainer,
+                    isFocused && styles.textInputContainerFocused,
+                    emptyError && styles.textInputContainerError,
+                  ]}
+                >
+                  <TextInput
+                    style={styles.textInput}
+                    multiline
+                    value={editText}
+                    onChangeText={(val) => {
+                      setEditText(val);
+                      if (emptyError && val.trim()) setEmptyError(false);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder="What's on your mind?"
+                    placeholderTextColor={Colors.TextMuted}
+                    textAlignVertical="top"
+                  />
+                </View>
+                {emptyError && (
+                  <Text style={styles.errorText}>Entry can't be empty</Text>
+                )}
+
+                {/* AI Analysis section */}
+                <View style={styles.analysisCard}>
+                  <View style={styles.analysisHeader}>
+                    <View style={styles.analysisIconBadge}>
+                      <Sparkles size={13} color={Colors.PrimaryDeep} strokeWidth={2.2} />
+                    </View>
+                    <Text style={styles.analysisTitle}>AI Analysis</Text>
+                    {confidencePhrase && (
+                      <View
+                        style={[
+                          styles.confidencePill,
+                          { backgroundColor: `${confidenceColor}1A` },
+                        ]}
+                      >
+                        <View
+                          style={[styles.confidenceDot, { backgroundColor: confidenceColor }]}
+                        />
+                        <Text style={[styles.confidenceText, { color: confidenceColor }]}>
+                          {confidencePhrase}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <Text style={styles.chipHint}>Tap to tag this entry</Text>
+
+                  <View style={styles.chipContainer}>
+                    {TAG_OPTIONS.map((tag) => {
+                      const isSelected = selectedTags.includes(tag.key);
+                      return (
+                        <Pressable
+                          key={tag.key}
+                          onPress={() => toggleTag(tag.key)}
+                          style={[styles.chip, isSelected && styles.chipSelected]}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              isSelected && styles.chipTextSelected,
+                            ]}
+                          >
+                            {tag.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </ScrollView>
+
+              {/* Action buttons */}
+              <View style={styles.actions}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.cancelButton,
+                    pressed && styles.cancelButtonPressed,
+                  ]}
+                  onPress={handleClose}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.actionButton,
+                    styles.saveButton,
+                    pressed && styles.saveButtonPressed,
+                    isSaving && styles.saveButtonDisabled,
+                  ]}
+                  onPress={handleSave}
+                  disabled={isSaving}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {isSaving ? 'Saving…' : 'Save changes'}
+                  </Text>
+                </Pressable>
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  backdropTap: { flex: 1 },
+  sheetWrap: {
+    position: 'relative',
+  },
+  mascotWrap: {
+    position: 'absolute',
+    top: -MASCOT_SIZE * 0.62,
+    right: 20,
+    width: MASCOT_SIZE,
+    height: MASCOT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  mascotGlow: {
+    position: 'absolute',
+    width: MASCOT_SIZE + 24,
+    height: MASCOT_SIZE + 24,
+    borderRadius: (MASCOT_SIZE + 24) / 2,
+    backgroundColor: 'rgba(16, 185, 129, 0.18)',
+  },
+  mascot: {
+    width: MASCOT_SIZE,
+    height: MASCOT_SIZE,
+  },
+  sheet: {
+    backgroundColor: Colors.Card,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: SCREEN_HEIGHT * 0.88,
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 24,
+    overflow: 'hidden',
+  },
+  keyboardView: { flex: 0 },
+  topBand: {
+    backgroundColor: Colors.PrimaryTint,
+    paddingTop: 10,
+    paddingBottom: 12,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  handle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.Primary,
+    opacity: 0.55,
+  },
+  scrollContent: { flexGrow: 0 },
+  scrollContentInner: {
+    paddingHorizontal: Spacing.screenPadding + 4,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+  },
+  sourcePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.PrimaryTint,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  sourcePillText: {
+    ...Typography.Secondary,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.PrimaryDeep,
+    textTransform: 'none',
+    letterSpacing: 0.2,
+  },
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: Colors.PrimaryDeep,
+    opacity: 0.5,
+    marginHorizontal: 2,
+  },
+  sourcePillMeta: {
+    ...Typography.Secondary,
+    fontSize: 12,
+    color: Colors.TextSecondary,
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  closeButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.Surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.Border,
+  },
+  sectionLabel: {
+    ...Typography.Secondary,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.TextSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  textInputContainer: {
+    backgroundColor: Colors.Surface,
+    borderWidth: 1.5,
+    borderColor: Colors.Border,
+    borderRadius: 18,
+    padding: 16,
+    minHeight: 120,
+  },
+  textInputContainerFocused: {
+    borderColor: Colors.Primary,
+    backgroundColor: Colors.Card,
+    shadowColor: Colors.Primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  textInputContainerError: {
+    borderColor: Colors.Danger,
+  },
+  textInput: {
+    ...Typography.Body,
+    color: Colors.TextPrimary,
+    minHeight: 90,
+    lineHeight: 22,
+    padding: 0,
+  },
+  errorText: {
+    ...Typography.Secondary,
+    color: Colors.Danger,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  analysisCard: {
+    backgroundColor: Colors.Surface,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+    borderRadius: 18,
+    padding: 14,
+    marginTop: Spacing.md,
+  },
+  analysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  analysisIconBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.PrimaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  analysisTitle: {
+    ...Typography.Body,
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.TextPrimary,
+    textTransform: 'none',
+    letterSpacing: 0,
+    flex: 1,
+  },
+  confidencePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  confidenceDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  confidenceText: {
+    ...Typography.Secondary,
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  chipHint: {
+    ...Typography.Secondary,
+    fontSize: 12,
+    color: Colors.TextMuted,
+    marginBottom: 10,
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: Colors.Card,
+    borderWidth: 1.5,
+    borderColor: Colors.Border,
+  },
+  chipSelected: {
+    backgroundColor: Colors.Primary,
+    borderColor: Colors.Primary,
+    shadowColor: Colors.Primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  chipText: {
+    ...Typography.Secondary,
+    fontSize: 13,
+    color: Colors.TextSecondary,
+    fontWeight: '600',
+    textTransform: 'none',
+    letterSpacing: 0,
+  },
+  chipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding + 4,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md + 4,
+    borderTopWidth: 1,
+    borderTopColor: Colors.Border,
+    backgroundColor: Colors.Card,
+  },
+  actionButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: Colors.Surface,
+    borderWidth: 1.5,
+    borderColor: Colors.Border,
+  },
+  cancelButtonPressed: {
+    backgroundColor: Colors.Border,
+  },
+  cancelButtonText: {
+    ...Typography.Body,
+    color: Colors.TextPrimary,
+    fontWeight: '700',
+  },
+  saveButton: {
+    backgroundColor: Colors.Primary,
+    shadowColor: Colors.Primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+    flex: 1.4,
+  },
+  saveButtonPressed: {
+    backgroundColor: Colors.PrimaryDark,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    ...Typography.Body,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+});

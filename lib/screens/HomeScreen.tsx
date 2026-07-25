@@ -10,7 +10,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { Mic, Square, Pause, Play, FileText, HelpCircle } from 'lucide-react-native';
+import { Mic, Square, Pause, Play, FileText, AlertCircle } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from 'expo-audio';
 import { requestMicPermissionWithRationale } from '../permissions/requestMicPermission';
@@ -23,7 +23,7 @@ interface HomeScreenProps {
   currentStreak: number;
   entries: LocalEntry[];
   onRecordFinished: (uri: string) => Promise<void>;
-  onConfirmTag?: (localId: string) => Promise<void>;
+  onEntryPress?: (entry: LocalEntry) => void;
 }
 
 const TAG_LABELS: Record<string, string> = {
@@ -46,7 +46,7 @@ export function HomeScreen({
   currentStreak,
   entries,
   onRecordFinished,
-  onConfirmTag,
+  onEntryPress,
 }: HomeScreenProps) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
@@ -255,7 +255,10 @@ export function HomeScreen({
         }
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         renderItem={({ item: entry }) => (
-          <View style={styles.entryItem}>
+          <Pressable
+            style={styles.entryItem}
+            onPress={() => onEntryPress?.(entry)}
+          >
             <View style={styles.entryIconWrapper}>
               {entry.source === 'voice' ? (
                 <Mic size={14} color={Colors.PrimaryDeep} />
@@ -265,29 +268,26 @@ export function HomeScreen({
             </View>
             <View style={styles.entryTextContent}>
               <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
-              {entry.tags && entry.tags.length > 0 && (
+              {(entry.tags && entry.tags.length > 0) || (((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected) ? (
                 <View style={styles.tagsContainer}>
-                  {entry.tags.map(tag => (
+                  {entry.tags?.map(tag => (
                     <View key={tag} style={styles.tagBadge}>
                       <Text style={styles.tagBadgeText}>{TAG_LABELS[tag] || tag}</Text>
                     </View>
                   ))}
-                  {entry.confidence !== undefined && entry.confidence < 0.85 && !entry.userCorrected && (
-                    <Pressable
-                      style={styles.confirmBadge}
-                      onPress={() => onConfirmTag?.(entry.localId)}
-                    >
-                      <HelpCircle size={12} color={Colors.Warning} />
-                      <Text style={styles.confirmBadgeText}>Review tag</Text>
-                    </Pressable>
+                  {((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected && (
+                    <View style={styles.reviewBadge}>
+                      <AlertCircle size={10} color={Colors.Warning} strokeWidth={2.5} />
+                      <Text style={styles.reviewBadgeText}>Needs review</Text>
+                    </View>
                   )}
                 </View>
-              )}
+              ) : null}
               <Text style={styles.entryMeta}>
                 {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
               </Text>
             </View>
-          </View>
+          </Pressable>
         )}
       />
     </View>
@@ -467,19 +467,21 @@ const styles = StyleSheet.create({
     color: Colors.PrimaryDeep,
     fontSize: 10,
   },
-  confirmBadge: {
+  reviewBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: Colors.Warning + '20', // Soft tinted background
+    backgroundColor: Colors.Warning + '15', // Soft tinted background
     borderRadius: Radii.chip,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.Warning + '40',
   },
-  confirmBadgeText: {
+  reviewBadgeText: {
     ...Typography.Label,
     color: Colors.Warning,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
