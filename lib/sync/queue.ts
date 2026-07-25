@@ -82,6 +82,11 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
         createdAt: Timestamp.fromDate(new Date(entry.createdAt)),
         source: entry.source,
         localId: entry.localId,
+        ...(entry.textEn != null && { textEn: entry.textEn }),
+        ...(entry.tags != null && { tags: entry.tags }),
+        ...(entry.confidence != null && { confidence: entry.confidence }),
+        ...(entry.classifierVersion != null && { classifierVersion: entry.classifierVersion }),
+        ...(entry.userCorrected != null && { userCorrected: entry.userCorrected }),
       };
 
       await setDoc(doc(db, 'entries', entry.localId), firestoreEntry);

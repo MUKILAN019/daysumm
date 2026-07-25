@@ -64,6 +64,7 @@ import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsSc
 import { fetchTodayDigest } from './lib/firestore/fetchTodayDigest';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+const SYNC_DEBOUNCE_MS = 60 * 1000; // 60-second debounce for entry-save syncs
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
 
 export default function App() {
@@ -83,6 +84,7 @@ export default function App() {
   const [pendingRole, setPendingRole] = useState<string | null>(null);
   const [showNotificationStep, setShowNotificationStep] = useState(false);
   const wasOnlineRef = useRef<boolean | null>(null);
+  const syncDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [openedDigestRecordId, setOpenedDigestRecordId] = useState<string | null>(null);
   const [showForegroundBanner, setShowForegroundBanner] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -141,6 +143,31 @@ export default function App() {
     }
   }
 
+  /**
+   * Schedule a debounced sync — waits SYNC_DEBOUNCE_MS before firing so that
+   * entries saved in quick succession are batched into a single classify call.
+   * Each new call resets the timer.
+   */
+  function scheduleDebouncedSync(reason: string) {
+    if (syncDebounceTimerRef.current) {
+      clearTimeout(syncDebounceTimerRef.current);
+    }
+    console.log(`Sync ${reason} debounced (${SYNC_DEBOUNCE_MS / 1000}s)`);
+    syncDebounceTimerRef.current = setTimeout(() => {
+      syncDebounceTimerRef.current = null;
+      runSync(reason);
+    }, SYNC_DEBOUNCE_MS);
+  }
+
+  /** Immediately fire any pending debounced sync (e.g. app backgrounding). */
+  function flushDebouncedSync() {
+    if (syncDebounceTimerRef.current) {
+      clearTimeout(syncDebounceTimerRef.current);
+      syncDebounceTimerRef.current = null;
+      runSync('debounce-flush');
+    }
+  }
+
   useEffect(() => {
     GoogleSignin.configure({
       webClientId: GOOGLE_WEB_CLIENT_ID,
@@ -170,11 +197,17 @@ export default function App() {
       appStateRef.current = nextAppState;
 
       if (previousAppState !== 'active' && nextAppState === 'active') {
+        flushDebouncedSync();
         runSync('foreground');
         const uid = getAuth().currentUser?.uid;
         refreshWidgetData(uid);
         refreshStreak();
         refreshTodayDigest();
+      }
+
+      // Flush any pending debounced sync before the app goes to background
+      if (previousAppState === 'active' && nextAppState !== 'active') {
+        flushDebouncedSync();
       }
     });
 
@@ -390,7 +423,7 @@ export default function App() {
       setText('');
       setSavedMessage('Saved locally');
 
-      await runSync('save');
+      scheduleDebouncedSync('save');
       await refreshWidgetData(uid);
 
       setTimeout(() => {
@@ -652,7 +685,7 @@ export default function App() {
 
       await insertEntry(trimmedText, 'voice', uid, textEn);
       await refreshEntries();
-      await runSync('voice-save');
+      scheduleDebouncedSync('voice-save');
       await refreshWidgetData(uid);
     } catch (error) {
       console.warn('Voice transcription/save failed', error);
@@ -703,7 +736,7 @@ export default function App() {
             if (!uid) return;
             await insertEntry(newText, 'text', uid);
             await refreshEntries();
-            await runSync('save');
+            scheduleDebouncedSync('save');
             await refreshWidgetData(uid);
           }}
         />
@@ -746,7 +779,7 @@ export default function App() {
               true
             );
             await refreshEntries();
-            await runSync('correction');
+            scheduleDebouncedSync('correction');
           }
         }}
       />
