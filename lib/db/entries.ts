@@ -13,6 +13,11 @@ export interface LocalEntry {
   source: EntrySource;
   localId: string;
   synced: boolean;
+  textEn?: string;
+  tags?: string[];
+  confidence?: number;
+  classifierVersion?: number;
+  userCorrected?: boolean;
 }
 
 interface EntryRow {
@@ -22,6 +27,23 @@ interface EntryRow {
   source: EntrySource;
   localId: string;
   synced: number;
+  textEn: string | null;
+  tags: string | null;
+  confidence: number | null;
+  classifierVersion: number | null;
+  userCorrected: number | null;
+}
+
+export function mapEntryRowToLocalEntry(row: EntryRow): LocalEntry {
+  return {
+    ...row,
+    synced: row.synced === 1,
+    textEn: row.textEn ?? undefined,
+    tags: row.tags ? JSON.parse(row.tags) : undefined,
+    confidence: row.confidence ?? undefined,
+    classifierVersion: row.classifierVersion ?? undefined,
+    userCorrected: row.userCorrected === 1,
+  };
 }
 
 function createLocalId() {
@@ -80,9 +102,28 @@ export async function initDb() {
       lastEntryPreview TEXT NOT NULL DEFAULT ''
     );
   `);
+
+  const pragmaResult = await db.getAllAsync<{ name: string }>('PRAGMA table_info(entries)');
+  const columnNames = pragmaResult.map((row) => row.name);
+
+  if (!columnNames.includes('textEn')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN textEn TEXT;`);
+  }
+  if (!columnNames.includes('tags')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN tags TEXT;`);
+  }
+  if (!columnNames.includes('confidence')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN confidence REAL;`);
+  }
+  if (!columnNames.includes('classifierVersion')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN classifierVersion INTEGER;`);
+  }
+  if (!columnNames.includes('userCorrected')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN userCorrected INTEGER DEFAULT 0;`);
+  }
 }
 
-export async function insertEntry(text: string, source: EntrySource, uid: string) {
+export async function insertEntry(text: string, source: EntrySource, uid: string, textEn?: string) {
   await initDb();
 
   const db = await getDb();
@@ -93,12 +134,13 @@ export async function insertEntry(text: string, source: EntrySource, uid: string
     source,
     localId: createLocalId(),
     synced: false,
+    textEn,
   };
 
   await db.runAsync(
     `
-      INSERT INTO entries (localId, uid, text, createdAt, source, synced)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO entries (localId, uid, text, createdAt, source, synced, textEn)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
     entry.localId,
     entry.uid,
@@ -106,6 +148,7 @@ export async function insertEntry(text: string, source: EntrySource, uid: string
     entry.createdAt,
     entry.source,
     entry.synced ? 1 : 0,
+    entry.textEn ?? null,
   );
 
   return entry;
@@ -120,7 +163,7 @@ export async function getTodayEntries(uid: string) {
   startOfDay.setHours(0, 0, 0, 0);
   
   const rows = await db.getAllAsync<EntryRow>(`
-    SELECT localId, uid, text, createdAt, source, synced
+    SELECT *
     FROM entries
     WHERE uid = ? AND createdAt >= ?
     ORDER BY createdAt DESC
@@ -129,10 +172,7 @@ export async function getTodayEntries(uid: string) {
   startOfDay.toISOString()
   );
 
-  return rows.map<LocalEntry>((row) => ({
-    ...row,
-    synced: row.synced === 1,
-  }));
+  return rows.map(mapEntryRowToLocalEntry);
 }
 
 export async function getUnsyncedEntries(uid: string) {
@@ -140,7 +180,7 @@ export async function getUnsyncedEntries(uid: string) {
 
   const db = await getDb();
   const rows = await db.getAllAsync<EntryRow>(`
-    SELECT localId, uid, text, createdAt, source, synced
+    SELECT *
     FROM entries
     WHERE synced = 0 AND uid = ?
     ORDER BY createdAt ASC
@@ -148,10 +188,47 @@ export async function getUnsyncedEntries(uid: string) {
   uid
   );
 
-  return rows.map<LocalEntry>((row) => ({
-    ...row,
-    synced: row.synced === 1,
-  }));
+  return rows.map(mapEntryRowToLocalEntry);
+}
+
+export async function getUnclassifiedEntries(uid: string) {
+  await initDb();
+
+  const db = await getDb();
+  const rows = await db.getAllAsync<EntryRow>(`
+    SELECT *
+    FROM entries
+    WHERE tags IS NULL AND uid = ?
+    ORDER BY createdAt ASC
+  `,
+  uid
+  );
+
+  return rows.map(mapEntryRowToLocalEntry);
+}
+
+export async function updateEntryClassification(
+  localId: string,
+  uid: string,
+  tags: string[],
+  confidence: number,
+  classifierVersion: number,
+  textEn?: string,
+  userCorrected = false,
+) {
+  await initDb();
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET tags = ?, confidence = ?, classifierVersion = ?, userCorrected = ?, synced = 0${textEn ? ', textEn = ?' : ''}
+      WHERE localId = ? AND uid = ?
+    `,
+    ...(textEn 
+      ? [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, textEn, localId, uid] 
+      : [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, localId, uid])
+  );
 }
 
 export async function markEntrySynced(localId: string, uid: string) {

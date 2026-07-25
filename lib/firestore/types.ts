@@ -11,6 +11,11 @@ export interface Entry {
   createdAt: Timestamp | FieldValue;
   source: EntrySource;
   localId: string;
+  textEn?: string;
+  tags?: string[];
+  confidence?: number;
+  classifierVersion?: number;
+  userCorrected?: boolean;
 }
 
 export interface DigestRecord {

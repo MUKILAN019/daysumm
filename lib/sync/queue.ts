@@ -1,4 +1,5 @@
 import { getAuth } from '@react-native-firebase/auth';
+import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import {
   doc,
   getFirestore,
@@ -9,6 +10,8 @@ import {
 import {
   getUnsyncedEntries,
   markEntrySynced,
+  getUnclassifiedEntries,
+  updateEntryClassification,
   type LocalEntry,
 } from '../db/entries';
 import type { Entry } from '../firestore/types';
@@ -48,6 +51,9 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
       failed: 0,
     };
   }
+
+  // Pre-sync classification step
+  await classifyPendingEntriesBatch(user.uid);
 
   const pendingEntries = await getPendingSyncEntries(user.uid);
 
@@ -89,4 +95,41 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
 
   console.log('Sync complete', result);
   return result;
+}
+
+async function classifyPendingEntriesBatch(uid: string) {
+  const unclassified = await getUnclassifiedEntries(uid);
+  if (unclassified.length === 0) return;
+
+  console.log(`Classifying ${unclassified.length} pending entries`);
+  
+  const entriesToClassify = unclassified.map(e => ({
+    localId: e.localId,
+    text: e.text,
+    textEn: e.textEn,
+  }));
+
+  try {
+    const functions = getFunctions();
+    const callable = httpsCallable(functions, 'classifyEntries');
+    const result = await callable({ entries: entriesToClassify });
+    const { results } = result.data as { results: any[] };
+
+    if (Array.isArray(results)) {
+      for (const res of results) {
+        if (res && res.localId && res.tags) {
+          await updateEntryClassification(
+            res.localId,
+            uid,
+            res.tags,
+            res.confidence ?? 0,
+            res.classifierVersion ?? 1,
+            res.textEn
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Classification sync step failed', error);
+  }
 }

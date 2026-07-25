@@ -6,11 +6,11 @@ import {
   StyleSheet,
   Text,
   View,
-  ScrollView,
+  FlatList,
   Platform,
   Image,
 } from 'react-native';
-import { Mic, Square, Pause, Play, FileText } from 'lucide-react-native';
+import { Mic, Square, Pause, Play, FileText, HelpCircle } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from 'expo-audio';
 import { requestMicPermissionWithRationale } from '../permissions/requestMicPermission';
@@ -23,7 +23,16 @@ interface HomeScreenProps {
   currentStreak: number;
   entries: LocalEntry[];
   onRecordFinished: (uri: string) => Promise<void>;
+  onConfirmTag?: (localId: string) => Promise<void>;
 }
+
+const TAG_LABELS: Record<string, string> = {
+  highlight: 'Done',
+  actionItem: 'To-do',
+  blocker: 'Blocked',
+  decision: 'Decision',
+  note: 'Note',
+};
 
 function formatTime(millis: number) {
   const totalSeconds = Math.floor(millis / 1000);
@@ -37,6 +46,7 @@ export function HomeScreen({
   currentStreak,
   entries,
   onRecordFinished,
+  onConfirmTag,
 }: HomeScreenProps) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
@@ -162,99 +172,124 @@ export function HomeScreen({
         subtitle="Record your thoughts on the go" 
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {/* Mic Capture Area */}
-        <View style={styles.captureArea}>
-        <View style={styles.micContainer}>
-          <Animated.View
-            style={[
-              styles.micHalo,
-              {
-                transform: [{ scale: pulseAnim }],
-                opacity: isRecording ? 1 : 0,
-              },
-            ]}
-          />
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleMicPress}
-            style={({ pressed }) => [
-              styles.micButton,
-              pressed && !isRecording && styles.micButtonPressed,
-            ]}
-          >
-            <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
-          </Pressable>
-        </View>
+      <FlatList
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        data={entries}
+        keyExtractor={(entry) => entry.localId}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View>
+            {/* Mic Capture Area */}
+            <View style={styles.captureArea}>
+              <View style={styles.micContainer}>
+                <Animated.View
+                  style={[
+                    styles.micHalo,
+                    {
+                      transform: [{ scale: pulseAnim }],
+                      opacity: isRecording ? 1 : 0,
+                    },
+                  ]}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleMicPress}
+                  style={({ pressed }) => [
+                    styles.micButton,
+                    pressed && !isRecording && styles.micButtonPressed,
+                  ]}
+                >
+                  <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
+                </Pressable>
+              </View>
 
-        {/* Waveform */}
-        <View style={styles.waveformContainer}>
-          {barsAnim.map((anim, i) => (
-            <Animated.View
-              key={i}
-              style={[
-                styles.waveformBar,
-                {
-                  transform: [{ scaleY: anim }],
-                },
-              ]}
-            />
-          ))}
-        </View>
+              {/* Waveform */}
+              <View style={styles.waveformContainer}>
+                {barsAnim.map((anim, i) => (
+                  <Animated.View
+                    key={i}
+                    style={[
+                      styles.waveformBar,
+                      {
+                        transform: [{ scaleY: anim }],
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
 
-        {/* Timer & Controls */}
-        {isRecordingSessionActive ? (
-          <View style={styles.recordingControls}>
-            <Pressable style={styles.secondaryButton} onPress={isPaused ? handleMicPress : handlePause}>
-              {isPaused ? (
-                <Play size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+              {/* Timer & Controls */}
+              {isRecordingSessionActive ? (
+                <View style={styles.recordingControls}>
+                  <Pressable style={styles.secondaryButton} onPress={isPaused ? handleMicPress : handlePause}>
+                    {isPaused ? (
+                      <Play size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+                    ) : (
+                      <Pause size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+                    )}
+                  </Pressable>
+                  <Text style={styles.timerText}>{formatTime(recorderState.durationMillis)}</Text>
+                  <Pressable style={styles.stopButton} onPress={handleStop}>
+                    <Square size={16} strokeWidth={2.5} color={Colors.Background} fill={Colors.Background} />
+                  </Pressable>
+                </View>
               ) : (
-                <Pause size={20} strokeWidth={1.75} color={Colors.TextPrimary} />
+                <Text style={styles.hintText}>
+                  {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous capture'}
+                </Text>
               )}
-            </Pressable>
-            <Text style={styles.timerText}>{formatTime(recorderState.durationMillis)}</Text>
-            <Pressable style={styles.stopButton} onPress={handleStop}>
-              <Square size={16} strokeWidth={2.5} color={Colors.Background} fill={Colors.Background} />
-            </Pressable>
-          </View>
-        ) : (
-          <Text style={styles.hintText}>
-            {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous capture'}
-          </Text>
-        )}
-      </View>
+            </View>
 
-      {/* Recent Entries */}
-      <View style={styles.recentSection}>
-        <View style={styles.recentHeaderRow}>
-          <Text style={styles.recentTitle}>Recent Entries</Text>
-        </View>
-        {entries.length === 0 ? (
+            {/* Recent Entries Header */}
+            <View style={styles.recentHeaderRow}>
+              <Text style={styles.recentTitle}>All Entries</Text>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <Image source={require('../../assets/owl-sitting-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
             <Text style={styles.emptyStateText}>No entries yet. Start recording or typing!</Text>
           </View>
-        ) : (
-          entries.slice(0, 5).map((entry) => (
-            <View key={entry.localId} style={styles.entryItem}>
-              <View style={styles.entryIconWrapper}>
-                {entry.source === 'voice' ? (
-                  <Mic size={14} color={Colors.PrimaryDeep} />
-                ) : (
-                  <FileText size={14} color={Colors.PrimaryDeep} />
-                )}
-              </View>
-              <View style={styles.entryTextContent}>
-                <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
-                <Text style={styles.entryMeta}>
-                  {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
-                </Text>
-              </View>
+        }
+        ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
+        renderItem={({ item: entry }) => (
+          <View style={styles.entryItem}>
+            <View style={styles.entryIconWrapper}>
+              {entry.source === 'voice' ? (
+                <Mic size={14} color={Colors.PrimaryDeep} />
+              ) : (
+                <FileText size={14} color={Colors.PrimaryDeep} />
+              )}
             </View>
-          ))
+            <View style={styles.entryTextContent}>
+              <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
+              {entry.tags && entry.tags.length > 0 && (
+                <View style={styles.tagsContainer}>
+                  {entry.tags.map(tag => (
+                    <View key={tag} style={styles.tagBadge}>
+                      <Text style={styles.tagBadgeText}>{TAG_LABELS[tag] || tag}</Text>
+                    </View>
+                  ))}
+                  {entry.confidence !== undefined && entry.confidence < 0.85 && !entry.userCorrected && (
+                    <Pressable
+                      style={styles.confirmBadge}
+                      onPress={() => onConfirmTag?.(entry.localId)}
+                    >
+                      <HelpCircle size={12} color={Colors.Warning} />
+                      <Text style={styles.confirmBadgeText}>Review tag</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
+              <Text style={styles.entryMeta}>
+                {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
+              </Text>
+            </View>
+          </View>
         )}
-      </View>
-    </ScrollView>
+      />
     </View>
   );
 }
@@ -268,9 +303,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xl,
-    alignItems: 'center',
   },
   captureArea: {
+    width: '100%',
     alignItems: 'center',
     marginBottom: Spacing.xl,
     minHeight: 280,
@@ -361,8 +396,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   recentHeaderRow: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   emptyState: {
     paddingVertical: Spacing.xl,
@@ -379,6 +417,7 @@ const styles = StyleSheet.create({
     color: Colors.TextMuted,
   },
   entryItem: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: Colors.Card,
@@ -409,5 +448,38 @@ const styles = StyleSheet.create({
     ...Typography.Label,
     color: Colors.TextMuted,
     marginTop: 2,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  tagBadge: {
+    backgroundColor: Colors.PrimaryTint,
+    borderRadius: Radii.chip,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  tagBadgeText: {
+    ...Typography.Label,
+    color: Colors.PrimaryDeep,
+    fontSize: 10,
+  },
+  confirmBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.Warning + '20', // Soft tinted background
+    borderRadius: Radii.chip,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  confirmBadgeText: {
+    ...Typography.Label,
+    color: Colors.Warning,
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

@@ -44,6 +44,7 @@ import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries } from './lib/sync/queue';
+import { updateEntryClassification } from './lib/db/entries';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
 import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
@@ -639,7 +640,7 @@ export default function App() {
 
   async function handleRecordFinished(uri: string) {
     try {
-      const text = await transcribeAudio(uri);
+      const { text, textEn } = await transcribeAudio(uri);
       const trimmedText = text.trim();
       if (!trimmedText) {
         console.warn('No speech detected in recording.');
@@ -649,7 +650,7 @@ export default function App() {
       const uid = getAuth().currentUser?.uid;
       if (!uid) return;
 
-      await insertEntry(trimmedText, 'voice', uid);
+      await insertEntry(trimmedText, 'voice', uid, textEn);
       await refreshEntries();
       await runSync('voice-save');
       await refreshWidgetData(uid);
@@ -730,6 +731,24 @@ export default function App() {
         currentStreak={currentStreak}
         entries={entries}
         onRecordFinished={handleRecordFinished}
+        onConfirmTag={async (localId) => {
+          const entry = entries.find((e) => e.localId === localId);
+          if (entry && entry.tags) {
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) return;
+            await updateEntryClassification(
+              localId,
+              uid,
+              entry.tags,
+              1.0,
+              entry.classifierVersion ?? 1,
+              entry.textEn,
+              true
+            );
+            await refreshEntries();
+            await runSync('correction');
+          }
+        }}
       />
     );
   }

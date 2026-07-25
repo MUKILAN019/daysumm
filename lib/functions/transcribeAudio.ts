@@ -1,7 +1,7 @@
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { File } from 'expo-file-system';
 
-export async function transcribeAudio(fileUri: string): Promise<string> {
+export async function transcribeAudio(fileUri: string): Promise<{ text: string, textEn: string }> {
   const file = new File(fileUri);
   const audioBase64 = await file.base64();
 
@@ -13,6 +13,6 @@ export async function transcribeAudio(fileUri: string): Promise<string> {
     mimeType: 'audio/m4a',
   });
 
-  const { text } = result.data as { text: string };
-  return text;
+  const { text, textEn } = result.data as { text: string, textEn: string };
+  return { text, textEn };
 }
