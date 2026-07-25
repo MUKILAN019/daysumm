@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Text,
   View,
-  Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { ScreenTransition } from '../components/ScreenTransition';
@@ -46,7 +45,7 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
 
   const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
-    setShowPicker(Platform.OS === 'ios');
+    setShowPicker(false);
     setDate(currentDate);
   };
 
@@ -87,15 +86,13 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
           
           <View style={styles.timePickerContainer}>
             <Text style={styles.timePickerLabel}>Select preferred time:</Text>
-            {Platform.OS === 'android' ? (
-              <Pressable style={styles.timeDisplayButton} onPress={showTimepicker}>
-                 <Text style={styles.timeDisplayText}>
-                   {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                 </Text>
-              </Pressable>
-            ) : null}
+            <Pressable style={styles.timeDisplayButton} onPress={showTimepicker}>
+               <Text style={styles.timeDisplayText}>
+                 {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+               </Text>
+            </Pressable>
             
-            {(showPicker || Platform.OS === 'ios') && (
+            {showPicker && (
               <DateTimePicker
                 testID="dateTimePicker"
                 value={date}

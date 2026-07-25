@@ -1,11 +1,10 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') {
-    return false; // this project targets Android only, per the app's scope
-  }
+  const androidVersion =
+    typeof Platform.Version === 'number' ? Platform.Version : Number.parseInt(Platform.Version, 10);
 
-  if (Platform.Version < 33) {
+  if (androidVersion < 33) {
     return true; // pre-Android 13 doesn't require runtime permission at all
   }
 

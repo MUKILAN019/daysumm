@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Platform, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Clock } from 'lucide-react-native';
@@ -120,7 +120,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 
   const onChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
-    setShowPicker(Platform.OS === 'ios');
+    setShowPicker(false);
     setDate(currentDate);
   };
 
@@ -158,7 +158,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
                 </Text>
               </Pressable>
 
-              {showPicker && Platform.OS === 'android' && (
+              {showPicker && (
                 <DateTimePicker
                   testID="dateTimePicker"
                   value={date}
@@ -206,25 +206,6 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
         onPrimaryPress={() => setModalVisible(false)}
       />
 
-      {Platform.OS === 'ios' && (
-        <CustomModal
-          visible={showPicker}
-          title="Select time"
-          type="info"
-          primaryButtonText="Confirm"
-          onPrimaryPress={() => setShowPicker(false)}
-        >
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode="time"
-            is24Hour={false}
-            display="spinner"
-            onChange={onChange}
-            style={styles.datePicker}
-          />
-        </CustomModal>
-      )}
     </View>
   );
 }

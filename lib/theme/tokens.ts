@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 export const Colors = {
   Primary: '#10B981',
   PrimaryDark: '#0F9B75',
@@ -21,11 +19,7 @@ export const Colors = {
   ProGold: '#D4A24C',
 };
 
-const fontFamily = Platform.select({
-  ios: 'System', // Uses SF Pro on iOS
-  android: 'Roboto', // Uses Roboto on Android
-  default: 'System',
-});
+const fontFamily = 'Roboto';
 
 export const Typography = {
   Display: {

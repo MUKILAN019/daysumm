@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -45,7 +44,6 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <GlobalHeader 
         title="Quick Log" 

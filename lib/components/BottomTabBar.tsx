@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View, Platform, Animated } from 'react-native';
+import { Pressable, StyleSheet, Text, View, Animated } from 'react-native';
 import { PenLine, Mic, Sparkles, CalendarDays, User } from 'lucide-react-native';
 import { Colors, Elevation, Typography } from '../theme/tokens';
 import { useEffect, useRef } from 'react';
@@ -103,8 +103,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.Border,
     ...Elevation,
-    // Safe area padding for newer devices (approximate if without react-native-safe-area-context)
-    paddingBottom: Platform.OS === 'android' ? 8 : 20,
+    paddingBottom: 8,
   },
   bar: {
     flexDirection: 'row',

@@ -7,7 +7,6 @@ import {
   Text,
   View,
   FlatList,
-  Platform,
   Image,
 } from 'react-native';
 import { Mic, Square, Pause, Play, FileText, AlertCircle } from 'lucide-react-native';
@@ -372,7 +371,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timerText: {
-    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }),
+    fontFamily: 'monospace',
     fontSize: 20,
     fontWeight: '600',
     color: Colors.TextPrimary,

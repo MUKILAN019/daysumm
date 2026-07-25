@@ -5,7 +5,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -182,7 +181,6 @@ export function EntryDetailSheet({
 
           <View style={styles.sheet}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={styles.keyboardView}
             >
               {/* Teal accent band with drag handle */}

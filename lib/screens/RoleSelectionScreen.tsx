@@ -8,7 +8,6 @@ import {
   TextInput,
   View,
   KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
 
@@ -57,7 +56,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
 
   return (
     <ScreenTransition style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
         <View style={styles.header}>
         <View style={styles.progressRow}>
           <View style={[styles.progressDot, styles.progressDotDone]} />

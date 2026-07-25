@@ -3,10 +3,10 @@ import messaging from '@react-native-firebase/messaging';
 import { updateFcmToken } from '../firestore/userSettings';
 
 async function hasNotificationPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') {
-    return false;
-  }
-  if (Platform.Version < 33) {
+  const androidVersion =
+    typeof Platform.Version === 'number' ? Platform.Version : Number.parseInt(Platform.Version, 10);
+
+  if (androidVersion < 33) {
     return true; // pre-Android 13 doesn't gate this behind runtime permission
   }
   return PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);

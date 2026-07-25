@@ -7,10 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/owl-logo-cool.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.mukilan19.daysumm"
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
