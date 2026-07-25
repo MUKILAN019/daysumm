@@ -30,7 +30,7 @@ export function DigestScreen({
     <View style={styles.container}>
       <GlobalHeader
         title="Daily Digest"
-        subtitle="Your summarized day"
+        subtitle="Your day at a glance"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -95,7 +95,7 @@ export function DigestScreen({
                 resizeMode="contain" 
               />
               <Text style={styles.digestEmptyText}>
-                Log some entries in the Write or Voice tab, then generate your daily summary here.
+                Log some entries in the Quick Log or Voice Log, then generate your daily summary here.
               </Text>
             </View>
           )}

@@ -158,8 +158,8 @@ export function HomeScreen({
   return (
     <View style={styles.container}>
       <GlobalHeader 
-        title="Voice Capture" 
-        subtitle="Speak your thoughts aloud" 
+        title="Voice Log" 
+        subtitle="Record your thoughts on the go" 
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -219,7 +219,7 @@ export function HomeScreen({
           </View>
         ) : (
           <Text style={styles.hintText}>
-            {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous'}
+            {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous capture'}
           </Text>
         )}
       </View>
@@ -227,12 +227,12 @@ export function HomeScreen({
       {/* Recent Entries */}
       <View style={styles.recentSection}>
         <View style={styles.recentHeaderRow}>
-          <Text style={styles.recentTitle}>Recent</Text>
+          <Text style={styles.recentTitle}>Recent Entries</Text>
         </View>
         {entries.length === 0 ? (
           <View style={styles.emptyState}>
             <Image source={require('../../assets/owl-sitting-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
-            <Text style={styles.emptyStateText}>Nothing saved yet — start above!</Text>
+            <Text style={styles.emptyStateText}>No entries yet. Start recording or typing!</Text>
           </View>
         ) : (
           entries.slice(0, 5).map((entry) => (

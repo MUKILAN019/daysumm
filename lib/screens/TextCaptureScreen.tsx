@@ -48,8 +48,8 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <GlobalHeader 
-        title="Text Log" 
-        subtitle="Write down the details" 
+        title="Quick Log" 
+        subtitle="Jot down your recent work" 
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
 
@@ -104,7 +104,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             ]}
           >
             <Text style={styles.saveButtonText}>
-              {isSaving ? 'Saving...' : 'Save entry'}
+              {isSaving ? 'Saving...' : 'Save Entry'}
             </Text>
           </Pressable>
         </View>
@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.Card,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.Border,
     borderRadius: Radii.card,
     padding: 20, // 20px inner padding per spec
     marginBottom: Spacing.md,

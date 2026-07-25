@@ -15,8 +15,12 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
   
   const [name, setName] = useState(user?.displayName || '');
   const [role, setRole] = useState('');
+  const [initialRole, setInitialRole] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const hasChanges = name !== (user?.displayName || '') || role !== initialRole;
+  const canSave = hasChanges && !saving;
 
   useEffect(() => {
     async function loadRole() {
@@ -25,6 +29,7 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
           const settings = await fetchUserSettings(user.uid);
           if (settings?.role) {
             setRole(settings.role);
+            setInitialRole(settings.role);
           }
         } catch (error) {
           console.warn('Failed to load role:', error);
@@ -53,7 +58,7 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
 
   return (
     <View style={styles.container}>
-      <GlobalHeader title="Personal Info" onBack={onBack} />
+      <GlobalHeader title="Profile Settings" subtitle="Manage your account details" onBack={onBack} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         
         {loading ? (
@@ -95,11 +100,11 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
             <Pressable
               accessibilityRole="button"
               onPress={handleSave}
-              disabled={saving}
+              disabled={!canSave}
               style={({ pressed }) => [
                 styles.saveButton,
                 pressed && styles.saveButtonPressed,
-                saving && styles.saveButtonDisabled,
+                !canSave && styles.saveButtonDisabled,
               ]}
             >
               {saving ? (
