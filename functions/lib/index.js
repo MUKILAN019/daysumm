@@ -144,6 +144,9 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
     const entries = entriesSnapshot.docs
         .map((doc) => doc.data())
         .filter((entry) => {
+        if (entry.deleted === true) {
+            return false;
+        }
         const createdAt = entry.createdAt;
         const date = createdAt instanceof Date
             ? createdAt
@@ -262,26 +265,14 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
             digest = degradedDigest;
         }
         didRegenerate = true;
-        if (existingDigestRecordId) {
-            await db.collection('digestRecords').doc(existingDigestRecordId).set({
-                uid,
-                dateKey,
-                generatedAt: new Date(),
-                entriesFingerprint,
-                ...digest,
-            });
-            digestRecordId = existingDigestRecordId;
-        }
-        else {
-            const newRecordRef = await db.collection('digestRecords').add({
-                uid,
-                dateKey,
-                generatedAt: new Date(),
-                entriesFingerprint,
-                ...digest,
-            });
-            digestRecordId = newRecordRef.id;
-        }
+        const newRecordRef = await db.collection('digestRecords').add({
+            uid,
+            dateKey,
+            generatedAt: new Date(),
+            entriesFingerprint,
+            ...digest,
+        });
+        digestRecordId = newRecordRef.id;
     }
     const dailyUsageUpdate = {
         uid,

@@ -2,6 +2,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import {
   doc,
+  deleteDoc,
   getFirestore,
   setDoc,
   Timestamp,
@@ -9,6 +10,9 @@ import {
 
 import {
   getUnsyncedEntries,
+  getPendingDeletedEntries,
+  hardDeleteLocalEntry,
+  isEntryActive,
   markEntrySynced,
   getUnclassifiedEntries,
   updateEntryClassification,
@@ -40,6 +44,57 @@ export async function syncEntries(): Promise<SyncEntriesResult> {
   return syncInFlight;
 }
 
+export async function syncPendingDeletedEntries(): Promise<SyncEntriesResult> {
+  const user = getAuth().currentUser;
+
+  if (!user) {
+    console.log('Delete sync skipped: no authenticated user');
+    return {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+    };
+  }
+
+  const pendingDeletedEntries = await getPendingDeletedEntries(user.uid);
+
+  if (pendingDeletedEntries.length === 0) {
+    console.log('Delete sync skipped: no pending deletions');
+    return {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+    };
+  }
+
+  return syncDeletedEntriesBatch(user.uid, pendingDeletedEntries);
+}
+
+async function syncDeletedEntriesBatch(
+  uid: string,
+  pendingDeletedEntries: LocalEntry[],
+): Promise<SyncEntriesResult> {
+  const db = getFirestore();
+  const result: SyncEntriesResult = {
+    attempted: pendingDeletedEntries.length,
+    synced: 0,
+    failed: 0,
+  };
+
+  for (const entry of pendingDeletedEntries) {
+    try {
+      await deleteDoc(doc(db, 'entries', entry.localId));
+      await hardDeleteLocalEntry(entry.localId, uid);
+      result.synced += 1;
+    } catch (error) {
+      result.failed += 1;
+      console.warn('Entry delete sync failed', entry.localId, error);
+    }
+  }
+
+  return result;
+}
+
 async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   const user = getAuth().currentUser;
 
@@ -55,9 +110,10 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   // Pre-sync classification step
   await classifyPendingEntriesBatch(user.uid);
 
+  const pendingDeletedEntries = await getPendingDeletedEntries(user.uid);
   const pendingEntries = await getPendingSyncEntries(user.uid);
 
-  if (pendingEntries.length === 0) {
+  if (pendingDeletedEntries.length === 0 && pendingEntries.length === 0) {
     console.log('Sync skipped: no pending entries');
     return {
       attempted: 0,
@@ -66,16 +122,28 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     };
   }
 
-  console.log(`Syncing ${pendingEntries.length} pending entries`);
-  const db = getFirestore();
   const result: SyncEntriesResult = {
-    attempted: pendingEntries.length,
+    attempted: pendingEntries.length + pendingDeletedEntries.length,
     synced: 0,
     failed: 0,
   };
 
+  console.log(`Syncing ${pendingEntries.length} pending entries and ${pendingDeletedEntries.length} pending deletions`);
+  const deleteResult = await syncDeletedEntriesBatch(user.uid, pendingDeletedEntries);
+  result.synced += deleteResult.synced;
+  result.failed += deleteResult.failed;
+
+  const db = getFirestore();
+
   for (const entry of pendingEntries) {
     try {
+      const entryStillActive = await isEntryActive(entry.localId, user.uid);
+      if (!entryStillActive) {
+        console.log('Entry upload skipped because it was deleted during sync', entry.localId);
+        result.synced += 1;
+        continue;
+      }
+
       const firestoreEntry: Entry = {
         uid: user.uid,
         text: entry.text,

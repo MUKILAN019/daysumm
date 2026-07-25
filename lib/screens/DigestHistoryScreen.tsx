@@ -79,7 +79,9 @@ export function DigestHistoryScreen({
         if (isCancelled) return;
         const map: Record<string, DigestHistoryEntry> = {};
         for (const entry of historyEntries) {
-          map[entry.dateKey] = entry;
+          if (!map[entry.dateKey]) {
+            map[entry.dateKey] = entry;
+          }
         }
         setDigestsByDate(map);
       })

@@ -19,6 +19,7 @@ export interface LocalEntry {
   classifierVersion?: number;
   userCorrected?: boolean;
   needsReview?: boolean;
+  deleted?: boolean;
 }
 
 interface EntryRow {
@@ -34,6 +35,7 @@ interface EntryRow {
   classifierVersion: number | null;
   userCorrected: number | null;
   needsReview: number | null;
+  deleted: number | null;
 }
 
 export function mapEntryRowToLocalEntry(row: EntryRow): LocalEntry {
@@ -46,6 +48,7 @@ export function mapEntryRowToLocalEntry(row: EntryRow): LocalEntry {
     classifierVersion: row.classifierVersion ?? undefined,
     userCorrected: row.userCorrected === 1,
     needsReview: row.needsReview === 1,
+    deleted: row.deleted === 1,
   };
 }
 
@@ -127,6 +130,9 @@ export async function initDb() {
   if (!columnNames.includes('needsReview')) {
     await db.execAsync(`ALTER TABLE entries ADD COLUMN needsReview INTEGER DEFAULT 0;`);
   }
+  if (!columnNames.includes('deleted')) {
+    await db.execAsync(`ALTER TABLE entries ADD COLUMN deleted INTEGER DEFAULT 0;`);
+  }
 }
 
 export async function insertEntry(text: string, source: EntrySource, uid: string, textEn?: string) {
@@ -171,7 +177,7 @@ export async function getTodayEntries(uid: string) {
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT *
     FROM entries
-    WHERE uid = ? AND createdAt >= ?
+    WHERE uid = ? AND createdAt >= ? AND deleted = 0
     ORDER BY createdAt DESC
   `,
   uid,
@@ -188,13 +194,47 @@ export async function getUnsyncedEntries(uid: string) {
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT *
     FROM entries
-    WHERE synced = 0 AND uid = ?
+    WHERE synced = 0 AND uid = ? AND deleted = 0
     ORDER BY createdAt ASC
   `,
   uid
   );
 
   return rows.map(mapEntryRowToLocalEntry);
+}
+
+export async function getPendingDeletedEntries(uid: string) {
+  await initDb();
+
+  const db = await getDb();
+  const rows = await db.getAllAsync<EntryRow>(`
+    SELECT *
+    FROM entries
+    WHERE synced = 0 AND uid = ? AND deleted = 1
+    ORDER BY createdAt ASC
+  `,
+  uid
+  );
+
+  return rows.map(mapEntryRowToLocalEntry);
+}
+
+export async function isEntryActive(localId: string, uid: string): Promise<boolean> {
+  await initDb();
+
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ deleted: number | null }>(
+    `
+      SELECT deleted
+      FROM entries
+      WHERE localId = ? AND uid = ?
+      LIMIT 1
+    `,
+    localId,
+    uid,
+  );
+
+  return Boolean(row && row.deleted !== 1);
 }
 
 export async function getUnclassifiedEntries(uid: string) {
@@ -204,7 +244,7 @@ export async function getUnclassifiedEntries(uid: string) {
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT *
     FROM entries
-    WHERE tags IS NULL AND uid = ?
+    WHERE tags IS NULL AND uid = ? AND deleted = 0
     ORDER BY createdAt ASC
   `,
   uid
@@ -230,8 +270,8 @@ export async function updateEntryClassification(
   // hasn't already corrected the entry manually. This prevents stale in-flight
   // classifications from overwriting user edits.
   const whereClause = userCorrected 
-    ? 'WHERE localId = ? AND uid = ?' 
-    : 'WHERE localId = ? AND uid = ? AND userCorrected = 0';
+    ? 'WHERE localId = ? AND uid = ? AND deleted = 0' 
+    : 'WHERE localId = ? AND uid = ? AND userCorrected = 0 AND deleted = 0';
 
   await db.runAsync(
     `
@@ -242,6 +282,69 @@ export async function updateEntryClassification(
     ...(textEn 
       ? [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, needsReview ? 1 : 0, textEn, localId, uid] 
       : [JSON.stringify(tags), confidence, classifierVersion, userCorrected ? 1 : 0, needsReview ? 1 : 0, localId, uid])
+  );
+}
+
+export async function softDeleteEntry(localId: string, uid: string) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET deleted = 1
+      WHERE localId = ? AND uid = ?
+    `,
+    localId,
+    uid,
+  );
+}
+
+export async function restoreSoftDeletedEntry(localId: string, uid: string) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET deleted = 0
+      WHERE localId = ? AND uid = ?
+    `,
+    localId,
+    uid,
+  );
+}
+
+export async function markEntryDeletionPending(localId: string, uid: string) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET synced = 0
+      WHERE localId = ? AND uid = ? AND deleted = 1
+    `,
+    localId,
+    uid,
+  );
+}
+
+export async function hardDeleteLocalEntry(localId: string, uid: string) {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      DELETE FROM entries
+      WHERE localId = ? AND uid = ?
+    `,
+    localId,
+    uid,
   );
 }
 
@@ -446,7 +549,7 @@ export async function getTodayEntryCount(uid: string): Promise<number> {
     `
       SELECT COUNT(*) AS count
       FROM entries
-      WHERE createdAt >= ? AND uid = ?
+      WHERE createdAt >= ? AND uid = ? AND deleted = 0
     `,
     startOfDay.toISOString(),
     uid
@@ -463,7 +566,7 @@ export async function getLatestEntryText(uid: string): Promise<string> {
   const row = await db.getFirstAsync<LatestEntryRow>(`
     SELECT text
     FROM entries
-    WHERE uid = ?
+    WHERE uid = ? AND deleted = 0
     ORDER BY createdAt DESC
     LIMIT 1
   `, uid);

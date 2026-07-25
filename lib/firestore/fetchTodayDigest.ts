@@ -1,4 +1,4 @@
-import { getFirestore, collection, query, where, limit, getDocs } from '@react-native-firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit, getDocs } from '@react-native-firebase/firestore';
 
 import type { Digest } from '../functions/generateDigest';
 
@@ -16,6 +16,7 @@ export async function fetchTodayDigest(uid: string): Promise<Digest | null> {
     collection(db, 'digestRecords'),
     where('uid', '==', uid),
     where('dateKey', '==', todayKey),
+    orderBy('generatedAt', 'desc'),
     limit(1),
   );
 

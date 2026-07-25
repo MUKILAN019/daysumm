@@ -14,6 +14,7 @@ import {
   AppState,
   type AppStateStatus,
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,10 @@ import {
   initDb,
   insertEntry,
   cleanupOldLocalEntries,
+  softDeleteEntry,
+  restoreSoftDeletedEntry,
+  markEntryDeletionPending,
+  hardDeleteLocalEntry,
   type LocalEntry,
 } from './lib/db/entries';
 import { GoogleSignInScreen } from './lib/screens/GoogleSignInScreen';
@@ -43,7 +48,7 @@ import { DigestViewScreen } from './lib/screens/DigestViewScreen';
 import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
-import { syncEntries } from './lib/sync/queue';
+import { syncEntries, syncPendingDeletedEntries } from './lib/sync/queue';
 import { updateEntryClassification, updateEntryText, updateEntryTextAndTags, markEntryUserCorrected } from './lib/db/entries';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
 import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
@@ -64,9 +69,11 @@ import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsSc
 import { fetchTodayDigest } from './lib/firestore/fetchTodayDigest';
 import { EntryDetailSheet, type EntryDetailSaveParams } from './lib/components/EntryDetailSheet';
 import { translateText } from './lib/functions/translateText';
+import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/tokens';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 60 * 1000; // 60-second debounce for entry-save syncs
+const DELETE_UNDO_MS = 4500;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
 
 export default function App() {
@@ -87,6 +94,8 @@ export default function App() {
   const [showNotificationStep, setShowNotificationStep] = useState(false);
   const wasOnlineRef = useRef<boolean | null>(null);
   const syncDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deleteUndoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDeleteRef = useRef<LocalEntry | null>(null);
   const [openedDigestRecordId, setOpenedDigestRecordId] = useState<string | null>(null);
   const [showForegroundBanner, setShowForegroundBanner] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -103,6 +112,7 @@ export default function App() {
   
   // ── Entry Detail Sheet state ───────────────────────────────────────
   const [selectedEntry, setSelectedEntry] = useState<LocalEntry | null>(null);
+  const [deletedEntryToast, setDeletedEntryToast] = useState<LocalEntry | null>(null);
 
 
   async function loadEntries() {
@@ -236,6 +246,9 @@ export default function App() {
       appStateSubscription.remove();
       netInfoUnsubscribe();
       clearInterval(intervalId);
+      if (deleteUndoTimerRef.current) {
+        clearTimeout(deleteUndoTimerRef.current);
+      }
     };
   }, []);
 
@@ -698,6 +711,106 @@ export default function App() {
     }
   }
 
+  async function finalizePendingDelete(entry: LocalEntry, uid: string) {
+    try {
+      if (entry.synced) {
+        await markEntryDeletionPending(entry.localId, uid);
+        const networkState = await NetInfo.fetch();
+        const isOnline =
+          networkState.isConnected === true && networkState.isInternetReachable !== false;
+
+        if (isOnline) {
+          const result = await syncPendingDeletedEntries();
+          if (result.attempted > 0) {
+            console.log('Sync delete', result);
+          }
+          await refreshEntries();
+        } else {
+          console.log('Sync delete skipped offline');
+        }
+      } else {
+        await hardDeleteLocalEntry(entry.localId, uid);
+      }
+      await refreshWidgetData(uid);
+    } catch (error) {
+      console.warn('Entry delete finalize failed', error);
+    }
+  }
+
+  function startDeleteUndoWindow(entry: LocalEntry, uid: string) {
+    if (deleteUndoTimerRef.current) {
+      clearTimeout(deleteUndoTimerRef.current);
+      deleteUndoTimerRef.current = null;
+    }
+
+    const previousPendingDelete = pendingDeleteRef.current;
+    if (previousPendingDelete && previousPendingDelete.localId !== entry.localId) {
+      finalizePendingDelete(previousPendingDelete, uid);
+    }
+
+    pendingDeleteRef.current = entry;
+    setDeletedEntryToast(entry);
+
+    deleteUndoTimerRef.current = setTimeout(() => {
+      deleteUndoTimerRef.current = null;
+      pendingDeleteRef.current = null;
+      setDeletedEntryToast(null);
+      finalizePendingDelete(entry, uid);
+    }, DELETE_UNDO_MS);
+  }
+
+  async function handleUndoDelete() {
+    const entry = pendingDeleteRef.current;
+    const uid = getAuth().currentUser?.uid;
+    if (!entry || !uid) return;
+
+    if (deleteUndoTimerRef.current) {
+      clearTimeout(deleteUndoTimerRef.current);
+      deleteUndoTimerRef.current = null;
+    }
+
+    pendingDeleteRef.current = null;
+    setDeletedEntryToast(null);
+
+    try {
+      await restoreSoftDeletedEntry(entry.localId, uid);
+      await refreshEntries();
+      await refreshWidgetData(uid);
+    } catch (error) {
+      console.warn('Entry delete undo failed', error);
+    }
+  }
+
+  function handleDeleteEntryPress(entry: LocalEntry) {
+    Alert.alert(
+      'Delete entry?',
+      'This entry will be removed from today\'s list.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) return;
+
+            try {
+              await softDeleteEntry(entry.localId, uid);
+              if (selectedEntry?.localId === entry.localId) {
+                setSelectedEntry(null);
+              }
+              await refreshEntries();
+              await refreshWidgetData(uid);
+              startDeleteUndoWindow(entry, uid);
+            } catch (error) {
+              console.warn('Entry delete failed', error);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   // Render the tab-specific content area
   function renderTabContent() {
     if (activeTab === 'profile') {
@@ -770,6 +883,7 @@ export default function App() {
         entries={entries}
         onRecordFinished={handleRecordFinished}
         onEntryPress={(entry) => setSelectedEntry(entry)}
+        onDeleteEntryPress={handleDeleteEntryPress}
       />
     );
   }
@@ -845,6 +959,22 @@ export default function App() {
 
       {/* Bottom tab bar */}
       <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
+
+      {deletedEntryToast ? (
+        <View style={styles.undoToast}>
+          <Text style={styles.undoToastText}>Entry deleted</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleUndoDelete}
+            style={({ pressed }) => [
+              styles.undoToastAction,
+              pressed && styles.undoToastActionPressed,
+            ]}
+          >
+            <Text style={styles.undoToastActionText}>Undo</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <StatusBar style="auto" />
     </View>
@@ -972,6 +1102,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  undoToast: {
+    position: 'absolute',
+    left: Spacing.screenPadding,
+    right: Spacing.screenPadding,
+    bottom: 82,
+    minHeight: 48,
+    borderRadius: Radii.card,
+    backgroundColor: Colors.Card,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    ...Elevation,
+  },
+  undoToastText: {
+    ...Typography.Secondary,
+    color: Colors.PrimaryDeep,
+    fontWeight: '600',
+  },
+  undoToastAction: {
+    borderRadius: Radii.button,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: Colors.PrimaryTint,
+  },
+  undoToastActionPressed: {
+    backgroundColor: 'rgba(16,185,129,0.15)',
+  },
+  undoToastActionText: {
+    ...Typography.Label,
+    color: Colors.PrimaryDeep,
+    fontWeight: '700',
   },
 
   // ── Today's Digest section ────────────────────────────────────

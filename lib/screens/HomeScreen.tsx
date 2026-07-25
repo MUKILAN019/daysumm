@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  type GestureResponderEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -9,7 +10,7 @@ import {
   FlatList,
   Image,
 } from 'react-native';
-import { Mic, Square, Pause, Play, FileText, AlertCircle } from 'lucide-react-native';
+import { Mic, Square, Pause, Play, FileText, AlertCircle, Trash2 } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from 'expo-audio';
 import { requestMicPermissionWithRationale } from '../permissions/requestMicPermission';
@@ -23,6 +24,7 @@ interface HomeScreenProps {
   entries: LocalEntry[];
   onRecordFinished: (uri: string) => Promise<void>;
   onEntryPress?: (entry: LocalEntry) => void;
+  onDeleteEntryPress?: (entry: LocalEntry) => void;
 }
 
 const TAG_LABELS: Record<string, string> = {
@@ -46,6 +48,7 @@ export function HomeScreen({
   entries,
   onRecordFinished,
   onEntryPress,
+  onDeleteEntryPress,
 }: HomeScreenProps) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(recorder);
@@ -286,6 +289,21 @@ export function HomeScreen({
                 {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
               </Text>
             </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Delete entry"
+              hitSlop={8}
+              onPress={(event: GestureResponderEvent) => {
+                event.stopPropagation();
+                onDeleteEntryPress?.(entry);
+              }}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                pressed && styles.deleteButtonPressed,
+              ]}
+            >
+              <Trash2 size={16} color={Colors.Danger} strokeWidth={2} />
+            </Pressable>
           </Pressable>
         )}
       />
@@ -425,6 +443,7 @@ const styles = StyleSheet.create({
     borderRadius: Radii.card,
     padding: Spacing.sm,
     gap: Spacing.sm,
+    position: 'relative',
   },
   entryIconWrapper: {
     width: 28,
@@ -437,6 +456,7 @@ const styles = StyleSheet.create({
   entryTextContent: {
     flex: 1,
     gap: 2,
+    paddingRight: 34,
   },
   entryText: {
     ...Typography.Body,
@@ -482,5 +502,20 @@ const styles = StyleSheet.create({
     color: Colors.Warning,
     fontSize: 10,
     fontWeight: '700',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.72,
+  },
+  deleteButtonPressed: {
+    backgroundColor: Colors.Danger + '12',
+    opacity: 1,
   },
 });
