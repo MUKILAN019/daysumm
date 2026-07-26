@@ -16,7 +16,6 @@ export async function fetchTodayDigest(uid: string): Promise<Digest | null> {
     collection(db, 'digestRecords'),
     where('uid', '==', uid),
     where('dateKey', '==', todayKey),
-    orderBy('generatedAt', 'desc'),
     limit(1),
   );
 

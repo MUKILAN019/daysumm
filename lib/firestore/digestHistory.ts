@@ -26,7 +26,6 @@ export async function fetchDigestHistory(
     where('uid', '==', uid),
     where('dateKey', '>=', cutoffDateKey),
     orderBy('dateKey', 'desc'),
-    orderBy('generatedAt', 'desc'),
   );
 
   const snapshot = await getDocs(digestQuery);
