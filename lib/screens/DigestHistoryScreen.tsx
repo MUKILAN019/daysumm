@@ -35,7 +35,8 @@ function toDateKey(year: number, month: number, day: number): string {
 }
 
 function getTodayDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 function parseDateKey(dateKey: string): { year: number; month: number; day: number } {
@@ -57,7 +58,7 @@ export function DigestHistoryScreen({
   refreshKey = 0,
   todayDigest = null,
 }: DigestHistoryScreenProps) {
-  const today = new Date();
+  // Recompute todayKey on every render so midnight rollover works correctly
   const todayKey = getTodayDateKey();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -65,8 +66,8 @@ export function DigestHistoryScreen({
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(todayKey);
   const [showPaywallSheet, setShowPaywallSheet] = useState(false);
 
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
 
   useEffect(() => {
     let isCancelled = false;
@@ -115,7 +116,7 @@ export function DigestHistoryScreen({
 
   const currentViewMonthStart = toDateKey(viewYear, viewMonth, 1);
   const canGoBack = isPro || currentViewMonthStart > oldestAllowedKey.slice(0, 8) + '01';
-  const canGoForward = viewYear < today.getFullYear() || viewMonth < today.getMonth();
+  const canGoForward = viewYear < new Date().getFullYear() || (viewYear === new Date().getFullYear() && viewMonth < new Date().getMonth());
 
   function handlePrevMonth() {
     if (!isPro && !canGoBack) {

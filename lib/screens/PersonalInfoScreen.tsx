@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { getAuth, updateProfile } from '@react-native-firebase/auth';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { fetchUserSettings, updateUserRole } from '../firestore/userSettings';
+import { CustomModal, type CustomModalType } from '../components/CustomModal';
 
 interface PersonalInfoScreenProps {
   onBack: () => void;
@@ -18,6 +19,7 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
   const [initialRole, setInitialRole] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{ visible: boolean; title: string; message: string; type: CustomModalType } | null>(null);
 
   const hasChanges = name !== (user?.displayName || '') || role !== initialRole;
   const canSave = hasChanges && !saving;
@@ -46,11 +48,11 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
       if (user) {
         await updateProfile(user, { displayName: name });
         await updateUserRole(user.uid, role);
-        Alert.alert('Success', 'Personal information updated successfully.');
+        setModalConfig({ visible: true, title: 'Success', message: 'Personal information updated successfully.', type: 'success' });
       }
     } catch (error) {
       console.warn('Failed to save personal info:', error);
-      Alert.alert('Error', 'Failed to update personal information. Please try again.');
+      setModalConfig({ visible: true, title: 'Error', message: 'Failed to update personal information. Please try again.', type: 'warning' });
     } finally {
       setSaving(false);
     }
@@ -116,6 +118,13 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
           </View>
         )}
       </ScrollView>
+      <CustomModal
+        visible={!!modalConfig?.visible}
+        title={modalConfig?.title ?? ''}
+        message={modalConfig?.message ?? ''}
+        type={modalConfig?.type ?? 'info'}
+        onPrimaryPress={() => setModalConfig(null)}
+      />
     </View>
   );
 }

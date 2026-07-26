@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { Mic, Square, Pause, Play, FileText, AlertCircle, Trash2 } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
-import { useAudioRecorder, useAudioRecorderState, RecordingPresets } from 'expo-audio';
-import { requestMicPermissionWithRationale } from '../permissions/requestMicPermission';
+import { useAudioRecorder, useAudioRecorderState, RecordingPresets, getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
+import { CustomModal } from '../components/CustomModal';
 import { LocalEntry } from '../db/entries';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
@@ -55,6 +55,10 @@ export function HomeScreen({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRecordingSessionActive, setIsRecordingSessionActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  
+  const [micModalVisible, setMicModalVisible] = useState(false);
+  const [micErrorModalVisible, setMicErrorModalVisible] = useState(false);
+  const micPermissionPromiseResolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const isRecording = recorderState.isRecording;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -137,9 +141,27 @@ export function HomeScreen({
     }
 
     // New session
-    const granted = await requestMicPermissionWithRationale();
+    let granted = false;
+    const current = await getRecordingPermissionsAsync();
+    
+    if (current.granted) {
+      granted = true;
+    } else if (current.canAskAgain) {
+      const proceed = await new Promise<boolean>((resolve) => {
+        micPermissionPromiseResolveRef.current = resolve;
+        setMicModalVisible(true);
+      });
+      if (proceed) {
+        const result = await requestRecordingPermissionsAsync();
+        granted = result.granted;
+      }
+    } else {
+      const result = await requestRecordingPermissionsAsync();
+      granted = result.granted;
+    }
+
     if (!granted) {
-      alert('Microphone access is required to capture voice entries.');
+      setMicErrorModalVisible(true);
       return;
     }
     await recorder.prepareToRecordAsync();
@@ -306,6 +328,39 @@ export function HomeScreen({
             </Pressable>
           </Pressable>
         )}
+      />
+      {/* Mic Rationale Modal */}
+      <CustomModal
+        visible={micModalVisible}
+        title="Microphone access"
+        message="DaySumm uses your microphone to turn spoken notes into text entries. Audio is only used for transcription and is not stored."
+        type="info"
+        primaryButtonText="Continue"
+        onPrimaryPress={() => {
+          setMicModalVisible(false);
+          if (micPermissionPromiseResolveRef.current) {
+            micPermissionPromiseResolveRef.current(true);
+            micPermissionPromiseResolveRef.current = null;
+          }
+        }}
+        secondaryButtonText="Not now"
+        onSecondaryPress={() => {
+          setMicModalVisible(false);
+          if (micPermissionPromiseResolveRef.current) {
+            micPermissionPromiseResolveRef.current(false);
+            micPermissionPromiseResolveRef.current = null;
+          }
+        }}
+      />
+
+      {/* Mic Error Modal */}
+      <CustomModal
+        visible={micErrorModalVisible}
+        title="Microphone Required"
+        message="Microphone access is required to capture voice entries. Please enable it in your device settings."
+        type="warning"
+        primaryButtonText="OK"
+        onPrimaryPress={() => setMicErrorModalVisible(false)}
       />
     </View>
   );

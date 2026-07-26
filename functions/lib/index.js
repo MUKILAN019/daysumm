@@ -137,9 +137,9 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
     const dailyUsageDoc = await dailyUsageRef.get();
     const existingDigestRecordId = dailyUsageDoc.data()?.digestRecordId;
     const existingPushSent = dailyUsageDoc.data()?.pushSent === true;
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+    const localNow = DateTime.now().setZone(timezone);
+    const startOfDay = localNow.startOf('day').toJSDate();
+    const endOfDay = localNow.endOf('day').toJSDate();
     const entriesSnapshot = await db.collection('entries').where('uid', '==', uid).get();
     const entries = entriesSnapshot.docs
         .map((doc) => doc.data())
@@ -265,14 +265,15 @@ async function buildAndStoreDigestForUser(uid, apiKey, options = { allowRegenera
             digest = degradedDigest;
         }
         didRegenerate = true;
-        const newRecordRef = await db.collection('digestRecords').add({
+        const deterministicId = `${uid}_${dateKey}`;
+        await db.collection('digestRecords').doc(deterministicId).set({
             uid,
             dateKey,
             generatedAt: new Date(),
             entriesFingerprint,
             ...digest,
         });
-        digestRecordId = newRecordRef.id;
+        digestRecordId = deterministicId;
     }
     const dailyUsageUpdate = {
         uid,

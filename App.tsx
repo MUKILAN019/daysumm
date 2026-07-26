@@ -70,6 +70,7 @@ import { fetchTodayDigest } from './lib/firestore/fetchTodayDigest';
 import { EntryDetailSheet, type EntryDetailSaveParams } from './lib/components/EntryDetailSheet';
 import { translateText } from './lib/functions/translateText';
 import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/tokens';
+import { CustomModal } from './lib/components/CustomModal';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 60 * 1000; // 60-second debounce for entry-save syncs
@@ -113,6 +114,7 @@ export default function App() {
   // ── Entry Detail Sheet state ───────────────────────────────────────
   const [selectedEntry, setSelectedEntry] = useState<LocalEntry | null>(null);
   const [deletedEntryToast, setDeletedEntryToast] = useState<LocalEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<LocalEntry | null>(null);
 
 
   async function loadEntries() {
@@ -570,6 +572,11 @@ export default function App() {
       setDigestRefreshVersion(v => v + 1);
       await markSampleDigestSeen();
       setShowSampleDigest(false);
+
+      // Refresh streak + widget immediately after digest generation
+      refreshStreak();
+      const uid = getAuth().currentUser?.uid;
+      refreshWidgetData(uid);
     } catch (error: unknown) {
       const err = error as { code?: string };
       if (err.code === 'functions/resource-exhausted') {
@@ -782,33 +789,30 @@ export default function App() {
   }
 
   function handleDeleteEntryPress(entry: LocalEntry) {
-    Alert.alert(
-      'Delete entry?',
-      'This entry will be removed from today\'s list.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const uid = getAuth().currentUser?.uid;
-            if (!uid) return;
+    setEntryToDelete(entry);
+  }
 
-            try {
-              await softDeleteEntry(entry.localId, uid);
-              if (selectedEntry?.localId === entry.localId) {
-                setSelectedEntry(null);
-              }
-              await refreshEntries();
-              await refreshWidgetData(uid);
-              startDeleteUndoWindow(entry, uid);
-            } catch (error) {
-              console.warn('Entry delete failed', error);
-            }
-          },
-        },
-      ],
-    );
+  async function confirmDeleteEntry() {
+    if (!entryToDelete) return;
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) {
+      setEntryToDelete(null);
+      return;
+    }
+
+    try {
+      await softDeleteEntry(entryToDelete.localId, uid);
+      if (selectedEntry?.localId === entryToDelete.localId) {
+        setSelectedEntry(null);
+      }
+      await refreshEntries();
+      await refreshWidgetData(uid);
+      startDeleteUndoWindow(entryToDelete, uid);
+    } catch (error) {
+      console.warn('Entry delete failed', error);
+    } finally {
+      setEntryToDelete(null);
+    }
   }
 
   // Render the tab-specific content area
@@ -922,11 +926,11 @@ export default function App() {
             } catch (err) {
               console.warn('Translate failed in Case A', err);
             }
-            scheduleDebouncedSync('edit-case-a');
+            runSync('edit-case-a');
           } else if (didTextChange && !didUserSetTags) {
             // Case B: Text changed, tags untouched. Clear tags and textEn, re-classify.
             await updateEntryText(localId, uid, newText);
-            scheduleDebouncedSync('edit-case-b');
+            runSync('edit-case-b');
           } else if (!didTextChange && didUserSetTags) {
             // Case C: Tags changed, text untouched. Update tags locally.
             const entry = entries.find(e => e.localId === localId);
@@ -942,11 +946,11 @@ export default function App() {
               true,
               false
             );
-            scheduleDebouncedSync('edit-case-c');
+            runSync('edit-case-c');
           } else if (!didTextChange && !didUserSetTags) {
             // Case D: No-op Save. User looked and said it's fine.
             await markEntryUserCorrected(localId, uid);
-            scheduleDebouncedSync('edit-case-noop');
+            runSync('edit-case-noop');
           }
           await refreshEntries();
         }}
@@ -975,6 +979,17 @@ export default function App() {
           </Pressable>
         </View>
       ) : null}
+
+      <CustomModal
+        visible={!!entryToDelete}
+        title="Delete entry?"
+        message="This entry will be removed from today's list."
+        type="warning"
+        primaryButtonText="Delete"
+        onPrimaryPress={confirmDeleteEntry}
+        secondaryButtonText="Cancel"
+        onSecondaryPress={() => setEntryToDelete(null)}
+      />
 
       <StatusBar style="auto" />
     </View>
