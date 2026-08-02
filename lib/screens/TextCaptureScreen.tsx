@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,10 +20,12 @@ interface TextCaptureScreenProps {
 }
 
 const SUGGESTED_TAGS = ['Meeting', 'Deep Work', 'Decision', 'Bug Fix'];
+const MAX_CHARS = 500;
 
 export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenProps) {
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   const canSave = text.trim().length > 0;
 
@@ -41,18 +45,65 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
     setText(newText);
   }
 
+  const isEmpty = text.length === 0;
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <GlobalHeader 
-        title="Quick Log" 
-        subtitle="Jot down your recent work" 
+      <GlobalHeader
+        title="Quick Log"
+        subtitle="Jot down your recent work"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
 
-      <View style={styles.content}>
-        <View style={styles.inputContainer}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Prompt banner with mascot — properly sized, aligned, on-theme */}
+        <View style={styles.promptCard}>
+          <View style={styles.promptTextCol}>
+            <Text style={styles.promptEyebrow}>OWL PROMPT</Text>
+            <Text style={styles.promptTitle}>What just happened?</Text>
+            <Text style={styles.promptBody}>
+              One or two lines is enough. I&apos;ll shape it into tonight&apos;s digest.
+            </Text>
+          </View>
+          <View style={styles.promptMascotWrap}>
+            <View style={styles.promptMascotHalo} />
+            <Image
+              source={require('../../assets/owl-invite-write.png')}
+              style={styles.promptMascot}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+
+        {/* Editor */}
+        <View style={[styles.inputCard, focused && styles.inputCardFocused]}>
+          <View style={styles.inputHeaderRow}>
+            <Text style={styles.inputLabel}>YOUR ENTRY</Text>
+            <View
+              style={[
+                styles.counterPill,
+                text.length > MAX_CHARS && styles.counterPillOver,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.counterText,
+                  text.length > MAX_CHARS && styles.counterTextOver,
+                ]}
+              >
+                {text.length}/{MAX_CHARS}
+              </Text>
+            </View>
+          </View>
+
           <TextInput
             style={styles.input}
             multiline
@@ -60,111 +111,215 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             placeholderTextColor={Colors.TextMuted}
             value={text}
             onChangeText={setText}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             textAlignVertical="top"
           />
-          {!text ? (
-            <Image
-              source={require('../../assets/owl-invite-write.png')}
-              style={styles.owlWatermark}
-              resizeMode="contain"
-            />
+
+          {isEmpty ? (
+            <View style={styles.hintRow}>
+              <View style={styles.hintDot} />
+              <Text style={styles.hintText}>
+                Tip: start with a verb — shipped, decided, blocked…
+              </Text>
+            </View>
           ) : null}
-          <Text style={styles.charCounter}>{text.length} chars</Text>
         </View>
 
-        <View style={styles.bottomSection}>
-          {/* Tag chips above keyboard */}
+        {/* Tags */}
+        <View style={styles.tagsBlock}>
+          <Text style={styles.sectionLabel}>QUICK TAGS</Text>
           <View style={styles.tagsRow}>
-            {SUGGESTED_TAGS.map((tag) => (
-              <Pressable
-                key={tag}
-                accessibilityRole="button"
-                onPress={() => handleTagPress(tag)}
-                style={({ pressed }) => [
-                  styles.tagChip,
-                  pressed && styles.tagChipPressed,
-                ]}
-              >
-                <Text style={styles.tagText}>+{tag}</Text>
-              </Pressable>
-            ))}
+            {SUGGESTED_TAGS.map((tag) => {
+              const active = text.includes(`#${tag}`);
+              return (
+                <Pressable
+                  key={tag}
+                  accessibilityRole="button"
+                  onPress={() => handleTagPress(tag)}
+                  style={({ pressed }) => [
+                    styles.tagChip,
+                    active && styles.tagChipActive,
+                    pressed && styles.tagChipPressed,
+                  ]}
+                >
+                  <Text style={[styles.tagText, active && styles.tagTextActive]}>
+                    {active ? tag : `+ ${tag}`}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-
-          {/* Primary Pill */}
-          <Pressable
-            accessibilityRole="button"
-            disabled={!canSave || isSaving}
-            onPress={handleSave}
-            style={({ pressed }) => [
-              styles.saveButton,
-              (!canSave || isSaving) && styles.saveButtonDisabled,
-              pressed && canSave && styles.saveButtonPressed,
-            ]}
-          >
-            <Text style={styles.saveButtonText}>
-              {isSaving ? 'Saving...' : 'Save Entry'}
-            </Text>
-          </Pressable>
         </View>
+      </ScrollView>
 
-        </View>
+      {/* Sticky action bar */}
+      <View style={styles.actionBar}>
+        <Pressable
+          accessibilityRole="button"
+          disabled={!canSave || isSaving}
+          onPress={handleSave}
+          style={({ pressed }) => [
+            styles.saveButton,
+            (!canSave || isSaving) && styles.saveButtonDisabled,
+            pressed && canSave && styles.saveButtonPressed,
+          ]}
+        >
+          <Text style={styles.saveButtonText}>
+            {isSaving ? 'Saving…' : 'Save entry'}
+          </Text>
+        </Pressable>
+      </View>
     </KeyboardAvoidingView>
   );
 }
+
+const MASCOT = 92;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.Background,
   },
-  content: {
-    flex: 1,
+  scroll: { flex: 1 },
+  scrollContent: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
-    gap: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
+    gap: Spacing.sm,
   },
-  inputContainer: {
-    flex: 1,
+
+  /* Prompt banner */
+  promptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.PrimaryTint,
+    borderRadius: Radii.card,
+    borderWidth: 1,
+    borderColor: 'rgba(16,185,129,0.18)',
+    paddingLeft: 18,
+    paddingRight: 10,
+    paddingVertical: 16,
+    gap: 12,
+    overflow: 'hidden',
+  },
+  promptTextCol: { flex: 1, gap: 4 },
+  promptEyebrow: {
+    ...Typography.Label,
+    color: Colors.PrimaryDark,
+    letterSpacing: 1,
+  },
+  promptTitle: {
+    ...Typography.SectionHeader,
+    fontSize: 18,
+    lineHeight: 24,
+    color: Colors.PrimaryDeep,
+  },
+  promptBody: {
+    ...Typography.Secondary,
+    color: Colors.TextSecondary,
+    lineHeight: 19,
+  },
+  promptMascotWrap: {
+    width: MASCOT,
+    height: MASCOT,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  promptMascotHalo: {
+    position: 'absolute',
+    width: MASCOT,
+    height: MASCOT,
+    borderRadius: MASCOT / 2,
+    backgroundColor: 'rgba(255,255,255,0.75)',
+  },
+  promptMascot: {
+    width: MASCOT - 8,
+    height: MASCOT - 8,
+  },
+
+  /* Editor */
+  inputCard: {
     backgroundColor: Colors.Card,
     borderWidth: 1.5,
     borderColor: Colors.Border,
     borderRadius: Radii.card,
-    padding: 20, // 20px inner padding per spec
-    marginBottom: Spacing.md,
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: Colors.Primary,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 16,
+    minHeight: 220,
+    shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 2,
   },
+  inputCardFocused: {
+    borderColor: Colors.Primary,
+    shadowColor: Colors.Primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  inputHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  inputLabel: {
+    ...Typography.Label,
+    color: Colors.TextMuted,
+  },
+  counterPill: {
+    backgroundColor: Colors.PrimaryTint,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  counterPillOver: { backgroundColor: 'rgba(239,68,68,0.10)' },
+  counterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.PrimaryDeep,
+    letterSpacing: 0.3,
+  },
+  counterTextOver: { color: Colors.Danger },
   input: {
     flex: 1,
+    minHeight: 130,
     ...Typography.Body,
+    lineHeight: 24,
     color: Colors.TextPrimary,
+    padding: 0,
   },
-  charCounter: {
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.Divider,
+  },
+  hintDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.Accent,
+  },
+  hintText: {
     ...Typography.Secondary,
+    fontSize: 13,
     color: Colors.TextMuted,
-    textAlign: 'right',
-    marginTop: Spacing.xs,
-    zIndex: 2,
+    flex: 1,
   },
-  owlWatermark: {
-    position: 'absolute',
-    bottom: -10,
-    left: -10,
-    width: 140,
-    height: 140,
-    opacity: 0.15,
-    zIndex: 1,
-  },
-  bottomSection: {
-    gap: Spacing.md,
-    // 12px safe-area gap is handled by the container's paddingBottom or can be adjusted here
-    paddingBottom: 12,
+
+  /* Tags */
+  tagsBlock: { gap: 10, marginTop: 4 },
+  sectionLabel: {
+    ...Typography.Label,
+    color: Colors.TextMuted,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -172,35 +327,57 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tagChip: {
-    backgroundColor: Colors.PrimaryTint,
-    borderRadius: Radii.chip,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    backgroundColor: Colors.Surface,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
   },
-  tagChipPressed: {
-    backgroundColor: 'rgba(16,185,129,0.15)', // slightly darker tint
+  tagChipPressed: { backgroundColor: Colors.PrimaryTint },
+  tagChipActive: {
+    backgroundColor: Colors.Primary,
+    borderColor: Colors.Primary,
   },
   tagText: {
     ...Typography.Secondary,
-    color: Colors.PrimaryDeep,
+    fontSize: 13,
+    color: Colors.TextSecondary,
     fontWeight: '600',
   },
+  tagTextActive: { color: '#FFFFFF' },
+
+  /* Action bar */
+  actionBar: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: 12,
+    paddingBottom: 20,
+    backgroundColor: Colors.Surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.Divider,
+  },
   saveButton: {
-    height: 48,
+    height: 54,
     borderRadius: Radii.button,
     backgroundColor: Colors.Primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.Primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  saveButtonPressed: {
-    backgroundColor: Colors.PrimaryDark,
-  },
+  saveButtonPressed: { backgroundColor: Colors.PrimaryDark },
   saveButtonDisabled: {
-    opacity: 0.5,
+    backgroundColor: Colors.Border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveButtonText: {
     ...Typography.Body,
-    fontWeight: '600',
-    color: Colors.Background,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
 });
