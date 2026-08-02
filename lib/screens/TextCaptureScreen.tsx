@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -48,10 +47,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   const isEmpty = text.length === 0;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <KeyboardAvoidingView style={styles.container}>
       <GlobalHeader
         title="Quick Log"
         subtitle="Jot down your recent work"
