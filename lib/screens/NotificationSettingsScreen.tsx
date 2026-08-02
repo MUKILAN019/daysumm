@@ -227,11 +227,11 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
             <Pressable
               accessibilityRole="button"
               onPress={handleSave}
-              disabled={saving}
+              disabled={saving || !isDirty}
               style={({ pressed }) => [
                 styles.saveButton,
-                pressed && styles.saveButtonPressed,
-                saving && styles.saveButtonDisabled,
+                (!isDirty || saving) && styles.saveButtonDisabled,
+                pressed && isDirty && !saving && styles.saveButtonPressed,
               ]}
             >
               {saving ? (

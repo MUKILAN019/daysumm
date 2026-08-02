@@ -384,10 +384,11 @@ export const generateDigest = onCall({ secrets: [OPENROUTER_API_KEY, REVENUECAT_
  * currently ~4:50 PM and haven't received a digest yet today (in their own
  * local date), then generates + stores a digest for each.
  */
-export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secrets: [OPENROUTER_API_KEY] }, async () => {
+export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secrets: [OPENROUTER_API_KEY, REVENUECAT_SECRET_API_KEY] }, async () => {
     const now = new Date().toISOString();
     const userSettingsSnapshot = await db.collection('userSettings').get();
     console.log(`digestDispatcher fired at ${now} — userSettings document count: ${userSettingsSnapshot.size}`);
+    const dueUsers = [];
     for (const settingsDoc of userSettingsSnapshot.docs) {
         const uid = settingsDoc.id;
         const settings = settingsDoc.data();
@@ -415,12 +416,26 @@ export const digestDispatcher = onSchedule({ schedule: 'every 10 minutes', secre
             if (!isDue) {
                 continue;
             }
-            console.log(`uid ${uid} is due for a digest (local time ${localNow.toFormat('HH:mm')}, zone ${timezone})`);
+            dueUsers.push({ uid, timezone, notificationTime });
+        }
+        catch (error) {
+            // One user's failure must not stop the batch.
+            console.warn(`Failed checking due status for uid ${uid} in digestDispatcher`, error);
+        }
+    }
+    const prioritizedUsers = await Promise.all(dueUsers.map(async (dueUser) => ({
+        ...dueUser,
+        isPro: await checkIsProEntitled(dueUser.uid, REVENUECAT_SECRET_API_KEY.value()),
+    })));
+    prioritizedUsers.sort((a, b) => Number(b.isPro) - Number(a.isPro));
+    for (const dueUser of prioritizedUsers) {
+        const { uid, timezone, notificationTime, isPro } = dueUser;
+        try {
+            console.log(`Processing ${isPro ? 'PRO' : 'free/guest'} digest for uid ${uid} (local time ${DateTime.now().setZone(timezone).toFormat('HH:mm')}, zone ${timezone})`);
             await buildAndStoreDigestForUser(uid, OPENROUTER_API_KEY.value());
             console.log(`Digest check complete for uid ${uid}`);
         }
         catch (error) {
-            // One user's failure must not stop the batch.
             console.warn(`Failed processing uid ${uid} in digestDispatcher`, error);
         }
     }
