@@ -21,22 +21,22 @@ interface PaywallScreenProps {
 }
 
 const PRO_FEATURES = [
-  'Unlimited digests — no 3-a-day limit',
-  '30 days of digest history, not just 3',
-  'Your digest, generated first — priority AI processing',
-  'Keep an indie builder building',
+  'Create unlimited digests — no daily limit',
+  'Keep 30 days of digest history',
+  'Get your digest first with faster AI processing',
+  'Support an indie app that keeps building',
 ];
 
 function getHeadlineForRole(role: string | null): string {
   switch (role) {
     case 'Software Engineer':
-      return 'Your standup, written before you even sit down.';
+      return 'Turn your day into a clear recap in seconds.';
     case 'Manager':
-      return 'Know what your team did today — without asking.';
+      return 'See what your team worked on without chasing updates.';
     case 'Freelancer':
-      return 'A client-ready recap, every single day.';
+      return 'Send polished client updates without the extra effort.';
     default:
-      return 'Your whole day, summarized — automatically.';
+      return 'Make your day easier to review and share.';
   }
 }
 
@@ -170,7 +170,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         visible={showGuestModal}
         type="warning"
         title="Sign in first"
-        message="Sign in with Google to upgrade to Pro — this keeps your digests and subscription tied to your account, not just this device."
+        message="Sign in with Google to unlock Pro and keep your digests tied to your account."
         primaryButtonText="OK"
         onPrimaryPress={() => setShowGuestModal(false)}
       />
@@ -178,9 +178,9 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
       <CustomModal
         visible={showSuccessModal}
         type="success"
-        title="You're on Pro"
-        message="Unlimited digests, full history, no more waiting in line for generation. Enjoy the extra time back."
-        primaryButtonText="Let's go"
+        title="You’re all set"
+        message="You now have unlimited digests, full history, and faster processing. Enjoy the extra time back."
+        primaryButtonText="Let’s go"
         onPrimaryPress={() => {
           setShowSuccessModal(false);
           onPurchaseSuccess();

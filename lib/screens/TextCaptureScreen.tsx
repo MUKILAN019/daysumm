@@ -68,9 +68,9 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
         <View style={styles.promptCard}>
           <View style={styles.promptTextCol}>
             <Text style={styles.promptEyebrow}>OWL PROMPT</Text>
-            <Text style={styles.promptTitle}>What just happened?</Text>
+            <Text style={styles.promptTitle}>What did you do today?</Text>
             <Text style={styles.promptBody}>
-              One or two lines is enough. I&apos;ll shape it into tonight&apos;s digest.
+              Write 1–2 short lines. I&apos;ll turn them into your evening digest.
             </Text>
           </View>
           <View style={styles.promptMascotWrap}>
@@ -107,7 +107,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
           <TextInput
             style={styles.input}
             multiline
-            placeholder="What did you just finish, decide, or promise?"
+            placeholder="What did you finish, decide, or promise today?"
             placeholderTextColor={Colors.TextMuted}
             value={text}
             onChangeText={setText}
@@ -120,7 +120,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             <View style={styles.hintRow}>
               <View style={styles.hintDot} />
               <Text style={styles.hintText}>
-                Tip: start with a verb — shipped, decided, blocked…
+                Tip: start with a verb, like shipped, decided, or blocked.
               </Text>
             </View>
           ) : null}
