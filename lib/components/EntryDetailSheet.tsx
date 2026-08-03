@@ -68,9 +68,9 @@ export function EntryDetailSheet({
   const [didUserSetTags, setDidUserSetTags] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [emptyError, setEmptyError] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
 
   const originalTextRef = useRef('');
+  const inputRef = useRef<TextInput | null>(null);
   const originalTagsRef = useRef<string[]>([]);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -83,7 +83,6 @@ export function EntryDetailSheet({
       setDidUserSetTags(false);
       setIsSaving(false);
       setEmptyError(false);
-      setIsFocused(false);
       originalTextRef.current = text;
       originalTagsRef.current = [...tags];
 
@@ -184,7 +183,7 @@ export function EntryDetailSheet({
 
           <View style={styles.sheet}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
               {/* Teal accent band with drag handle */}
               <View style={styles.topBand}>
@@ -222,18 +221,14 @@ export function EntryDetailSheet({
                   </Pressable>
                 </View>
 
-                {/* Section label */}
-                <Text style={styles.sectionLabel}>Your entry</Text>
-
-                {/* Editable text field */}
                 <View
                   style={[
                     styles.textInputContainer,
-                    isFocused && styles.textInputContainerFocused,
                     emptyError && styles.textInputContainerError,
                   ]}
                 >
                   <TextInput
+                    ref={inputRef}
                     style={styles.textInput}
                     multiline
                     value={editText}
@@ -241,11 +236,13 @@ export function EntryDetailSheet({
                       setEditText(val);
                       if (emptyError && val.trim()) setEmptyError(false);
                     }}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    placeholder="What's on your mind?"
+                    placeholder="What happened today?"
                     placeholderTextColor={Colors.TextMuted}
                     textAlignVertical="top"
+                    selectionColor={Colors.Primary}
+                    autoCorrect={false}
+                    autoCapitalize="sentences"
+                    returnKeyType="default"
                   />
                 </View>
                 {emptyError && (
@@ -340,7 +337,7 @@ export function EntryDetailSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    backgroundColor: `${Colors.Ink}45`,
     justifyContent: 'flex-end',
   },
   backdropTap: { flex: 1 },
@@ -373,27 +370,27 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: SCREEN_HEIGHT * 0.88,
-    shadowColor: '#064E3B',
-    shadowOffset: { width: 0, height: -6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 24,
+    shadowColor: Colors.TextPrimary,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 12,
     overflow: 'hidden',
   },
   topBand: {
-    backgroundColor: Colors.PrimaryTint,
+    backgroundColor: Colors.Surface,
     paddingTop: 10,
     paddingBottom: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(16, 185, 129, 0.15)',
+    borderBottomColor: Colors.Border,
   },
   handle: {
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: Colors.Primary,
-    opacity: 0.55,
+    backgroundColor: Colors.TextSecondary,
+    opacity: 0.4,
   },
   scrollContent: { flexGrow: 0 },
   scrollContentInner: {
@@ -416,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: Colors.PrimaryTint,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    borderColor: Colors.Border,
   },
   sourcePillText: {
     ...Typography.Secondary,
@@ -451,31 +448,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.Border,
   },
-  sectionLabel: {
-    ...Typography.Secondary,
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.TextSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
   textInputContainer: {
     backgroundColor: Colors.Surface,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.Border,
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     minHeight: 120,
-  },
-  textInputContainerFocused: {
-    borderColor: Colors.Primary,
-    backgroundColor: Colors.Card,
-    shadowColor: Colors.Primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 2,
   },
   textInputContainerError: {
     borderColor: Colors.Danger,
@@ -486,6 +466,7 @@ const styles = StyleSheet.create({
     minHeight: 90,
     lineHeight: 22,
     padding: 0,
+    backgroundColor: 'transparent',
   },
   errorText: {
     ...Typography.Secondary,

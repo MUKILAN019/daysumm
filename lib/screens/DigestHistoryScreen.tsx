@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   // ---------- Paywall Sheet (mirrors EntryDetailSheet) ----------
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(6, 78, 59, 0.45)',
+    backgroundColor: `${Colors.Ink}45`,
     justifyContent: 'flex-end',
   },
   backdropTap: { flex: 1 },
