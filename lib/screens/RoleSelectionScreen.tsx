@@ -8,6 +8,8 @@ import {
   TextInput,
   View,
   KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
 
@@ -18,7 +20,7 @@ interface RoleSelectionScreenProps {
 const ROLE_OPTIONS = ['Software Engineer', 'Manager', 'Freelancer', 'Other'];
 
 /**
- * Screen 2 — Role. White-first layout, slim teal header with owl-peek
+ * Screen 2 — Role. White-first layout, slim teal header with cat-peek
  * peeking DOWN over the header edge.
  */
 export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
@@ -56,7 +58,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
 
   return (
     <ScreenTransition style={styles.container}>
-      <KeyboardAvoidingView behavior="height" style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={styles.header}>
         <View style={styles.progressRow}>
           <View style={[styles.progressDot, styles.progressDotDone]} />
@@ -64,13 +66,13 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
           <View style={styles.progressDot} />
         </View>
         <Image
-          source={require('../../assets/owl-peek.png')}
+          source={require('../../assets/cat-peek.png')}
           style={styles.peek}
           resizeMode="contain"
         />
       </View>
 
-      <View style={styles.body}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body} bounces={false}>
         <View style={styles.contentBlock}>
           <Text style={styles.eyebrow}>Step 2 of 3</Text>
           <Text style={styles.title}>What best describes your work?</Text>
@@ -98,7 +100,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
                   </Text>
                   <View style={[styles.radio, isSelected && styles.radioSelected]}>
                     {isSelected && isSaving && role !== 'Other' ? (
-                      <ActivityIndicator size="small" color="#10B981" />
+                      <ActivityIndicator size="small" color="#6C5CE7" />
                     ) : isSelected ? (
                       <View style={styles.radioInner} />
                     ) : null}
@@ -141,7 +143,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
         </View>
 
         <Text style={styles.footerNote}>You can change this anytime in settings.</Text>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </ScreenTransition>
   );
@@ -153,7 +155,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   header: {
     height: HEADER_HEIGHT,
-    backgroundColor: '#10B981',
+    backgroundColor: '#6C5CE7',
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     paddingTop: 48,
@@ -177,7 +179,7 @@ const styles = StyleSheet.create({
     height: 96,
   },
   body: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 56,
     paddingBottom: 24,
@@ -190,7 +192,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.2,
-    color: '#10B981',
+    color: '#6C5CE7',
     textTransform: 'uppercase',
     marginBottom: 8,
     textAlign: 'center',
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
     minHeight: 60,
     paddingHorizontal: 20,
   },
-  optionSelected: { borderColor: '#10B981', backgroundColor: '#ECFDF5' },
+  optionSelected: { borderColor: '#6C5CE7', backgroundColor: '#EFECFE' },
   optionPressed: { backgroundColor: '#F9FAFB' },
   optionText: { fontSize: 15, fontWeight: '600', color: '#111827' },
   optionTextSelected: { color: '#065F46' },
@@ -234,12 +236,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioSelected: { borderColor: '#10B981' },
+  radioSelected: { borderColor: '#6C5CE7' },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#10B981',
+    backgroundColor: '#6C5CE7',
   },
   otherRow: { marginTop: 14, gap: 10 },
   otherInput: {
@@ -255,7 +257,7 @@ const styles = StyleSheet.create({
   otherSubmitButton: {
     minHeight: 52,
     borderRadius: 999,
-    backgroundColor: '#10B981',
+    backgroundColor: '#6C5CE7',
     alignItems: 'center',
     justifyContent: 'center',
   },

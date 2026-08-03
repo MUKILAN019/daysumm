@@ -90,7 +90,7 @@ export function DigestScreen({
           ) : (
             <View style={styles.digestEmptyState}>
               <Image 
-                source={require('../../assets/owl-sitting-waiting.png')} 
+                source={require('../../assets/cat-lying-waiting.png')} 
                 style={styles.digestEmptyMascot} 
                 resizeMode="contain" 
               />
@@ -218,9 +218,9 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   digestEmptyMascot: {
-    width: 100,
-    height: 100,
-    opacity: 0.8,
+    width: 140,
+    height: 140,
+    opacity: 0.9,
   },
   digestEmptyText: {
     ...Typography.Secondary,

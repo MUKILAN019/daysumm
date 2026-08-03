@@ -157,7 +157,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               <View style={styles.heroBlobB} />
               <View style={styles.heroMascotWrap}>
                 <Image
-                  source={require('../../assets/owl-bell.png')}
+                  source={require('../../assets/cat-bell.png')}
                   style={styles.heroMascot}
                   resizeMode="contain"
                 />

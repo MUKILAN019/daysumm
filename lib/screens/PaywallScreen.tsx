@@ -6,9 +6,10 @@ import {
   StyleSheet,
   Text,
   View,
+  ScrollView,
 } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
-import { CheckCircle2 } from 'lucide-react-native';
+import { CheckCircle2, Sparkles, Star } from 'lucide-react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -95,12 +96,16 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
     <View style={styles.container}>
       <GlobalHeader title="Upgrade to Pro" onBack={onBack} />
 
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} bounces={false}>
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.mascotMedallion}>
+            <View style={styles.glowAura} />
+            <Sparkles size={32} color={Colors.ProGold} style={styles.star1} strokeWidth={2} />
+            <Star size={22} color={Colors.ProGold} style={styles.star2} strokeWidth={2.5} fill={Colors.ProGold} />
+            <Sparkles size={28} color={Colors.ProGold} style={styles.star3} strokeWidth={2.5} />
             <Image
-              source={require('../../assets/owl-king.png')}
+              source={require('../../assets/cat-king.png')}
               style={styles.mascotIcon}
               resizeMode="contain"
             />
@@ -164,7 +169,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
             <Text style={styles.errorText}>{errorMessage}</Text>
           ) : null}
         </View>
-      </View>
+      </ScrollView>
 
       <CustomModal
         visible={showGuestModal}
@@ -187,7 +192,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         }}
       >
         <Image
-          source={require('../../assets/owl-smiley-cheer.png')}
+          source={require('../../assets/cat-widget-cheer.png')}
           style={styles.successMascot}
           resizeMode="contain"
         />
@@ -201,11 +206,12 @@ const MEDALLION = 132;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.Background },
   content: {
-    flex: 1,
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
-    justifyContent: 'space-between',
+    paddingBottom: Spacing.xl,
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    gap: Spacing.lg,
   },
 
   hero: {
@@ -214,15 +220,46 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
   },
   mascotMedallion: {
-    width: MEDALLION,
-    height: MEDALLION,
-    borderRadius: MEDALLION / 2,
-    backgroundColor: Colors.PrimaryTint,
+    width: 180,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xs,
   },
-  mascotIcon: { width: 96, height: 96 },
+  glowAura: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#FFF8D6', // Very soft glowing gold
+    shadowColor: Colors.ProGold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  star1: {
+    position: 'absolute',
+    top: 15,
+    left: 20,
+    transform: [{ rotate: '-10deg' }],
+    zIndex: 2,
+  },
+  star2: {
+    position: 'absolute',
+    top: 40,
+    right: 15,
+    transform: [{ rotate: '20deg' }],
+    zIndex: 2,
+  },
+  star3: {
+    position: 'absolute',
+    bottom: 30,
+    left: 5,
+    transform: [{ rotate: '15deg' }],
+    zIndex: 2,
+  },
+  mascotIcon: { width: 144, height: 144, zIndex: 5 },
   eyebrow: {
     ...Typography.Label,
     color: Colors.ProGold,

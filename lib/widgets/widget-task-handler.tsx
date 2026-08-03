@@ -23,6 +23,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
             todayEntryCount={todayEntryCount}
             currentStreak={cache.currentStreak}
             lastEntryPreview={lastEntryPreview}
+            widgetInfo={props.widgetInfo}
           />,
         );
       } catch (error) {
@@ -34,6 +35,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
               todayEntryCount={cache.todayEntryCount}
               currentStreak={cache.currentStreak}
               lastEntryPreview={cache.lastEntryPreview}
+              widgetInfo={props.widgetInfo}
             />,
           );
         } catch (fallbackError) {

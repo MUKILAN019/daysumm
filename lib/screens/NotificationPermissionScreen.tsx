@@ -15,7 +15,7 @@ interface NotificationPermissionScreenProps {
 }
 
 /**
- * Screen 3 — Notifications. Teal top + white sheet, with owl-peek
+ * Screen 3 — Notifications. Teal top + white sheet, with cat-peek
  * peeking UP over the sheet edge, bridging the two zones.
  */
 export function NotificationPermissionScreen({ onContinue }: NotificationPermissionScreenProps) {
@@ -65,7 +65,7 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
 
       <View style={styles.sheet}>
         <Image
-          source={require('../../assets/owl-peek.png')}
+          source={require('../../assets/cat-peek.png')}
           style={styles.peek}
           resizeMode="contain"
         />
@@ -139,7 +139,7 @@ function FeatureRow({ label }: { label: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#10B981' },
+  container: { flex: 1, backgroundColor: '#6C5CE7' },
   top: {
     height: 140,
     alignItems: 'center',
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1.2,
-    color: '#10B981',
+    color: '#6C5CE7',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
@@ -213,9 +213,9 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#EFECFE',
+    borderColor: '#6C5CE7',
     borderWidth: 1.5,
-    borderColor: '#10B981',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderLeftWidth: 2,
     borderBottomWidth: 2,
-    borderColor: '#10B981',
+    borderColor: '#6C5CE7',
     transform: [{ rotate: '-45deg' }],
     marginTop: -2,
   },
@@ -265,12 +265,12 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 54,
     borderRadius: 999,
-    backgroundColor: '#10B981',
+    backgroundColor: '#6C5CE7',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
   },
-  buttonPressed: { backgroundColor: '#0F9B75' },
+  buttonPressed: { backgroundColor: '#4F3FD6' },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });

@@ -89,15 +89,17 @@ export function SettingsScreen({
 
       {/* Pro Banner */}
       {!isPro && (
-        <View style={styles.proBanner}>
+        <Pressable 
+          style={({ pressed }) => [styles.proBanner, pressed && styles.proBannerPressed]} 
+          onPress={onUpgradePress}
+        >
+          <Image source={require('../../assets/cat-king.png')} style={styles.proBannerImage} resizeMode="contain" />
           <View style={styles.proBannerContent}>
             <Text style={styles.proBannerTitle}>Unlock DaySumm Pro</Text>
-            <Text style={styles.proBannerText}>Get unlimited history and advanced digests.</Text>
+            <Text style={styles.proBannerText}>Get unlimited history and faster AI processing.</Text>
           </View>
-          <Pressable style={styles.proButton} onPress={onUpgradePress}>
-            <Text style={styles.proButtonText}>Upgrade</Text>
-          </Pressable>
-        </View>
+          <ChevronRight size={20} color={Colors.ProGold} />
+        </Pressable>
       )}
 
       {/* Sections */}
@@ -185,37 +187,41 @@ const styles = StyleSheet.create({
   proBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.PrimaryTint,
-    borderWidth: 1,
-    borderColor: Colors.Primary,
+    backgroundColor: '#FFFBEB',
     borderRadius: Radii.card,
-    padding: Spacing.sm,
-    marginBottom: Spacing.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: Spacing.xl,
+    shadowColor: Colors.ProGold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  proBannerPressed: {
+    opacity: 0.85,
+  },
+  proBannerImage: {
+    width: 68,
+    height: 68,
+    marginRight: 12,
   },
   proBannerContent: {
     flex: 1,
-    paddingRight: Spacing.md,
+    paddingRight: 8,
+    justifyContent: 'center',
   },
   proBannerTitle: {
     ...Typography.Body,
-    fontWeight: '700',
-    color: Colors.PrimaryDeep,
-    marginBottom: 2,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 4,
   },
   proBannerText: {
     ...Typography.Secondary,
-    color: Colors.PrimaryDeep,
-  },
-  proButton: {
-    backgroundColor: Colors.ProGold,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 6,
-    borderRadius: Radii.button,
-  },
-  proButtonText: {
-    ...Typography.Label,
-    fontWeight: '700',
-    color: Colors.Background,
+    fontSize: 13,
+    color: '#4B5563',
+    lineHeight: 18,
   },
   section: {
     marginBottom: Spacing.xl,

@@ -5,12 +5,12 @@
     "slug": "DaySumm",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/owl-logo-cool.png",
+    "icon": "./assets/cat-logo-cool.png",
     "userInterfaceStyle": "light",
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/owl-logo-cool.png"
+        "foregroundImage": "./assets/cat-logo-cool.png"
       },
       "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,

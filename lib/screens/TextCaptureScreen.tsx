@@ -8,6 +8,7 @@ import {
   TextInput,
   View,
   Image,
+  Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -47,7 +48,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   const isEmpty = text.length === 0;
 
   return (
-    <KeyboardAvoidingView style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <GlobalHeader
         title="Quick Log"
         subtitle="Jot down your recent work"
@@ -60,27 +61,17 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Prompt banner with mascot — properly sized, aligned, on-theme */}
-        <View style={styles.promptCard}>
-          <View style={styles.promptTextCol}>
-            <Text style={styles.promptEyebrow}>OWL PROMPT</Text>
-            <Text style={styles.promptTitle}>What did you do today?</Text>
-            <Text style={styles.promptBody}>
-              Write 1–2 short lines. I&apos;ll turn them into your evening digest.
-            </Text>
-          </View>
-          <View style={styles.promptMascotWrap}>
-            <View style={styles.promptMascotHalo} />
-            <Image
-              source={require('../../assets/owl-invite-write.png')}
-              style={styles.promptMascot}
-              resizeMode="contain"
-            />
-          </View>
+        {/* Mascot perfectly peeking from behind the text box */}
+        <View style={{ alignItems: 'center', marginBottom: -16, zIndex: 10 }}>
+          <Image
+            source={require('../../assets/cat-peek.png')}
+            style={{ width: 100, height: 100 }}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Editor */}
-        <View style={[styles.inputCard, focused && styles.inputCardFocused]}>
+        <View style={[styles.inputCard, focused && styles.inputCardFocused, { zIndex: 1 }]}>
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>YOUR ENTRY</Text>
             <View

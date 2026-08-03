@@ -279,7 +279,7 @@ export function DigestHistoryScreen({
         ) : (
           <View style={styles.emptyEntries}>
             <Image
-              source={require('../../assets/owl-sitting-waiting.png')}
+              source={require('../../assets/cat-lying-waiting.png')}
               style={styles.emptyHistoryMascot}
               resizeMode="contain"
             />
@@ -304,7 +304,7 @@ export function DigestHistoryScreen({
             {/* Floating mascot seated on top-right edge */}
             <View pointerEvents="none" style={styles.mascotWrap}>
               <Image
-                source={require('../../assets/owl-king.png')}
+                source={require('../../assets/cat-king.png')}
                 style={styles.mascot}
                 resizeMode="contain"
               />
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     marginTop: Spacing.xl,
   },
-  emptyHistoryMascot: { width: 120, height: 120, opacity: 0.85 },
+  emptyHistoryMascot: { width: 140, height: 140, opacity: 0.9 },
   emptyEntriesText: { ...Typography.Secondary, color: Colors.TextMuted },
 
   // ---------- Paywall Sheet (mirrors EntryDetailSheet) ----------

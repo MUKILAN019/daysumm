@@ -40,7 +40,7 @@ export function CustomModal({
           <View style={styles.headerBand}>
             <View style={styles.headerBandInner} />
             <Image
-              source={require('../../assets/owl-modal-friendly.png')}
+              source={require('../../assets/cat-modal-friendly.png')}
               style={styles.mascot}
               resizeMode="contain"
             />

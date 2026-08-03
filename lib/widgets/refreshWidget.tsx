@@ -21,11 +21,12 @@ export async function refreshWidgetData(uid?: string): Promise<void> {
 
     await requestWidgetUpdate({
       widgetName: 'DaySummWidget',
-      renderWidget: () => (
+      renderWidget: (widgetInfo) => (
         <DaySummWidget
           todayEntryCount={todayEntryCount}
           currentStreak={currentStreak}
           lastEntryPreview={lastEntryPreview}
+          widgetInfo={widgetInfo}
         />
       ),
       widgetNotFound: () => {

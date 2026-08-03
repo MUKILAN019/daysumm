@@ -56,7 +56,7 @@ export function GoogleSignInScreen({
       <View style={styles.hero}>
         <View style={styles.mascotHalo}>
           <Image
-            source={require('../../assets/owl-face.png')}
+            source={require('../../assets/cat-face.png')}
             style={styles.mascot}
             resizeMode="contain"
           />
@@ -108,7 +108,7 @@ export function GoogleSignInScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#10B981' },
+  container: { flex: 1, backgroundColor: '#6C5CE7' },
   hero: {
     flex: 1,
     alignItems: 'center',

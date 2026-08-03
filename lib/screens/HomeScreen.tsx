@@ -273,7 +273,7 @@ export function HomeScreen({
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Image source={require('../../assets/owl-sitting-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
+            <Image source={require('../../assets/cat-lying-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
             <Text style={styles.emptyStateText}>No entries yet. Start recording or typing!</Text>
           </View>
         }
@@ -480,9 +480,9 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   emptyStateImage: {
-    width: 100,
-    height: 100,
-    opacity: 0.8,
+    width: 140,
+    height: 140,
+    opacity: 0.9,
   },
   emptyStateText: {
     ...Typography.Secondary,

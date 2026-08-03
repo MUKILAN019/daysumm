@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   savedMessage: {
-    color: '#047857',
+    color: '#4F3FD6',
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',

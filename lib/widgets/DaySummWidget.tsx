@@ -2,16 +2,27 @@ import React from 'react';
 import { FlexWidget, TextWidget, ImageWidget, SvgWidget } from 'react-native-android-widget';
 import { flameSvg } from './widgetSvgs';
 
+import type { WidgetInfo } from 'react-native-android-widget';
+
 interface DaySummWidgetProps {
   todayEntryCount: number;
   currentStreak: number;
   lastEntryPreview: string;
+  widgetInfo?: WidgetInfo;
 }
 
 export function DaySummWidget({
   todayEntryCount,
   currentStreak,
+  widgetInfo,
 }: DaySummWidgetProps) {
+  const width = widgetInfo?.width || 200;
+  const height = widgetInfo?.height || 100;
+
+  const isVertical = height > width + 20;
+  const isCompact = width < 160;
+  const isMicro = width < 120 || height < 120;
+  const mascotSize = isMicro ? 50 : isCompact ? 70 : 90;
   return (
     <FlexWidget
       clickAction="OPEN_URI"
@@ -22,8 +33,8 @@ export function DaySummWidget({
         flexDirection: 'column',
         justifyContent: 'center',
         backgroundGradient: {
-          from: '#0F766E',
-          to: '#059669',
+          from: '#6C5CE7',
+          to: '#4F3FD6',
           orientation: 'TOP_BOTTOM',
         },
         borderRadius: 24,
@@ -43,45 +54,52 @@ export function DaySummWidget({
           style={{
             fontSize: 20,
             fontWeight: '900',
-            color: '#FBBF24',
+            color: '#FF7A9C',
             marginLeft: 6,
           }}
         />
       </FlexWidget>
 
-      {/* Main Content: Big Owl hero + tagline */}
+      {/* Main Content: Big Cat hero + tagline */}
       <FlexWidget
         style={{
-          flexDirection: 'row',
+          flexDirection: isVertical ? 'column' : 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: 16,
+          justifyContent: isVertical ? 'center' : 'space-between',
+          marginTop: isVertical ? 8 : 16,
+          flex: 1,
         }}
       >
         <FlexWidget
           style={{
-            flex: 1,
+            flex: isVertical ? undefined : 1,
             flexDirection: 'column',
-            paddingRight: 8,
+            paddingRight: isVertical ? 0 : 8,
+            alignItems: isVertical ? 'center' : 'flex-start',
+            marginBottom: isVertical ? 8 : 0,
           }}
         >
-          <TextWidget
-            text="Tap and speak"
-            style={{
-              fontSize: 18,
-              fontWeight: '900',
-              color: '#FFFFFF',
-              lineHeight: 22,
-            }}
-            maxLines={2}
-          />
+          {!isMicro && (
+            <TextWidget
+              text="Tap and speak"
+              style={{
+                fontSize: isCompact ? 14 : 18,
+                fontWeight: '900',
+                color: '#FFFFFF',
+                lineHeight: isCompact ? 18 : 22,
+                textAlign: isVertical ? 'center' : 'left',
+              }}
+              maxLines={2}
+            />
+          )}
           <TextWidget
             text={todayEntryCount > 0 ? 'Keep the streak alive' : "Don't let it break!"}
             style={{
-              fontSize: 11,
+              fontSize: isMicro ? 10 : 11,
               fontWeight: '600',
-              color: '#D1FAE5',
+              color: '#EFECFE',
               marginTop: 4,
+              textAlign: isVertical ? 'center' : 'left',
             }}
             maxLines={1}
             truncate="END"
@@ -89,10 +107,10 @@ export function DaySummWidget({
         </FlexWidget>
 
         <ImageWidget
-          image={require('../../assets/owl-widget-cheer.png')}
-          imageWidth={90}
-          imageHeight={90}
-          style={{ width: 90, height: 90 }}
+          image={require('../../assets/cat-widget-cheer.png')}
+          imageWidth={mascotSize}
+          imageHeight={mascotSize}
+          style={{ width: mascotSize, height: mascotSize }}
         />
       </FlexWidget>
     </FlexWidget>

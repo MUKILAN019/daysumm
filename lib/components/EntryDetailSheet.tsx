@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   View,
+  Platform,
 } from 'react-native';
 import { Mic, FileText, X, Sparkles } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
@@ -161,6 +162,8 @@ export function EntryDetailSheet({
       transparent
       visible={visible}
       animationType="none"
+      hardwareAccelerated={true}
+      statusBarTranslucent={true}
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
@@ -173,7 +176,7 @@ export function EntryDetailSheet({
           <View pointerEvents="none" style={styles.mascotWrap}>
             {/* <View style={styles.mascotGlow} /> */}
             <Image
-              source={require('../../assets/owl-modal-friendly.png')}
+              source={require('../../assets/cat-modal-friendly.png')}
               style={styles.mascot}
               resizeMode="contain"
             />
@@ -181,19 +184,19 @@ export function EntryDetailSheet({
 
           <View style={styles.sheet}>
             <KeyboardAvoidingView
-              style={styles.keyboardView}
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
               {/* Teal accent band with drag handle */}
               <View style={styles.topBand}>
                 <View style={styles.handle} />
               </View>
 
-              <ScrollView
-                style={styles.scrollContent}
-                contentContainerStyle={styles.scrollContentInner}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
+                <ScrollView
+                  style={styles.scrollContent}
+                  contentContainerStyle={styles.scrollContentInner}
+                  keyboardShouldPersistTaps="always"
+                  showsVerticalScrollIndicator={false}
+                >
                 {/* Header: source pill + close */}
                 <View style={styles.header}>
                   <View style={styles.sourcePill}>
@@ -377,7 +380,6 @@ const styles = StyleSheet.create({
     elevation: 24,
     overflow: 'hidden',
   },
-  keyboardView: { flex: 0 },
   topBand: {
     backgroundColor: Colors.PrimaryTint,
     paddingTop: 10,
