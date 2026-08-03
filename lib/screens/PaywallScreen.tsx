@@ -161,7 +161,6 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                   </Pressable>
                 );
               })}
-              <Text style={styles.fineprint}>Cancel anytime. No hidden fees.</Text>
             </View>
           )}
 

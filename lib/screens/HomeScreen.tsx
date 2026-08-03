@@ -193,7 +193,7 @@ export function HomeScreen({
     <View style={styles.container}>
       <GlobalHeader 
         title="Voice Log" 
-        subtitle="Record your thoughts on the go" 
+        subtitle="Record your thoughts"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
       <FlatList
