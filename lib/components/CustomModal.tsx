@@ -36,7 +36,7 @@ export function CustomModal({
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          {/* Teal header band with owl mascot */}
+          {/* Teal header band with cat mascot */}
           <View style={styles.headerBand}>
             <View style={styles.headerBandInner} />
             <Image
@@ -53,6 +53,17 @@ export function CustomModal({
             {children ? <View style={styles.childrenContainer}>{children}</View> : null}
 
             <View style={styles.buttonContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primaryButton,
+                  pressed && styles.primaryButtonPressed,
+                  type === 'warning' && styles.primaryButtonWarning,
+                ]}
+                onPress={onPrimaryPress}
+              >
+                <Text style={styles.buttonText}>{primaryButtonText}</Text>
+              </Pressable>
               {secondaryButtonText && onSecondaryPress && (
                 <Pressable
                   style={({ pressed }) => [
@@ -67,17 +78,6 @@ export function CustomModal({
                   </Text>
                 </Pressable>
               )}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.button,
-                  styles.primaryButton,
-                  pressed && styles.primaryButtonPressed,
-                  type === 'warning' && styles.primaryButtonWarning,
-                ]}
-                onPress={onPrimaryPress}
-              >
-                <Text style={styles.buttonText}>{primaryButtonText}</Text>
-              </Pressable>
             </View>
           </View>
         </View>
@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    gap: Spacing.md,
+    flexDirection: 'column',
+    gap: Spacing.sm,
     width: '100%',
   },
   button: {
-    flex: 1,
-    height: 50,
+    width: '100%',
+    height: 56,
     borderRadius: Radii.button,
     justifyContent: 'center',
     alignItems: 'center',

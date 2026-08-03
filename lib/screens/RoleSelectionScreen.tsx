@@ -114,30 +114,15 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
             <View style={styles.otherRow}>
               <TextInput
                 autoFocus
-                placeholder="Tell us your role"
+                placeholder="Tell us your role and press enter..."
                 placeholderTextColor="#9CA3AF"
-                style={styles.otherInput}
+                style={[styles.otherInput, { flex: 1 }]}
                 value={otherText}
                 onChangeText={setOtherText}
                 editable={!isSaving}
                 onSubmitEditing={handleOtherSubmit}
                 returnKeyType="done"
               />
-              <Pressable
-                accessibilityRole="button"
-                disabled={isSaving || otherText.trim().length === 0}
-                onPress={handleOtherSubmit}
-                style={[
-                  styles.otherSubmitButton,
-                  (isSaving || otherText.trim().length === 0) && styles.otherSubmitDisabled,
-                ]}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.otherSubmitText}>Continue</Text>
-                )}
-              </Pressable>
             </View>
           ) : null}
         </View>

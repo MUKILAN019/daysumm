@@ -164,7 +164,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               </View>
               <Text style={styles.heroTitle}>Daily digest time</Text>
               <Text style={styles.heroSubtitle}>
-                Your owl rings once a day with everything you logged.
+                Your cat rings once a day with everything you logged.
               </Text>
             </View>
 
@@ -178,15 +178,17 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
                 style={({ pressed }) => [styles.timeRow, pressed && styles.timeRowPressed]}
               >
                 <View style={styles.timeIconWrap}>
-                  <Clock size={20} color={Colors.PrimaryDeep} />
+                  <Clock size={22} color={Colors.PrimaryDeep} strokeWidth={2.5} />
                 </View>
                 <View style={styles.timeTextCol}>
                   <Text style={styles.timeValue}>{timeLabel}</Text>
-                  <Text style={styles.timeCaption}>
+                  <Text style={[styles.timeCaption, isDirty && { color: Colors.Warning, fontWeight: '600' }]}>
                     {isDirty ? 'Unsaved — tap save to confirm' : 'Currently scheduled'}
                   </Text>
                 </View>
-                <ChevronRight size={20} color={Colors.TextMuted} />
+                <View style={styles.editBadge}>
+                   <Text style={styles.editBadgeText}>Edit</Text>
+                </View>
               </Pressable>
 
               {showPicker && (
@@ -210,7 +212,10 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 
             {/* System settings info */}
             <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>Not receiving notifications?</Text>
+              <View style={styles.infoHeader}>
+                 <Info size={20} color={Colors.Primary} />
+                 <Text style={styles.infoTitle}>Not receiving notifications?</Text>
+              </View>
               <Text style={styles.infoBody}>
                 Enable them for DaySumm in your device settings:
               </Text>
@@ -354,25 +359,40 @@ const styles = StyleSheet.create({
     borderColor: Colors.Primary,
   },
   timeIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.PrimaryTint,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
   timeTextCol: { flex: 1 },
   timeValue: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
     color: Colors.TextPrimary,
     letterSpacing: 0.5,
   },
   timeCaption: {
     ...Typography.Secondary,
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.TextMuted,
     marginTop: 2,
+  },
+  editBadge: {
+    backgroundColor: Colors.Surface,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+  },
+  editBadgeText: {
+    ...Typography.Secondary,
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.TextPrimary,
   },
   noteRow: {
     flexDirection: 'row',
@@ -397,11 +417,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.Border,
     borderRadius: Radii.card,
-    padding: 16,
-    gap: 6,
+    padding: 18,
+    gap: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   infoTitle: { ...Typography.Body, fontWeight: '700', color: Colors.TextPrimary },
-  infoBody: { ...Typography.Secondary, color: Colors.TextSecondary, lineHeight: 19 },
+  infoBody: { ...Typography.Secondary, color: Colors.TextSecondary, lineHeight: 20 },
   pathBox: {
     marginTop: 6,
     backgroundColor: Colors.Background,

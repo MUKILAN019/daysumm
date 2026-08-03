@@ -61,17 +61,17 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Mascot perfectly peeking from behind the text box */}
-        <View style={{ alignItems: 'center', marginBottom: -16, zIndex: 10 }}>
-          <Image
-            source={require('../../assets/cat-peek.png')}
-            style={{ width: 100, height: 100 }}
-            resizeMode="contain"
-          />
-        </View>
-
         {/* Editor */}
-        <View style={[styles.inputCard, focused && styles.inputCardFocused, { zIndex: 1 }]}>
+        <View style={[styles.inputCard, focused && styles.inputCardFocused]}>
+          {/* Mascot inside the text box */}
+          <View style={{ position: 'absolute', bottom: 0, right: 16, zIndex: 0, opacity: 0.75 }} pointerEvents="none">
+            <Image
+              source={require('../../assets/cat-peek.png')}
+              style={{ width: 100, height: 80 }}
+              resizeMode="contain"
+            />
+          </View>
+
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>YOUR ENTRY</Text>
             <View
@@ -92,7 +92,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
           </View>
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, { zIndex: 1 }]}
             multiline
             placeholder="What did you finish, decide, or promise today?"
             placeholderTextColor={Colors.TextMuted}
@@ -103,15 +103,16 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             textAlignVertical="top"
           />
 
-          {isEmpty ? (
-            <View style={styles.hintRow}>
-              <View style={styles.hintDot} />
-              <Text style={styles.hintText}>
-                Tip: start with a verb, like shipped, decided, or blocked.
-              </Text>
-            </View>
-          ) : null}
         </View>
+
+        {isEmpty ? (
+          <View style={styles.hintRow}>
+            <View style={styles.hintDot} />
+            <Text style={styles.hintText}>
+              Tip: start with a verb, like shipped, decided, or blocked.
+            </Text>
+          </View>
+        ) : null}
 
         {/* Tags */}
         <View style={styles.tagsBlock}>
@@ -284,10 +285,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.Divider,
+    marginTop: 4,
+    marginBottom: 4,
+    paddingHorizontal: 8,
   },
   hintDot: {
     width: 6,

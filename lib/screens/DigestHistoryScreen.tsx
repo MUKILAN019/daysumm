@@ -500,19 +500,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   topBand: {
-    backgroundColor: Colors.PrimaryTint,
+    backgroundColor: Colors.Surface,
     paddingTop: 10,
     paddingBottom: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(16, 185, 129, 0.15)',
+    borderBottomColor: Colors.Border,
   },
   handle: {
     width: 44,
     height: 5,
     borderRadius: 3,
-    backgroundColor: Colors.Primary,
-    opacity: 0.55,
+    backgroundColor: Colors.TextSecondary,
+    opacity: 0.4,
   },
   scrollContent: { flexGrow: 0 },
   scrollContentInner: {

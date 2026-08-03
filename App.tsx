@@ -73,7 +73,7 @@ import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/token
 import { CustomModal } from './lib/components/CustomModal';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
-const SYNC_DEBOUNCE_MS = 60 * 1000; // 60-second debounce for entry-save syncs
+const SYNC_DEBOUNCE_MS = 10 * 1000; // 10-second debounce for entry-save syncs
 const DELETE_UNDO_MS = 4500;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
 
