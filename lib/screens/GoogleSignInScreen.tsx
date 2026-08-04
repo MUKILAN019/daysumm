@@ -1,12 +1,18 @@
+// src/screens/onboarding/GoogleSignInScreen.tsx
+import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
-  Image,
+  Animated,
+  Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { Mic, Sparkles, CalendarDays, ShieldCheck } from 'lucide-react-native';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface GoogleSignInScreenProps {
   onContinue: () => void;
@@ -15,10 +21,16 @@ interface GoogleSignInScreenProps {
   errorMessage?: string | null;
 }
 
-/**
- * Official Google "G" logomark — four-color, per Google's sign-in branding guidelines.
- * Rendered as SVG so no extra image asset is needed.
- */
+const C = {
+  primary: '#6C5CE7',
+  primaryDeep: '#4B3FC4',
+  primaryDark: '#2E2470',
+  tint: '#EFECFE',
+  ink: '#14131A',
+  white: '#FFFFFF',
+  muted: '#6B7280',
+};
+
 function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 48 48">
@@ -42,8 +54,45 @@ function GoogleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
+function Bouncy({
+  children,
+  onPress,
+  disabled,
+  style,
+  accessibilityLabel,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+  style?: any;
+  accessibilityLabel?: string;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (v: number) =>
+    Animated.spring(scale, { toValue: v, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        onPress={onPress}
+        onPressIn={() => to(0.96)}
+        onPressOut={() => to(1)}
+        disabled={disabled}
+        style={style}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 /**
- * Screen 1 — Welcome. Full teal hero, mascot centered, buttons floating on teal.
+ * Landing / welcome screen.
+ * Hero scrolls (nothing can ever hide behind the panel) and the sign-in panel
+ * is a fixed docked card — no fake drag handle, so it never reads as a
+ * draggable drawer that "won't close".
  */
 export function GoogleSignInScreen({
   onContinue,
@@ -51,135 +100,332 @@ export function GoogleSignInScreen({
   isLoading,
   errorMessage,
 }: GoogleSignInScreenProps) {
+  const enter = useRef(new Animated.Value(0)).current;
+  const panel = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.stagger(120, [
+      Animated.timing(enter, {
+        toValue: 1,
+        duration: 620,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(panel, { toValue: 1, useNativeDriver: true, speed: 12, bounciness: 5 }),
+    ]).start();
+
+    Animated.loop(
+      Animated.timing(pulse, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, [enter, panel, pulse]);
+
+  const heroStyle = {
+    opacity: enter,
+    transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [22, 0] }) }],
+  };
+
+  const mascotStyle = {
+    transform: [
+      { scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) },
+    ],
+  };
+
+  const haloStyle = {
+    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.28, 0] }),
+    transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.35] }) }],
+  };
+
+  const panelStyle = {
+    opacity: panel,
+    transform: [{ translateY: panel.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.hero}>
-        <View style={styles.mascotHalo}>
-          <Image
-            source={require('../../assets/cat-face.png')}
-            style={styles.mascot}
-            resizeMode="contain"
-          />
-        </View>
-        <Text style={styles.brand}>DaySumm</Text>
-        <Text style={styles.tagline}>Your workday, reconstructed in 10 seconds</Text>
-      </View>
+      <AmbientBackground isDarkTheme />
 
-      <View style={styles.actions}>
+      {/* ---------------- HERO (scrollable, never clipped) ---------------- */}
+      <ScrollView
+        style={styles.heroScroll}
+        contentContainerStyle={styles.heroContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Animated.View style={[styles.hero, heroStyle]}>
+          <View style={styles.mascotStage}>
+            <Animated.View pointerEvents="none" style={[styles.halo, haloStyle]} />
+            <View pointerEvents="none" style={styles.mascotPad} />
+            <Animated.Image
+              source={require('../../assets/cat-hero.png')}
+              style={[styles.mascot, mascotStyle]}
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text style={styles.brand}>DaySumm</Text>
+          <Text style={styles.tagline}>
+            Speak, jot, forget.{'\n'}Your workday rebuilds itself in 10 seconds.
+          </Text>
+
+          {/* Value rail */}
+          <View style={styles.rail}>
+            <View style={styles.railItem}>
+              <View style={styles.railIcon}>
+                <Mic size={16} color={C.white} strokeWidth={2} />
+              </View>
+              <Text style={styles.railText}>Talk it{'\n'}out</Text>
+            </View>
+            <View style={styles.railDivider} />
+            <View style={styles.railItem}>
+              <View style={styles.railIcon}>
+                <Sparkles size={16} color={C.white} strokeWidth={2} />
+              </View>
+              <Text style={styles.railText}>AI{'\n'}summary</Text>
+            </View>
+            <View style={styles.railDivider} />
+            <View style={styles.railItem}>
+              <View style={styles.railIcon}>
+                <CalendarDays size={16} color={C.white} strokeWidth={2} />
+              </View>
+              <Text style={styles.railText}>Replay{'\n'}any day</Text>
+            </View>
+          </View>
+        </Animated.View>
+      </ScrollView>
+
+      {/* ---------------- DOCKED ACTION PANEL ---------------- */}
+      <Animated.View style={[styles.panel, panelStyle]}>
+        <Text style={styles.panelTitle}>Start your first summary</Text>
+        <Text style={styles.panelSub}>Free forever. No card, no setup.</Text>
+
         {errorMessage ? (
           <View style={styles.errorChip}>
             <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
+        <Bouncy
           onPress={onContinue}
           disabled={isLoading}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-            isLoading && styles.buttonDisabled,
-          ]}
+          accessibilityLabel="Continue with Google"
+          style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
         >
-          <View style={styles.googleButtonContent}>
-            <GoogleLogo size={20} />
+          <View style={styles.buttonRow}>
+            <View style={styles.googleChip}>
+              <GoogleLogo size={18} />
+            </View>
             <Text style={styles.primaryButtonText}>Continue with Google</Text>
+            <View style={styles.inlineSpinner} />
           </View>
-        </Pressable>
+        </Bouncy>
 
-        <Pressable
-          accessibilityRole="button"
+        <Bouncy
           onPress={onContinueAsGuest}
           disabled={isLoading}
-          style={({ pressed }) => [
-            styles.ghostButton,
-            pressed && styles.ghostButtonPressed,
-            isLoading && styles.buttonDisabled,
-          ]}
+          accessibilityLabel="Continue as guest"
+          style={[styles.ghostButton, isLoading && styles.buttonDisabled]}
         >
           <Text style={styles.ghostButtonText}>Continue as Guest</Text>
-        </Pressable>
+        </Bouncy>
 
-        {isLoading ? <ActivityIndicator color="#FFFFFF" style={styles.spinner} /> : null}
-      </View>
+        {isLoading ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator size="small" color={C.muted} />
+            <Text style={styles.loadingText}>Signing you in…</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.trustRow}>
+          <ShieldCheck size={14} color={C.muted} strokeWidth={2} />
+          <Text style={styles.trustText}>Your entries stay private on your device</Text>
+        </View>
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#6C5CE7' },
-  hero: {
-    flex: 1,
-    alignItems: 'center',
+  container: { flex: 1, backgroundColor: C.primaryDeep },
+
+  /* Hero */
+  heroScroll: { flex: 1 },
+  heroContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 18,
   },
-  mascotHalo: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  hero: { alignItems: 'center', paddingHorizontal: 24 },
+
+  mascotStage: {
+    width: 230,
+    height: 200,
+    marginTop: 0,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
+    justifyContent: 'flex-end',
   },
-  mascot: { width: 140, height: 140 },
-  brand: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.3,
+  halo: {
+    position: 'absolute',
+    bottom: 6,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
+  mascotPad: {
+    position: 'absolute',
+    bottom: 4,
+    width: 150,
+    height: 18,
+    borderRadius: 999,
+    backgroundColor: 'rgba(20,19,26,0.18)',
+  },
+  mascot: { width: 200, height: 200 },
+
+  brand: { marginTop: 10, fontSize: 38, fontWeight: '800', color: C.white, letterSpacing: 0.2 },
   tagline: {
     marginTop: 8,
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.85)',
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(255,255,255,0.82)',
     textAlign: 'center',
   },
-  actions: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  errorChip: {
-    backgroundColor: 'rgba(239,68,68,0.18)',
-    borderRadius: 12,
-    paddingVertical: 8,
+
+  /* Value rail */
+  rail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 22,
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    marginBottom: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    alignSelf: 'stretch',
   },
-  errorText: {
-    color: '#FEE2E2',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  primaryButton: {
-    minHeight: 54,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+  railItem: { flex: 1, alignItems: 'center', gap: 8 },
+  railIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
   },
-  primaryButtonPressed: { backgroundColor: '#F3F4F6' },
-  buttonDisabled: { opacity: 0.7 },
-  googleButtonContent: {
+  railText: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 11.5,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+  railDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.16)' },
+
+  /* Docked action panel */
+  panel: {
+    backgroundColor: C.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 30,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 18,
+  },
+  panelTitle: { fontSize: 19, fontWeight: '800', color: C.ink, textAlign: 'center' },
+  panelSub: {
+    fontSize: 13.5,
+    color: C.muted,
+    textAlign: 'center',
+    marginTop: -6,
+    marginBottom: 2,
+  },
+
+  errorChip: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  errorText: { color: '#B91C1C', fontSize: 13.5, textAlign: 'center' },
+
+  primaryButton: {
+    minHeight: 56,
+    borderRadius: 999,
+    backgroundColor: C.primary,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+    shadowColor: C.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  googleChip: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.white,
+  },
+  inlineSpinner: { width: 36, alignItems: 'center' },
+
+  ghostButton: {
+    minHeight: 52,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.tint,
+  },
+  ghostButtonText: { fontSize: 15, fontWeight: '700', color: C.primaryDark },
+  buttonDisabled: { opacity: 0.65 },
+
+  trustRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 6,
+    marginTop: 2,
   },
-  primaryButtonText: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  ghostButton: {
-    minHeight: 48,
-    borderRadius: 999,
+  trustText: { fontSize: 12, color: C.muted },
+  loadingRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.7)',
+    gap: 8,
+    paddingVertical: 6,
   },
-  ghostButtonPressed: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  ghostButtonText: { fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
-  spinner: { marginTop: 8 },
+  loadingText: {
+    fontSize: 13,
+    color: C.muted,
+    fontWeight: '500',
+  },
 });

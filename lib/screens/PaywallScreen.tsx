@@ -14,6 +14,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface PaywallScreenProps {
   role: string | null;
@@ -94,6 +95,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader title="Upgrade to Pro" onBack={onBack} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} bounces={false}>
@@ -101,9 +103,10 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         <View style={styles.hero}>
           <View style={styles.mascotMedallion}>
             <View style={styles.glowAura} />
-            <Sparkles size={32} color={Colors.ProGold} style={styles.star1} strokeWidth={2} />
-            <Star size={22} color={Colors.ProGold} style={styles.star2} strokeWidth={2.5} fill={Colors.ProGold} />
-            <Sparkles size={28} color={Colors.ProGold} style={styles.star3} strokeWidth={2.5} />
+            <Sparkles size={28} color={Colors.ProGold} style={styles.star1} strokeWidth={2} />
+            <Star size={18} color={Colors.ProGold} style={styles.star2} strokeWidth={2.5} fill={Colors.ProGold} />
+            <Sparkles size={24} color={Colors.ProGold} style={styles.star3} strokeWidth={2.5} />
+            <Star size={16} color={Colors.ProGold} style={styles.star4} strokeWidth={2} fill={Colors.ProGold} />
             <Image
               source={require('../../assets/cat-king.png')}
               style={styles.mascotIcon}
@@ -219,8 +222,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
   },
   mascotMedallion: {
-    width: 180,
-    height: 180,
+    width: 220,
+    height: 220,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xs,
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#FFF8D6', // Very soft glowing gold
+    backgroundColor: '#FFF8D6',
     shadowColor: Colors.ProGold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
@@ -239,23 +242,30 @@ const styles = StyleSheet.create({
   },
   star1: {
     position: 'absolute',
-    top: 15,
-    left: 20,
+    top: 20,
+    left: 30,
     transform: [{ rotate: '-10deg' }],
     zIndex: 2,
   },
   star2: {
     position: 'absolute',
-    top: 40,
-    right: 15,
+    top: 30,
+    right: 28,
     transform: [{ rotate: '20deg' }],
     zIndex: 2,
   },
   star3: {
     position: 'absolute',
     bottom: 30,
-    left: 5,
+    left: 24,
     transform: [{ rotate: '15deg' }],
+    zIndex: 2,
+  },
+  star4: {
+    position: 'absolute',
+    bottom: 40,
+    right: 30,
+    transform: [{ rotate: '-15deg' }],
     zIndex: 2,
   },
   mascotIcon: { width: 144, height: 144, zIndex: 5 },

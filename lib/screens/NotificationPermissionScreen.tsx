@@ -3,25 +3,38 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Clock, Check } from 'lucide-react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface NotificationPermissionScreenProps {
   onContinue: (time: string) => Promise<void>;
 }
 
-/**
- * Screen 3 — Notifications. Teal top + white sheet, with cat-peek
- * peeking UP over the sheet edge, bridging the two zones.
- */
+const C = {
+  primary: '#6C5CE7',
+  primaryDeep: '#4B3FC4',
+  primaryDark: '#2E2470',
+  tint: '#EFECFE',
+  ink: '#111827',
+  body: '#4B5563',
+  line: '#E5E7EB',
+  white: '#FFFFFF',
+  muted: '#9CA3AF',
+};
+
+const TOP_HEIGHT = 148;
+
+/** Screen 3 — Notifications. Indigo top + white sheet, cat peeking UP over the sheet edge. */
 export function NotificationPermissionScreen({ onContinue }: NotificationPermissionScreenProps) {
   const [isRequesting, setIsRequesting] = useState(false);
-  
-  // Default to 5:00 PM
+
   const defaultDate = new Date();
   defaultDate.setHours(17, 0, 0, 0);
   const [date, setDate] = useState(defaultDate);
@@ -30,37 +43,31 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
   async function handleContinue() {
     if (isRequesting) return;
     setIsRequesting(true);
-    
-    // Format to HH:mm string
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
-    const timeString = `${hours}:${minutes}`;
-    
     try {
-      await onContinue(timeString);
+      await onContinue(`${hours}:${minutes}`);
     } finally {
       setIsRequesting(false);
     }
   }
 
-  const onChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
+  const onChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     setShowPicker(false);
-    setDate(currentDate);
-  };
-
-  const showTimepicker = () => {
-    setShowPicker(true);
+    setDate(selectedDate || date);
   };
 
   return (
     <ScreenTransition style={styles.container}>
+      <AmbientBackground isDarkTheme />
+
       <View style={styles.top}>
         <View style={styles.progressRow}>
           <View style={[styles.progressDot, styles.progressDotDone]} />
           <View style={[styles.progressDot, styles.progressDotDone]} />
           <View style={[styles.progressDot, styles.progressDotActive]} />
         </View>
+        <Text style={styles.headerStep}>Step 3 of 3</Text>
       </View>
 
       <View style={styles.sheet}>
@@ -70,58 +77,73 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
           resizeMode="contain"
         />
 
-        <View style={styles.contentBlock}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.sheetContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.eyebrow}>Almost done</Text>
           <Text style={styles.title}>Get your digest the moment it's ready</Text>
           <Text style={styles.subtitle}>
-            DaySumm sends your daily digest at the end of your workday. Turn on notifications
-            so you don't have to keep checking the app.
+            DaySumm sends your daily digest at the end of your workday — one quiet ping, no
+            checking the app.
           </Text>
 
           <View style={styles.featureList}>
             <FeatureRow label="One quiet ping a day, right when your digest is ready" />
             <FeatureRow label="Never miss a summary of your work" />
-            <FeatureRow label="Choose your own time anytime in settings" />
+            <FeatureRow label="Change the time anytime in settings" />
           </View>
-          
-          <View style={styles.timePickerContainer}>
-            <Text style={styles.timePickerLabel}>Select preferred time:</Text>
-            <Pressable style={styles.timeDisplayButton} onPress={showTimepicker}>
-               <Text style={styles.timeDisplayText}>
-                 {date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-               </Text>
-            </Pressable>
-            
-            {showPicker && (
-              <DateTimePicker
-                testID="dateTimePicker"
-                value={date}
-                mode="time"
-                is24Hour={false}
-                display="default"
-                onChange={onChange}
-                style={styles.datePicker}
-              />
-            )}
-          </View>
-        </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={handleContinue}
-          disabled={isRequesting}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-            isRequesting && styles.buttonDisabled,
-          ]}
-        >
-          {isRequesting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.buttonText}>Enable Notifications</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowPicker(true)}
+            style={({ pressed }) => [styles.timeRow, pressed && styles.timeRowPressed]}
+          >
+            <View style={styles.timeIcon}>
+              <Clock size={18} color={C.primary} strokeWidth={2} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.timeLabel}>Daily digest time</Text>
+              <Text style={styles.timeHint}>Tap to change</Text>
+            </View>
+            <View style={styles.timePill}>
+              <Text style={styles.timePillText}>
+                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          </Pressable>
+
+          {showPicker && (
+            <DateTimePicker
+              testID="dateTimePicker"
+              value={date}
+              mode="time"
+              is24Hour={false}
+              display="default"
+              onChange={onChange}
+            />
           )}
-        </Pressable>
+        </ScrollView>
+
+        <View style={styles.actionBar}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={handleContinue}
+            disabled={isRequesting}
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+              isRequesting && styles.buttonDisabled,
+            ]}
+          >
+            {isRequesting ? (
+              <ActivityIndicator color={C.white} />
+            ) : (
+              <Text style={styles.buttonText}>Enable Notifications</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     </ScreenTransition>
   );
@@ -131,7 +153,7 @@ function FeatureRow({ label }: { label: string }) {
   return (
     <View style={styles.featureRow}>
       <View style={styles.checkDot}>
-        <View style={styles.checkMark} />
+        <Check size={12} color={C.primary} strokeWidth={3} />
       </View>
       <Text style={styles.featureText}>{label}</Text>
     </View>
@@ -139,138 +161,133 @@ function FeatureRow({ label }: { label: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#6C5CE7' },
-  top: {
-    height: 140,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 48,
-  },
+  container: { flex: 1, backgroundColor: C.primaryDeep },
+
+  top: { height: TOP_HEIGHT, alignItems: 'center', paddingTop: 52 },
   progressRow: { flexDirection: 'row', gap: 6 },
-  progressDot: {
-    width: 24,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+  progressDot: { width: 24, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' },
+  progressDotActive: { backgroundColor: C.white },
+  progressDotDone: { backgroundColor: C.white },
+  headerStep: {
+    marginTop: 12,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
-  progressDotActive: { backgroundColor: '#FFFFFF' },
-  progressDotDone: { backgroundColor: '#FFFFFF' },
+
   sheet: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.white,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    paddingHorizontal: 24,
-    paddingTop: 64,
-    paddingBottom: 32,
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   peek: {
     position: 'absolute',
-    top: -48,
-    width: 130,
+    top: -52,
+    width: 128,
     height: 104,
     alignSelf: 'center',
+    zIndex: 5,
   },
-  contentBlock: {
+  sheetContent: {
+    paddingHorizontal: 24,
+    paddingTop: 68,
+    paddingBottom: 16,
     alignItems: 'center',
-    marginTop: 8,
   },
+
   eyebrow: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
     letterSpacing: 1.2,
-    color: '#6C5CE7',
+    color: C.primary,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111827',
+    color: C.ink,
     marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     lineHeight: 21,
-    color: '#4B5563',
-    marginBottom: 24,
+    color: C.body,
+    marginBottom: 22,
     textAlign: 'center',
   },
-  featureList: {
-    alignSelf: 'stretch',
-    gap: 12,
-    paddingHorizontal: 4,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+
+  featureList: { alignSelf: 'stretch', gap: 12 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkDot: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#EFECFE',
-    borderColor: '#6C5CE7',
+    backgroundColor: C.tint,
+    borderColor: C.primary,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkMark: {
-    width: 8,
-    height: 4,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: '#6C5CE7',
-    transform: [{ rotate: '-45deg' }],
-    marginTop: -2,
+  featureText: { flex: 1, fontSize: 14, lineHeight: 20, color: '#374151', fontWeight: '500' },
+
+  timeRow: {
+    alignSelf: 'stretch',
+    marginTop: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: C.line,
+    backgroundColor: C.white,
   },
-  featureText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  timePickerContainer: {
-    marginTop: 24,
+  timeRowPressed: { backgroundColor: '#F9FAFB' },
+  timeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: C.tint,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 12,
   },
-  timePickerLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  timeDisplayButton: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
+  timeLabel: { fontSize: 15, fontWeight: '700', color: C.ink },
+  timeHint: { fontSize: 12, color: C.muted, marginTop: 2 },
+  timePill: {
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 999,
+    backgroundColor: C.tint,
   },
-  timeDisplayText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  datePicker: {
-    width: 100,
+  timePillText: { fontSize: 15, fontWeight: '800', color: C.primaryDark },
+
+  actionBar: {
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 30,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    backgroundColor: C.white,
   },
   button: {
     width: '100%',
     minHeight: 54,
     borderRadius: 999,
-    backgroundColor: '#6C5CE7',
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 24,
+    shadowColor: C.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  buttonPressed: { backgroundColor: '#4F3FD6' },
+  buttonPressed: { backgroundColor: C.primaryDeep },
   buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  buttonText: { color: C.white, fontSize: 16, fontWeight: '700' },
 });

@@ -15,6 +15,7 @@ import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
+import { AmbientBackground } from '../components/AmbientBackground';
 import type { Digest } from '../functions/generateDigest';
 
 interface DigestHistoryScreenProps {
@@ -216,6 +217,7 @@ export function DigestHistoryScreen({
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       {/* Calendar Header */}
       <View style={styles.calendarHeader}>
         <View style={styles.monthTitleRow}>

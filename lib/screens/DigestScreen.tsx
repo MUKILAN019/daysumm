@@ -5,6 +5,7 @@ import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { Wand2 } from 'lucide-react-native';
 import { StreakBadge } from '../components/StreakBadge';
+import { AmbientBackground } from '../components/AmbientBackground';
 import type { Digest } from '../functions/generateDigest';
 
 interface DigestScreenProps {
@@ -28,6 +29,7 @@ export function DigestScreen({
 }: DigestScreenProps) {
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader
         title="Daily Digest"
         subtitle="Your day at a glance"

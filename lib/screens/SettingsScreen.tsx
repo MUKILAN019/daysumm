@@ -5,6 +5,7 @@ import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-nati
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface SettingsScreenProps {
   currentStreak: number;
@@ -73,6 +74,7 @@ export function SettingsScreen({
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader title="Profile" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 

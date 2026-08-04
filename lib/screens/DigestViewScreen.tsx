@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GlobalHeader } from '../components/GlobalHeader';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 import { DigestCard } from '../components/DigestCard';
 import { fetchDigestRecordById } from '../firestore/digestRecords';
@@ -52,6 +53,7 @@ export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenPro
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader title="Digest" onBack={onBack} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>

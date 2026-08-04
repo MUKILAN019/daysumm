@@ -5,6 +5,7 @@ import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { fetchUserSettings, updateUserRole } from '../firestore/userSettings';
 import { CustomModal, type CustomModalType } from '../components/CustomModal';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface PersonalInfoScreenProps {
   onBack: () => void;
@@ -60,6 +61,7 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader title="Profile Settings" subtitle="Manage your account details" onBack={onBack} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         

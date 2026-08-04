@@ -17,6 +17,7 @@ import { CustomModal } from '../components/CustomModal';
 import { LocalEntry } from '../db/entries';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface HomeScreenProps {
   userName?: string;
@@ -191,13 +192,14 @@ export function HomeScreen({
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <GlobalHeader 
         title="Voice Log" 
         subtitle="Record your thoughts"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
       />
       <FlatList
-        style={styles.container}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.content}
         data={entries}
         keyExtractor={(entry) => entry.localId}
@@ -379,8 +381,8 @@ const styles = StyleSheet.create({
   captureArea: {
     width: '100%',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
-    minHeight: 280,
+    marginBottom: Spacing.md,
+    minHeight: 240,
   },
   micContainer: {
     width: 120,
@@ -472,7 +474,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+    marginTop: 0,
   },
   emptyState: {
     paddingVertical: Spacing.xl,

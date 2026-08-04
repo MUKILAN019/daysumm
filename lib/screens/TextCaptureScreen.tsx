@@ -13,6 +13,7 @@ import {
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
+import { AmbientBackground } from '../components/AmbientBackground';
 
 interface TextCaptureScreenProps {
   currentStreak: number;
@@ -49,6 +50,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <AmbientBackground />
       <GlobalHeader
         title="Quick Log"
         subtitle="Jot down your recent work"
@@ -56,7 +58,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
       />
 
       <ScrollView
-        style={styles.scroll}
+        style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
