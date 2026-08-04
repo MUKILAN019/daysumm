@@ -194,6 +194,7 @@ export default function App() {
       require('./assets/cat-peek.png'),
       require('./assets/cat-lying-waiting.png'),
       require('./assets/cat-king.png'),
+      require('./assets/cat-widget-cheer.png'),
     ]).catch((err) => console.warn('Asset preload failed', err));
 
     initDb()
