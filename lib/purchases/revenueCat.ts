@@ -1,7 +1,6 @@
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
-const REVENUECAT_ANDROID_API_KEY = 'test_lHwrIpOJNWvNYEKNgXxdGItDPFW';
-
+const REVENUECAT_ANDROID_API_KEY = 'goog_NhNVzyxiaogziujZxJiYSAmSVGm';
 let configuredUid: string | null = null;
 
 export function configureRevenueCat(appUserID: string): void {
