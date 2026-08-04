@@ -16,6 +16,10 @@ const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
 const REVENUECAT_SECRET_API_KEY = defineSecret('REVENUECAT_SECRET_API_KEY');
 
+// Hosted in Firebase Storage — public read, permanent URL
+const NOTIFICATION_IMAGE_URL =
+  'https://firebasestorage.googleapis.com/v0/b/daysumm.firebasestorage.app/o/assets%2Fcat-bell.png?alt=media&token=033a8a93-2ef7-4312-b186-4f62f5c0e0a5';
+
 const openRouterModels = [
   'google/gemini-2.5-flash-lite',
   'openai/gpt-5-mini',
@@ -95,10 +99,10 @@ async function getDigestFromOpenRouter(
     typeof content === 'string'
       ? content
       : Array.isArray(content)
-      ? content
+        ? content
           .map((item) => (typeof item === 'string' ? item : item.text ?? ''))
           .join('\n')
-      : ''
+        : ''
   ).trim();
 }
 
@@ -213,8 +217,8 @@ async function buildAndStoreDigestForUser(
         createdAt instanceof Date
           ? createdAt
           : typeof createdAt?.toDate === 'function'
-          ? createdAt.toDate()
-          : new Date(createdAt);
+            ? createdAt.toDate()
+            : new Date(createdAt);
 
       return date >= startOfDay && date <= endOfDay;
     });
@@ -230,13 +234,13 @@ async function buildAndStoreDigestForUser(
     const text = typeof entry.textEn === 'string' && entry.textEn.trim()
       ? entry.textEn.trim()
       : typeof entry.text === 'string'
-      ? entry.text.trim()
-      : '';
-    
+        ? entry.text.trim()
+        : '';
+
     if (!text) return;
 
     const tags = Array.isArray(entry.tags) ? entry.tags : [];
-    
+
     if (tags.length === 0) {
       uncategorized.push(text);
       return;
@@ -256,7 +260,7 @@ async function buildAndStoreDigestForUser(
   if (decisions.length) entryText += `\nDecisions Made:\n- ${decisions.join('\n- ')}\n`;
   if (notes.length) entryText += `\nContext & Notes:\n- ${notes.join('\n- ')}\n`;
   if (uncategorized.length) entryText += `\nOther Entries:\n- ${uncategorized.join('\n- ')}\n`;
-  
+
   entryText = entryText.trim();
 
   const entriesFingerprint = createHash('sha256').update(entryText).digest('hex');
@@ -400,11 +404,28 @@ async function buildAndStoreDigestForUser(
       await messaging.send({
         token: fcmToken,
         notification: {
-          title: 'Your digest is ready',
-          body: `${decisionsCount} decision${decisionsCount === 1 ? '' : 's'} · ${actionItemsCount} action item${actionItemsCount === 1 ? '' : 's'}`,
+          title: 'Your daily digest is ready!',
+          body: `${decisionsCount} decision${decisionsCount === 1 ? '' : 's'} · ${actionItemsCount} action item${actionItemsCount === 1 ? '' : 's'} — tap to read`,
+          imageUrl: NOTIFICATION_IMAGE_URL,
         },
         data: { digestRecordId, dateKey },
-        android: { priority: 'high' },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'daysumm_digest',
+            color: '#6C5CE7',
+            imageUrl: NOTIFICATION_IMAGE_URL,
+            sound: 'default',
+            vibrateTimingsMillis: [0, 250, 250, 250],
+          },
+        },
+        apns: {
+          payload: {
+            aps: {
+              sound: 'default',
+            },
+          },
+        },
       });
 
       await dailyUsageRef.set({ pushSent: true }, { merge: true });
@@ -817,14 +838,14 @@ export const cleanupGuestAccounts = onSchedule('every 1 hours', async () => {
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
   let pageToken: string | undefined;
-  
+
   do {
     const listUsersResult = await auth.listUsers(1000, pageToken);
     pageToken = listUsersResult.pageToken;
 
     for (const user of listUsersResult.users) {
       const isGuest = user.providerData.length === 0;
-      
+
       if (isGuest && user.metadata.creationTime) {
         const creationTime = new Date(user.metadata.creationTime).getTime();
         if (now - creationTime > TWENTY_FOUR_HOURS) {
