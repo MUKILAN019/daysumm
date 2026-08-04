@@ -1,5 +1,5 @@
 import { PermissionsAndroid, Platform } from 'react-native';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, getToken, onTokenRefresh } from '@react-native-firebase/messaging';
 import { updateFcmToken } from '../firestore/userSettings';
 
 async function hasNotificationPermission(): Promise<boolean> {
@@ -25,7 +25,8 @@ export async function syncFcmToken(uid: string, storedToken?: string | null): Pr
   }
 
   try {
-    const currentToken = await messaging().getToken();
+    const messaging = getMessaging();
+    const currentToken = await getToken(messaging);
 
     if (currentToken && currentToken !== storedToken) {
       await updateFcmToken(uid, currentToken);
@@ -40,7 +41,8 @@ export async function syncFcmToken(uid: string, storedToken?: string | null): Pr
  * of this app session. Returns an unsubscribe function.
  */
 export function subscribeToTokenRefresh(uid: string): () => void {
-  return messaging().onTokenRefresh(async (newToken) => {
+  const messaging = getMessaging();
+  return onTokenRefresh(messaging, async (newToken) => {
     try {
       await updateFcmToken(uid, newToken);
     } catch (error) {

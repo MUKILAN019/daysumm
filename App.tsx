@@ -43,7 +43,7 @@ import { requestNotificationPermission } from './lib/permissions/requestNotifica
 import { syncFcmToken, subscribeToTokenRefresh } from './lib/notifications/fcmToken';
 import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
 import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
-import messaging from '@react-native-firebase/messaging';
+import { getMessaging, onMessage, onNotificationOpenedApp, getInitialNotification } from '@react-native-firebase/messaging';
 import { DigestViewScreen } from './lib/screens/DigestViewScreen';
 import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
@@ -348,8 +348,10 @@ export default function App() {
   }, [authReady, showGoogleSignIn]);
 
   useEffect(() => {
-    // Case: app was backgrounded, user tapped the notification
-    const unsubscribeOpenedApp = messaging().onNotificationOpenedApp((remoteMessage) => {
+    const messaging = getMessaging();
+    
+    // Case: app was in background, user tapped the notification to foreground it
+    const unsubscribeOpenedApp = onNotificationOpenedApp(messaging, (remoteMessage) => {
       const digestRecordId = extractDigestRecordId(remoteMessage);
       if (digestRecordId) {
         setOpenedDigestRecordId(digestRecordId);
@@ -358,8 +360,7 @@ export default function App() {
     });
 
     // Case: app was fully killed, tapping the notification launched it fresh
-    messaging()
-      .getInitialNotification()
+    getInitialNotification(messaging)
       .then((remoteMessage) => {
         const digestRecordId = extractDigestRecordId(remoteMessage);
         if (digestRecordId) {
@@ -372,7 +373,7 @@ export default function App() {
       });
 
     // Case: app already open in the foreground when the push arrives
-    const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+    const unsubscribeForeground = onMessage(messaging, async (remoteMessage) => {
       const digestRecordId = extractDigestRecordId(remoteMessage);
       if (digestRecordId) {
         setOpenedDigestRecordId(digestRecordId);
