@@ -126,7 +126,6 @@ export default function App() {
     const localEntries = await getTodayEntries(uid);
 
     setEntries(localEntries);
-    console.log('Local SQLite entries', localEntries);
   }
 
   async function refreshEntries() {
@@ -141,17 +140,12 @@ export default function App() {
         networkState.isConnected === true && networkState.isInternetReachable !== false;
 
       if (!isOnline) {
-        console.log(`Sync ${reason} skipped offline`);
         await loadEntries();
         setEntriesRefreshVersion((value) => value + 1);
         return;
       }
 
       const result = await syncEntries();
-
-      if (result.attempted > 0) {
-        console.log(`Sync ${reason}`, result);
-      }
 
       await loadEntries();
       setEntriesRefreshVersion((value) => value + 1);
@@ -169,7 +163,6 @@ export default function App() {
     if (syncDebounceTimerRef.current) {
       clearTimeout(syncDebounceTimerRef.current);
     }
-    console.log(`Sync ${reason} debounced (${SYNC_DEBOUNCE_MS / 1000}s)`);
     syncDebounceTimerRef.current = setTimeout(() => {
       syncDebounceTimerRef.current = null;
       runSync(reason);
@@ -196,7 +189,8 @@ export default function App() {
   useEffect(() => {
     initDb()
       .then(async () => {
-        await cleanupOldLocalEntries();
+        const uid = getAuth().currentUser?.uid;
+        await cleanupOldLocalEntries(uid);
         await refreshEntries();
         const hasSeenSample = await getHasSeenSampleDigest();
         if (!hasSeenSample) {
@@ -293,7 +287,6 @@ export default function App() {
           const creationDate = new Date(user.metadata.creationTime);
           const ageHours = (Date.now() - creationDate.getTime()) / (1000 * 60 * 60);
           if (ageHours > 24) {
-            console.log('Guest account expired (> 24 hours). Signing out.');
             await auth.signOut();
             return; // onAuthStateChanged will fire again with user=null
           }
@@ -310,13 +303,6 @@ export default function App() {
           configureRevenueCat(user.uid);
         } catch (error) {
           console.warn('Failed to sync RevenueCat identity', error);
-        }
-
-        try {
-          const token = await user.getIdToken();
-          console.log('Firebase client auth ID token:', token);
-        } catch (error) {
-          console.warn('Unable to retrieve Firebase auth token', error);
         }
 
         runSync('auth-ready');
@@ -532,7 +518,6 @@ export default function App() {
 
   async function handleNotificationStepContinue(time: string) {
     const granted = await requestNotificationPermission();
-    console.log(`Notification permission ${granted ? 'granted' : 'denied'}`);
 
     const auth = getAuth();
     const uid = auth.currentUser?.uid;
@@ -727,13 +712,8 @@ export default function App() {
           networkState.isConnected === true && networkState.isInternetReachable !== false;
 
         if (isOnline) {
-          const result = await syncPendingDeletedEntries();
-          if (result.attempted > 0) {
-            console.log('Sync delete', result);
-          }
+          await syncPendingDeletedEntries();
           await refreshEntries();
-        } else {
-          console.log('Sync delete skipped offline');
         }
       } else {
         await hardDeleteLocalEntry(entry.localId, uid);

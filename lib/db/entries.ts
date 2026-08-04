@@ -583,16 +583,25 @@ export async function markMilestoneSeen(milestone: number): Promise<void> {
   await setSetting(`seenMilestone_${milestone}`, '1');
 }
 
-export async function cleanupOldLocalEntries(): Promise<void> {
+export async function cleanupOldLocalEntries(uid?: string): Promise<void> {
   await initDb();
   
   const db = await getDb();
   
   // 24 hours ago
   const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  
-  await db.runAsync(`
-    DELETE FROM entries
-    WHERE createdAt < ?
-  `, cutoffTime);
+
+  if (uid) {
+    // Scope to the current user so we don't accidentally remove another
+    // account's unsynced entries on a shared / multi-account device.
+    await db.runAsync(`
+      DELETE FROM entries
+      WHERE createdAt < ? AND uid = ?
+    `, cutoffTime, uid);
+  } else {
+    await db.runAsync(`
+      DELETE FROM entries
+      WHERE createdAt < ?
+    `, cutoffTime);
+  }
 }

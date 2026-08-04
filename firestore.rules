@@ -35,7 +35,9 @@ service cloud.firestore {
     }
 
     match /userStats/{uid} {
-      allow read, write: if ownsUidDocument(uid);
+      // Clients may read their own stats; writes come exclusively from the
+      // Admin SDK (Cloud Functions), which bypasses these rules.
+      allow read: if ownsUidDocument(uid);
     }
 
     match /dailyUsage/{usageId} {

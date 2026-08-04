@@ -39,3 +39,13 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase — contains API keys and OAuth client IDs; provide via EAS Secrets for CI builds
+google-services.json
+
+# Cloud Functions compiled output — generated from functions/src, do not commit
+functions/lib/
+
+# AI tool config directories — may accumulate session data or tokens
+.claude/
+.codex/

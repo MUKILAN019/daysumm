@@ -48,7 +48,6 @@ export async function syncPendingDeletedEntries(): Promise<SyncEntriesResult> {
   const user = getAuth().currentUser;
 
   if (!user) {
-    console.log('Delete sync skipped: no authenticated user');
     return {
       attempted: 0,
       synced: 0,
@@ -59,7 +58,6 @@ export async function syncPendingDeletedEntries(): Promise<SyncEntriesResult> {
   const pendingDeletedEntries = await getPendingDeletedEntries(user.uid);
 
   if (pendingDeletedEntries.length === 0) {
-    console.log('Delete sync skipped: no pending deletions');
     return {
       attempted: 0,
       synced: 0,
@@ -99,7 +97,6 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   const user = getAuth().currentUser;
 
   if (!user) {
-    console.log('Sync skipped: no authenticated user');
     return {
       attempted: 0,
       synced: 0,
@@ -114,7 +111,6 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
   const pendingEntries = await getPendingSyncEntries(user.uid);
 
   if (pendingDeletedEntries.length === 0 && pendingEntries.length === 0) {
-    console.log('Sync skipped: no pending entries');
     return {
       attempted: 0,
       synced: 0,
@@ -128,7 +124,6 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     failed: 0,
   };
 
-  console.log(`Syncing ${pendingEntries.length} pending entries and ${pendingDeletedEntries.length} pending deletions`);
   const deleteResult = await syncDeletedEntriesBatch(user.uid, pendingDeletedEntries);
   result.synced += deleteResult.synced;
   result.failed += deleteResult.failed;
@@ -139,7 +134,6 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     try {
       const entryStillActive = await isEntryActive(entry.localId, user.uid);
       if (!entryStillActive) {
-        console.log('Entry upload skipped because it was deleted during sync', entry.localId);
         result.synced += 1;
         continue;
       }
@@ -167,15 +161,12 @@ async function syncEntriesBatch(): Promise<SyncEntriesResult> {
     }
   }
 
-  console.log('Sync complete', result);
   return result;
 }
 
 async function classifyPendingEntriesBatch(uid: string) {
   const unclassified = await getUnclassifiedEntries(uid);
   if (unclassified.length === 0) return;
-
-  console.log(`Classifying ${unclassified.length} pending entries`);
   
   const entriesToClassify = unclassified.map(e => ({
     localId: e.localId,
