@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { Asset } from 'expo-asset';
 import NetInfo from '@react-native-community/netinfo';
 import {
   getAuth,
@@ -187,6 +188,14 @@ export default function App() {
 
 
   useEffect(() => {
+    // Preload heavy image assets in the background
+    Asset.loadAsync([
+      require('./assets/cat-hero.png'),
+      require('./assets/cat-peek.png'),
+      require('./assets/cat-lying-waiting.png'),
+      require('./assets/cat-king.png'),
+    ]).catch((err) => console.warn('Asset preload failed', err));
+
     initDb()
       .then(async () => {
         const uid = getAuth().currentUser?.uid;
