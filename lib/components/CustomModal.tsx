@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { Modal, View, Text, StyleSheet, Pressable, Image, type ImageSourcePropType } from 'react-native';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 
 export type CustomModalType = 'info' | 'warning' | 'success';
@@ -14,6 +14,7 @@ interface CustomModalProps {
   secondaryButtonText?: string;
   onSecondaryPress?: () => void;
   children?: React.ReactNode;
+  customMascot?: ImageSourcePropType;
 }
 
 export function CustomModal({
@@ -26,6 +27,7 @@ export function CustomModal({
   secondaryButtonText,
   onSecondaryPress,
   children,
+  customMascot,
 }: CustomModalProps) {
   return (
     <Modal
@@ -40,7 +42,7 @@ export function CustomModal({
           <View style={styles.headerBand}>
             <View style={styles.headerBandInner} />
             <Image
-              source={require('../../assets/cat-modal-friendly.png')}
+              source={customMascot ?? require('../../assets/cat-modal-friendly.png')}
               style={styles.mascot}
               resizeMode="contain"
             />

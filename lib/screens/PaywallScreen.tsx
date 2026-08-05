@@ -214,17 +214,12 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         title="You’re all set"
         message="You now have unlimited digests, full history, and faster processing. Enjoy the extra time back."
         primaryButtonText="Let’s go"
+        customMascot={require('../../assets/cat-widget-cheer.png')}
         onPrimaryPress={() => {
           setShowSuccessModal(false);
           onPurchaseSuccess();
         }}
-      >
-        <Image
-          source={require('../../assets/cat-widget-cheer.png')}
-          style={styles.successMascot}
-          resizeMode="contain"
-        />
-      </CustomModal>
+      />
     </View>
   );
 }

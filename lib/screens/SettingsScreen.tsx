@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image, Linking } from 'react-native';
 import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
+import Purchases from 'react-native-purchases';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
@@ -35,11 +36,25 @@ export function SettingsScreen({
     if (signOutBusy) return;
     setSignOutBusy(true);
     try {
+      await Purchases.logOut();
       await signOut(getAuth());
     } catch (error) {
       console.warn('Sign out failed', error);
     } finally {
       setSignOutBusy(false);
+    }
+  }
+
+  async function handleManageSubscription() {
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      if (customerInfo.managementURL) {
+        Linking.openURL(customerInfo.managementURL);
+      } else {
+        Linking.openURL('https://play.google.com/store/account/subscriptions');
+      }
+    } catch (error) {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
     }
   }
 
@@ -110,7 +125,11 @@ export function SettingsScreen({
         <View style={styles.card}>
           <SettingsRow icon={User} label="Personal Information" onPress={handlePersonalInfoPress} />
           <View style={styles.divider} />
-          <SettingsRow icon={Crown} label="Subscription" onPress={isPro ? undefined : onUpgradePress} />
+          <SettingsRow 
+            icon={Crown} 
+            label="Subscription" 
+            onPress={isPro ? handleManageSubscription : onUpgradePress} 
+          />
         </View>
       </View>
 
