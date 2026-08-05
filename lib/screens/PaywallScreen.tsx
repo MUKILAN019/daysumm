@@ -156,7 +156,9 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
             <View style={styles.packageList}>
               {packages.map((pkg) => {
                 const isPurchasing = purchasingPackageId === pkg.identifier;
+                const isMonthly = pkg.packageType === 'MONTHLY';
                 const suffix = pkg.packageType === 'ANNUAL' ? '/year' : '/month';
+                
                 return (
                   <Pressable
                     key={pkg.identifier}
@@ -172,10 +174,18 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                     {isPurchasing ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                      <Text style={styles.packageButtonText}>
-                        Get Pro — {pkg.product.priceString}
-                        {suffix}
-                      </Text>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={styles.packageButtonText}>
+                          {isMonthly 
+                            ? 'Start 7-Day Free Trial' 
+                            : `Get Pro — ${pkg.product.priceString}${suffix}`}
+                        </Text>
+                        {isMonthly && (
+                          <Text style={[styles.fineprint, { color: 'rgba(255,255,255,0.8)', marginTop: 2 }]}>
+                            Then {pkg.product.priceString}{suffix}
+                          </Text>
+                        )}
+                      </View>
                     )}
                   </Pressable>
                 );
