@@ -202,7 +202,6 @@ export function GoogleSignInScreen({
       {/* ---------------- DOCKED ACTION PANEL ---------------- */}
       <Animated.View style={[styles.panel, panelStyle]}>
         <Text style={styles.panelTitle}>Start your first summary</Text>
-        <Text style={styles.panelSub}>Free forever. No card, no setup.</Text>
 
         {errorMessage ? (
           <View style={styles.errorChip}>
@@ -345,13 +344,6 @@ const styles = StyleSheet.create({
     elevation: 18,
   },
   panelTitle: { fontSize: 19, fontWeight: '800', color: C.ink, textAlign: 'center' },
-  panelSub: {
-    fontSize: 13.5,
-    color: C.muted,
-    textAlign: 'center',
-    marginTop: -6,
-    marginBottom: 2,
-  },
 
   errorChip: {
     backgroundColor: '#FEF2F2',

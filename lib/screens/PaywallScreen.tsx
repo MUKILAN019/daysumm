@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -26,7 +26,6 @@ const PRO_FEATURES = [
   'Create unlimited digests — no daily limit',
   'Keep 30 days of digest history',
   'Get your digest first with faster AI processing',
-  'Support an indie app that keeps building',
 ];
 
 function getHeadlineForRole(role: string | null): string {
@@ -49,6 +48,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const purchaseInFlightRef = useRef(false);
 
   const auth = getAuth();
   const user = auth.currentUser;
@@ -74,21 +74,37 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   }, []);
 
   async function handlePurchase(pkg: PurchasesPackage) {
+    if (purchaseInFlightRef.current) return;
+
     if (isGuest) {
       setShowGuestModal(true);
       return;
     }
+
+    purchaseInFlightRef.current = true;
     setPurchasingPackageId(pkg.identifier);
     setErrorMessage(null);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       if (customerInfo.entitlements.active['pro']) setShowSuccessModal(true);
     } catch (error: unknown) {
-      const err = error as { userCancelled?: boolean };
+      const err = error as {
+        userCancelled?: boolean;
+        message?: string;
+        underlyingErrorMessage?: string;
+        debugMessage?: string;
+      };
       if (err.userCancelled) return;
       console.warn('Purchase failed', error);
-      setErrorMessage("That didn't go through. Please try again.");
+
+      const detail = err.underlyingErrorMessage || err.debugMessage || err.message;
+      if (detail && detail.toLowerCase().includes('published')) {
+        setErrorMessage('Google Play needs the app version to be published before purchases can be completed.');
+      } else {
+        setErrorMessage("That didn't go through. Please try again.");
+      }
     } finally {
+      purchaseInFlightRef.current = false;
       setPurchasingPackageId(null);
     }
   }

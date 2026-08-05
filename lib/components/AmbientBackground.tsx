@@ -1,67 +1,118 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Colors } from '../theme/tokens';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated, Easing } from 'react-native';
 
 interface AmbientBackgroundProps {
-  /** If true, uses white/lighter blobs suited for dark backgrounds like the onboarding screens. */
+  /** White/light blobs for dark backgrounds (onboarding). */
   isDarkTheme?: boolean;
+  /** Set false to disable the slow drift animation (e.g. reduced motion). */
+  animated?: boolean;
+  /** Global opacity multiplier for the whole ambient layer. */
+  intensity?: number;
 }
 
-export function AmbientBackground({ isDarkTheme = false }: AmbientBackgroundProps) {
+const PRIMARY = '108,92,231';   // #6C5CE7
+const ACCENT  = '255,122,156';  // #FF7A9C
+const GOLD    = '240,169,59';   // #F0A93B
+
+function useDrift(enabled: boolean, duration: number, delay = 0) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!enabled) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, {
+          toValue: 1,
+          duration,
+          delay,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(v, {
+          toValue: 0,
+          duration,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [enabled, duration, delay, v]);
+  return v;
+}
+
+export function AmbientBackground({
+  isDarkTheme = false,
+  animated = true,
+  intensity = 1,
+}: AmbientBackgroundProps) {
+  const a = useDrift(animated, 9000);
+  const b = useDrift(animated, 11000, 600);
+  const c = useDrift(animated, 13000, 1200);
+
+  const tint = (rgb: string, dark: number, light: number) =>
+    `rgba(${rgb},${(isDarkTheme ? dark : light) * intensity})`;
+
+  const move = (v: Animated.Value, x: number, y: number, s = 0.06) => ({
+    transform: [
+      { translateX: v.interpolate({ inputRange: [0, 1], outputRange: [0, x] }) },
+      { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, y] }) },
+      { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1 + s] }) },
+    ],
+  });
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <View
+      {/* Soft top glow — anchors the header area */}
+      <Animated.View
         style={[
           styles.blob,
           styles.blobTop,
-          {
-            backgroundColor: isDarkTheme
-              ? 'rgba(255,255,255,0.18)'
-              : 'rgba(108,92,231,0.15)', // Colors.Primary
-          },
+          { backgroundColor: tint(PRIMARY, 0.2, 0.16) },
+          move(a, 0, 26, 0.08),
         ]}
       />
-      <View
+      <Animated.View
         style={[
           styles.blob,
           styles.blobRight,
-          {
-            backgroundColor: isDarkTheme
-              ? 'rgba(255,122,156,0.24)'
-              : 'rgba(255,122,156,0.16)', // Colors.Accent
-          },
+          { backgroundColor: tint(ACCENT, 0.24, 0.16) },
+          move(b, -22, 18),
         ]}
       />
-      <View
+      <Animated.View
         style={[
           styles.blob,
           styles.blobLeft,
-          {
-            backgroundColor: isDarkTheme
-              ? 'rgba(240,169,59,0.22)'
-              : 'rgba(240,169,59,0.16)', // Colors.ProGold
-          },
+          { backgroundColor: tint(GOLD, 0.2, 0.14) },
+          move(c, 20, -20),
         ]}
       />
-      <View
+      <Animated.View
         style={[
           styles.blob,
           styles.blobBottomRight,
-          {
-            backgroundColor: isDarkTheme
-              ? 'rgba(255,255,255,0.15)'
-              : 'rgba(108,92,231,0.12)', // Colors.Primary
-          },
+          { backgroundColor: tint(PRIMARY, 0.16, 0.12) },
+          move(b, -14, -22, 0.1),
         ]}
       />
-      <View
+      <Animated.View
         style={[
           styles.blob,
           styles.blobMiddleLeft,
+          { backgroundColor: tint(GOLD, 0.16, 0.1) },
+          move(a, 16, 14, 0.12),
+        ]}
+      />
+
+      {/* Depth vignette: pushes blobs back so foreground text stays crisp */}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
           {
             backgroundColor: isDarkTheme
-              ? 'rgba(240,169,59,0.18)'
-              : 'rgba(240,169,59,0.12)', // Colors.ProGold
+              ? 'rgba(20,19,26,0.10)'
+              : 'rgba(255,255,255,0.28)',
           },
         ]}
       />
@@ -70,38 +121,10 @@ export function AmbientBackground({ isDarkTheme = false }: AmbientBackgroundProp
 }
 
 const styles = StyleSheet.create({
-  blob: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  blobTop: {
-    width: 420,
-    height: 420,
-    top: -180,
-    alignSelf: 'center',
-  },
-  blobRight: {
-    width: 260,
-    height: 260,
-    top: 140,
-    right: -120,
-  },
-  blobLeft: {
-    width: 220,
-    height: 220,
-    top: 400,
-    left: -110,
-  },
-  blobBottomRight: {
-    width: 180,
-    height: 180,
-    bottom: -40,
-    right: -60,
-  },
-  blobMiddleLeft: {
-    width: 140,
-    height: 140,
-    top: 160,
-    left: -70,
-  },
+  blob: { position: 'absolute', borderRadius: 999 },
+  blobTop: { width: 460, height: 460, top: -210, alignSelf: 'center' },
+  blobRight: { width: 280, height: 280, top: 130, right: -130 },
+  blobLeft: { width: 240, height: 240, top: 390, left: -120 },
+  blobBottomRight: { width: 200, height: 200, bottom: -50, right: -70 },
+  blobMiddleLeft: { width: 150, height: 150, top: 150, left: -75 },
 });
