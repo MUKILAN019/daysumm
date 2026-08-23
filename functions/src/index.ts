@@ -15,6 +15,7 @@ const db = getFirestore();
 const OPENROUTER_API_KEY = defineSecret('OPENROUTER_API_KEY');
 const GROQ_API_KEY = defineSecret('GROQ_API_KEY');
 const REVENUECAT_SECRET_API_KEY = defineSecret('REVENUECAT_SECRET_API_KEY');
+const GROQ_TEXT_MODEL = 'openai/gpt-oss-20b';
 
 // Hosted in Firebase Storage — public read, permanent URL
 const NOTIFICATION_IMAGE_URL =
@@ -712,7 +713,7 @@ Return ONLY a JSON object with a "results" array. Shape:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_TEXT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -769,7 +770,7 @@ export const translateText = onCall(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_TEXT_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
