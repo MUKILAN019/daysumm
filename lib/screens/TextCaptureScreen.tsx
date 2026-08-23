@@ -23,12 +23,19 @@ interface TextCaptureScreenProps {
 const SUGGESTED_TAGS = ['Meeting', 'Deep Work', 'Decision', 'Bug Fix'];
 const MAX_CHARS = 500;
 
+function hasEntryText(value: string) {
+  return value
+    .replace(/#[\p{L}\p{N}_-]+/gu, '')
+    .trim()
+    .length > 0;
+}
+
 export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenProps) {
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [focused, setFocused] = useState(false);
 
-  const canSave = text.trim().length > 0;
+  const canSave = hasEntryText(text);
 
   async function handleSave() {
     if (!canSave || isSaving) return;
@@ -42,6 +49,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   }
 
   function handleTagPress(tag: string) {
+    if (!hasEntryText(text)) return;
     const newText = text ? `${text} #${tag} ` : `#${tag} `;
     setText(newText);
   }
@@ -126,9 +134,11 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
                 <Pressable
                   key={tag}
                   accessibilityRole="button"
+                  disabled={!hasEntryText(text)}
                   onPress={() => handleTagPress(tag)}
                   style={({ pressed }) => [
                     styles.tagChip,
+                    !hasEntryText(text) && styles.tagChipDisabled,
                     active && styles.tagChipActive,
                     pressed && styles.tagChipPressed,
                   ]}
@@ -324,6 +334,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   tagChipPressed: { backgroundColor: Colors.PrimaryTint },
+  tagChipDisabled: {
+    opacity: 0.45,
+  },
   tagChipActive: {
     backgroundColor: Colors.Primary,
     borderColor: Colors.Primary,

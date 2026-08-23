@@ -96,9 +96,7 @@ export function DigestScreen({
                 style={styles.digestEmptyMascot} 
                 resizeMode="contain" 
               />
-              <Text style={styles.digestEmptyText}>
-                Log some entries in the Quick Log or Voice Log, then generate your daily summary here.
-              </Text>
+              <Text style={styles.digestEmptyText}>No digest yet</Text>
             </View>
           )}
         </View>

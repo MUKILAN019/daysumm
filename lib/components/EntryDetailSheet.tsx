@@ -183,6 +183,7 @@ export function EntryDetailSheet({
 
           <View style={styles.sheet}>
             <KeyboardAvoidingView
+              style={styles.keyboardWrap}
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
               {/* Teal accent band with drag handle */}
@@ -377,6 +378,9 @@ const styles = StyleSheet.create({
     elevation: 12,
     overflow: 'hidden',
   },
+  keyboardWrap: {
+    maxHeight: SCREEN_HEIGHT * 0.88,
+  },
   topBand: {
     backgroundColor: Colors.Surface,
     paddingTop: 10,
@@ -392,7 +396,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.TextSecondary,
     opacity: 0.4,
   },
-  scrollContent: { flexGrow: 0 },
+  scrollContent: {
+    flexGrow: 0,
+    maxHeight: SCREEN_HEIGHT * 0.62,
+  },
   scrollContentInner: {
     paddingHorizontal: Spacing.screenPadding + 4,
     paddingTop: Spacing.md,

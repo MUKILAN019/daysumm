@@ -262,7 +262,7 @@ export function HomeScreen({
                 </View>
               ) : (
                 <Text style={styles.hintText}>
-                  {isProcessing ? 'Processing...' : 'Tap to record • Hold for continuous capture'}
+                  {isProcessing ? 'Processing...' : 'Tap to record'}
                 </Text>
               )}
             </View>
@@ -276,7 +276,7 @@ export function HomeScreen({
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Image source={require('../../assets/cat-lying-waiting.png')} style={styles.emptyStateImage} resizeMode="contain" />
-            <Text style={styles.emptyStateText}>No entries yet. Start recording or typing!</Text>
+            <Text style={styles.emptyStateText}>No entries yet</Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
