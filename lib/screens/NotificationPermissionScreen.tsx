@@ -12,6 +12,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Clock, Check } from 'lucide-react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
 import { AmbientBackground } from '../components/AmbientBackground';
+import { StatusBar } from 'expo-status-bar';
 
 interface NotificationPermissionScreenProps {
   onContinue: (time: string) => Promise<void>;
@@ -59,6 +60,7 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
 
   return (
     <ScreenTransition style={styles.container}>
+      <StatusBar style="light" />
       <AmbientBackground isDarkTheme />
 
       <View style={styles.top}>

@@ -13,6 +13,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { Mic, Sparkles, CalendarDays, ShieldCheck } from 'lucide-react-native';
 import { AmbientBackground } from '../components/AmbientBackground';
+import { StatusBar } from 'expo-status-bar';
 
 interface GoogleSignInScreenProps {
   onContinue: () => void;
@@ -148,6 +149,7 @@ export function GoogleSignInScreen({
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" />
       <AmbientBackground isDarkTheme />
 
       {/* ---------------- HERO (scrollable, never clipped) ---------------- */}

@@ -616,6 +616,7 @@ export default function App() {
   if (!authReady) {
     return (
       <View style={styles.loadingContainer}>
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color="#2563EB" />
         <Text style={styles.loadingText}>Loading your account…</Text>
       </View>
@@ -636,6 +637,7 @@ export default function App() {
   if (!onboardingChecked) {
     return (
       <View style={styles.loadingContainer}>
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color="#2563EB" />
         <Text style={styles.loadingText}>Setting things up…</Text>
       </View>
@@ -982,7 +984,7 @@ export default function App() {
         onSecondaryPress={() => setEntryToDelete(null)}
       />
 
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </View>
   );
 }

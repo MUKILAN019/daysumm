@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Colors, Typography, Spacing } from '../theme/tokens';
 import type { ReactNode } from 'react';
 
@@ -13,6 +14,7 @@ interface GlobalHeaderProps {
 export function GlobalHeader({ title, subtitle, onBack, rightAction }: GlobalHeaderProps) {
   return (
     <View style={styles.container}>
+      <StatusBar style="dark" />
       <View style={styles.left}>
         {onBack ? (
           <Pressable
@@ -51,7 +53,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: 60, // Clear status bar
     paddingBottom: Spacing.sm,
-    backgroundColor: Colors.Background,
+    backgroundColor: 'transparent',
   },
   left: {
     flex: 1,
@@ -72,10 +74,12 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.Background,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderWidth: 1,
+    borderColor: 'rgba(229, 231, 235, 0.5)',
   },
   backButtonPressed: {
-    backgroundColor: Colors.Surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   backButtonPlaceholder: {
     width: 44,

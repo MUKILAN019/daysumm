@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
 import { AmbientBackground } from '../components/AmbientBackground';
+import { StatusBar } from 'expo-status-bar';
 
 interface RoleSelectionScreenProps {
   onSelect: (role: string) => Promise<void>;
@@ -70,6 +71,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
 
   return (
     <ScreenTransition style={styles.container}>
+      <StatusBar style="dark" />
       <AmbientBackground />
       {/* Pinned header — sits above the scroll layer, so it never moves */}
       <View pointerEvents="none" style={styles.headerLayer}>

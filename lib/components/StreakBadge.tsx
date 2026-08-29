@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Flame } from 'lucide-react-native';
+import { Colors } from '../theme/tokens';
 
 interface StreakBadgeProps {
   currentStreak: number;
@@ -10,7 +11,7 @@ export function StreakBadge({ currentStreak }: StreakBadgeProps) {
 
   return (
     <View style={styles.badge}>
-      <Flame size={16} color="#EAB308" style={{ marginRight: 4 }} />
+      <Flame size={16} color={Colors.Accent} style={{ marginRight: 4 }} />
       <Text style={styles.text}>{currentStreak}</Text>
     </View>
   );
@@ -24,9 +25,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 20,
-    backgroundColor: '#FEF9C3',
+    backgroundColor: '#FFF0F3',
     borderWidth: 1,
-    borderColor: '#FEF08A',
+    borderColor: '#FFE4E9',
   },
-  text: { fontSize: 13, fontWeight: '700', color: '#A16207' },
+  text: { fontSize: 13, fontWeight: '700', color: '#BE123C' },
 });
