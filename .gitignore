@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Firebase local/generated files
+.firebase/
+
 # Native
 .kotlin/
 *.orig.*
@@ -31,6 +34,8 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
 
 # typescript
@@ -47,5 +52,6 @@ google-services.json
 functions/lib/
 
 # AI tool config directories — may accumulate session data or tokens
+.agents/
 .claude/
 .codex/
