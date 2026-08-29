@@ -1,6 +1,7 @@
 import { getFirestore, collection, query, where, orderBy, limit, getDocs } from '@react-native-firebase/firestore';
 
 import type { Digest } from '../functions/generateDigest';
+import { getDateKey } from '../utils/date';
 
 /**
  * Fetches the latest digest for today's date key for a given user.
@@ -9,8 +10,7 @@ import type { Digest } from '../functions/generateDigest';
 export async function fetchTodayDigest(uid: string): Promise<Digest | null> {
   const db = getFirestore();
 
-  const today = new Date();
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayKey = getDateKey();
 
   const digestQuery = query(
     collection(db, 'digestRecords'),

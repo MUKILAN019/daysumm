@@ -42,7 +42,7 @@ import { TextCaptureScreen } from './lib/screens/TextCaptureScreen';
 import { NotificationPermissionScreen } from './lib/screens/NotificationPermissionScreen';
 import { requestNotificationPermission } from './lib/permissions/requestNotificationPermission';
 import { syncFcmToken, subscribeToTokenRefresh } from './lib/notifications/fcmToken';
-import { fetchUserSettings, completeOnboarding } from './lib/firestore/userSettings';
+import { fetchUserSettings, completeOnboarding, syncUserTimezone } from './lib/firestore/userSettings';
 import { RoleSelectionScreen } from './lib/screens/RoleSelectionScreen';
 import { getMessaging, onMessage, onNotificationOpenedApp, getInitialNotification } from '@react-native-firebase/messaging';
 import { DigestViewScreen } from './lib/screens/DigestViewScreen';
@@ -50,7 +50,7 @@ import { DigestReadyBanner } from './lib/components/DigestReadyBanner';
 import { extractDigestRecordId } from './lib/notifications/notificationRouting';
 import { getFunctions, httpsCallable } from '@react-native-firebase/functions';
 import { syncEntries, syncPendingDeletedEntries } from './lib/sync/queue';
-import { updateEntryClassification, updateEntryText, updateEntryTextAndTags, markEntryUserCorrected } from './lib/db/entries';
+import { updateEntryClassification, updateEntryText, updateEntryTextAndTags, markEntryUserCorrected, migrateLocalEntriesUid, migrateUnsyncedEntriesToUser } from './lib/db/entries';
 import { refreshWidgetData } from './lib/widgets/refreshWidget';
 import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
@@ -309,6 +309,12 @@ export default function App() {
         setAuthReady(true);
         setGoogleError(null);
 
+        // Adopt any local unsynced entries on device for this user UID
+        await migrateUnsyncedEntriesToUser(user.uid);
+        syncUserTimezone(user.uid).catch((err) =>
+          console.warn('Failed to sync user timezone', err)
+        );
+
         try {
           configureRevenueCat(user.uid);
         } catch (error) {
@@ -485,14 +491,25 @@ export default function App() {
           const err = linkError as { code?: string };
           if (err.code === 'auth/credential-already-in-use') {
             // This Google account already belongs to a different (older) account — sign into that instead.
-            await signInWithCredential(auth, credential);
+            const oldUid = currentUser.uid;
+            const userCredential = await signInWithCredential(auth, credential);
+            const newUid = userCredential.user.uid;
+
+            if (oldUid && newUid && oldUid !== newUid) {
+              await migrateLocalEntriesUid(oldUid, newUid);
+              await syncEntries();
+            }
           } else {
             throw linkError;
           }
         }
       } else {
         // No guest session at all — straightforward sign-in.
-        await signInWithCredential(auth, credential);
+        const userCredential = await signInWithCredential(auth, credential);
+        if (userCredential.user?.uid) {
+          await migrateUnsyncedEntriesToUser(userCredential.user.uid);
+          await syncEntries();
+        }
       }
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
@@ -563,8 +580,11 @@ export default function App() {
     setIsLimitError(false);
 
     try {
+      // Flush pending local entries first so recent saves are included in digest
+      await syncEntries();
       const nextDigest = await generateDigest();
       setDigest(nextDigest);
+
       setDigestRefreshVersion(v => v + 1);
       await markSampleDigestSeen();
       setShowSampleDigest(false);

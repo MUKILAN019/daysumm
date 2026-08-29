@@ -33,6 +33,8 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+import { getDateKey, getCutoffDateKey } from '../utils/date';
+
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const MASCOT_SIZE = 108;
 
@@ -41,9 +43,9 @@ function toDateKey(year: number, month: number, day: number): string {
 }
 
 function getTodayDateKey(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  return getDateKey();
 }
+
 
 function daysAgo(dateKey: string): number {
   const todayMs = new Date(getTodayDateKey() + 'T00:00:00').getTime();
@@ -121,10 +123,9 @@ export function DigestHistoryScreen({
 
   const oldestAllowedKey = useMemo(() => {
     if (isPro) return '2000-01-01';
-    const d = new Date(todayKey + 'T00:00:00');
-    d.setDate(d.getDate() - 3);
-    return d.toISOString().slice(0, 10);
-  }, [isPro, todayKey]);
+    return getCutoffDateKey(3);
+  }, [isPro]);
+
 
   const calendarGrid = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();

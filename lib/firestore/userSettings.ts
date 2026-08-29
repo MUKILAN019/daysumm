@@ -7,6 +7,7 @@ import {
 } from '@react-native-firebase/firestore';
 
 import type { UserSettings } from './types';
+import { getUserTimezone } from '../utils/date';
 
 export async function fetchUserSettings(uid: string): Promise<UserSettings | null> {
   const db = getFirestore();
@@ -57,6 +58,16 @@ export async function updateFcmToken(uid: string, fcmToken: string): Promise<voi
   await setDoc(
     doc(db, 'userSettings', uid),
     { fcmToken, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export async function syncUserTimezone(uid: string): Promise<void> {
+  const timezone = getUserTimezone();
+  const db = getFirestore();
+  await setDoc(
+    doc(db, 'userSettings', uid),
+    { timezone, updatedAt: serverTimestamp() },
     { merge: true },
   );
 }

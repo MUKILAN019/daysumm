@@ -1,6 +1,7 @@
 import { getFirestore, collection, query, where, orderBy, getDocs } from '@react-native-firebase/firestore';
 
 import type { Digest } from '../functions/generateDigest';
+import { getCutoffDateKey } from '../utils/date';
 
 export interface DigestHistoryEntry extends Digest {
   dateKey: string;
@@ -17,9 +18,7 @@ export async function fetchDigestHistory(
 ): Promise<DigestHistoryEntry[]> {
   const db = getFirestore();
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - maxDaysBack);
-  const cutoffDateKey = cutoff.toISOString().slice(0, 10);
+  const cutoffDateKey = getCutoffDateKey(maxDaysBack);
 
   const digestQuery = query(
     collection(db, 'digestRecords'),

@@ -1,6 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 
 import type { EntrySource } from '../firestore/types';
+import { getStartOfDayISO } from '../utils/date';
 
 const DATABASE_NAME = 'daysumm.db';
 
@@ -171,8 +172,7 @@ export async function getTodayEntries(uid: string) {
 
   const db = await getDb();
   
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDayIso = getStartOfDayISO();
   
   const rows = await db.getAllAsync<EntryRow>(`
     SELECT *
@@ -181,7 +181,7 @@ export async function getTodayEntries(uid: string) {
     ORDER BY createdAt DESC
   `,
   uid,
-  startOfDay.toISOString()
+  startOfDayIso
   );
 
   return rows.map(mapEntryRowToLocalEntry);
@@ -542,8 +542,7 @@ export async function getTodayEntryCount(uid: string): Promise<number> {
 
   const db = await getDb();
 
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
+  const startOfDayIso = getStartOfDayISO();
 
   const row = await db.getFirstAsync<CountRow>(
     `
@@ -551,7 +550,7 @@ export async function getTodayEntryCount(uid: string): Promise<number> {
       FROM entries
       WHERE createdAt >= ? AND uid = ? AND deleted = 0
     `,
-    startOfDay.toISOString(),
+    startOfDayIso,
     uid
   );
 
@@ -583,6 +582,38 @@ export async function markMilestoneSeen(milestone: number): Promise<void> {
   await setSetting(`seenMilestone_${milestone}`, '1');
 }
 
+export async function migrateLocalEntriesUid(fromUid: string, toUid: string): Promise<void> {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET uid = ?, synced = 0
+      WHERE uid = ?
+    `,
+    toUid,
+    fromUid,
+  );
+}
+
+export async function migrateUnsyncedEntriesToUser(toUid: string): Promise<void> {
+  await initDb();
+
+  const db = await getDb();
+
+  await db.runAsync(
+    `
+      UPDATE entries
+      SET uid = ?, synced = 0
+      WHERE (uid IS NULL OR uid != ?) AND synced = 0
+    `,
+    toUid,
+    toUid,
+  );
+}
+
 export async function cleanupOldLocalEntries(uid?: string): Promise<void> {
   await initDb();
   
@@ -594,14 +625,15 @@ export async function cleanupOldLocalEntries(uid?: string): Promise<void> {
   if (uid) {
     // Scope to the current user so we don't accidentally remove another
     // account's unsynced entries on a shared / multi-account device.
+    // CRITICAL: Only delete entries that have already been synced (synced = 1)
     await db.runAsync(`
       DELETE FROM entries
-      WHERE createdAt < ? AND uid = ?
+      WHERE createdAt < ? AND uid = ? AND synced = 1
     `, cutoffTime, uid);
   } else {
     await db.runAsync(`
       DELETE FROM entries
-      WHERE createdAt < ?
+      WHERE createdAt < ? AND synced = 1
     `, cutoffTime);
   }
 }
