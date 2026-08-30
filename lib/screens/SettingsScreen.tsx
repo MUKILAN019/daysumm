@@ -7,6 +7,7 @@ import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
 import { AmbientBackground } from '../components/AmbientBackground';
+import { StreakBadge } from '../components/StreakBadge';
 
 interface SettingsScreenProps {
   currentStreak: number;
@@ -36,7 +37,10 @@ export function SettingsScreen({
     if (signOutBusy) return;
     setSignOutBusy(true);
     try {
-      await Purchases.logOut();
+      const isAnon = await Purchases.isAnonymous();
+      if (!isAnon) {
+        await Purchases.logOut();
+      }
       await signOut(getAuth());
     } catch (error) {
       console.warn('Sign out failed', error);
@@ -90,7 +94,10 @@ export function SettingsScreen({
   return (
     <View style={styles.container}>
       <AmbientBackground />
-      <GlobalHeader title="Profile" />
+      <GlobalHeader
+        title="Profile"
+        rightAction={<StreakBadge currentStreak={currentStreak} />}
+      />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* User Summary */}
@@ -119,7 +126,7 @@ export function SettingsScreen({
         </Pressable>
       )}
 
-      {/* Sections */}
+      {/* Account Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Account</Text>
         <View style={styles.card}>
@@ -133,6 +140,7 @@ export function SettingsScreen({
         </View>
       </View>
 
+      {/* Preferences Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Preferences</Text>
         <View style={styles.card}>
@@ -140,13 +148,30 @@ export function SettingsScreen({
         </View>
       </View>
 
+      {/* Support Section */}
       <View style={styles.section}>
         <Text style={styles.sectionHeader}>Support</Text>
         <View style={styles.card}>
           <SettingsRow icon={Mail} label="Contact Us" onPress={handleContactUs} />
-          <View style={styles.divider} />
-          <SettingsRow icon={LogOut} label={signOutBusy ? 'Signing out...' : 'Sign Out'} onPress={handleSignOut} destructive />
         </View>
+      </View>
+
+      {/* Danger Zone Section */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionHeader, { color: Colors.Danger }]}>Account Actions</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleSignOut}
+          disabled={signOutBusy}
+          style={({ pressed }) => [
+            styles.signOutCard,
+            pressed && styles.signOutCardPressed,
+            signOutBusy && { opacity: 0.7 },
+          ]}
+        >
+          <LogOut size={18} color={Colors.Danger} strokeWidth={2} />
+          <Text style={styles.signOutCardText}>{signOutBusy ? 'Signing out...' : 'Sign Out'}</Text>
+        </Pressable>
       </View>
       </ScrollView>
 
@@ -208,19 +233,21 @@ const styles = StyleSheet.create({
   proBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
     borderRadius: Radii.card,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: Spacing.xl,
     shadowColor: Colors.ProGold,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 4,
   },
   proBannerPressed: {
-    opacity: 0.85,
+    opacity: 0.88,
   },
   proBannerImage: {
     width: 68,
@@ -281,5 +308,25 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.Divider,
     marginLeft: 52, // icon width + gap + padding
+  },
+  signOutCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FCA5A5',
+    borderRadius: Radii.card,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+  },
+  signOutCardPressed: {
+    backgroundColor: '#FEE2E2',
+  },
+  signOutCardText: {
+    ...Typography.Body,
+    fontWeight: '700',
+    color: Colors.Danger,
   },
 });

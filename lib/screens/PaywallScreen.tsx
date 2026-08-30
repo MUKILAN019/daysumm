@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Image,
   Pressable,
   StyleSheet,
@@ -41,6 +43,18 @@ function getHeadlineForRole(role: string | null): string {
   }
 }
 
+function getTrialText(pkg: PurchasesPackage): string | null {
+  const prod = pkg.product;
+  if (!prod) return null;
+
+  const hasTrial =
+    prod.introPrice?.price === 0 ||
+    prod.defaultOption?.freePhase != null ||
+    (prod.subscriptionOptions ?? []).some((opt) => opt.freePhase != null);
+
+  return hasTrial ? '7-Day Free Trial' : null;
+}
+
 export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreenProps) {
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [isLoadingOffering, setIsLoadingOffering] = useState(true);
@@ -53,6 +67,23 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
   const auth = getAuth();
   const user = auth.currentUser;
   const isGuest = user ? user.isAnonymous || user.providerData.length === 0 : true;
+
+  const featureAnimValues = useRef(
+    PRO_FEATURES.map(() => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    featureAnimValues.forEach((anim) => anim.setValue(0));
+    const animations = featureAnimValues.map((anim) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 340,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      })
+    );
+    Animated.stagger(70, animations).start();
+  }, [featureAnimValues]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -135,15 +166,32 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 
         {/* Features */}
         <View style={styles.featureList}>
-          {PRO_FEATURES.map((feature, idx) => (
-            <View
-              key={feature}
-              style={[styles.featureRow, idx < PRO_FEATURES.length - 1 && styles.featureRowDivider]}
-            >
-              <CheckCircle2 size={20} color={Colors.Primary} />
-              <Text style={styles.featureText}>{feature}</Text>
-            </View>
-          ))}
+          {PRO_FEATURES.map((feature, idx) => {
+            const anim = featureAnimValues[idx] || featureAnimValues[0];
+            return (
+              <Animated.View
+                key={feature}
+                style={[
+                  styles.featureRow,
+                  idx < PRO_FEATURES.length - 1 && styles.featureRowDivider,
+                  {
+                    opacity: anim,
+                    transform: [
+                      {
+                        translateY: anim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [12, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <CheckCircle2 size={20} color={Colors.Primary} />
+                <Text style={styles.featureText}>{feature}</Text>
+              </Animated.View>
+            );
+          })}
         </View>
 
         {/* Purchase */}
@@ -159,6 +207,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                 const isMonthly = pkg.packageType === 'MONTHLY';
                 const isAnnual = pkg.packageType === 'ANNUAL';
                 const suffix = isAnnual ? '/year' : '/month';
+                const trialText = getTrialText(pkg);
 
                 if (isAnnual) {
                   return (
@@ -187,7 +236,8 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                               <Zap size={14} color={Colors.ProGold} strokeWidth={2.5} />
                             </View>
                             <Text style={styles.annualPriceText}>
-                              {pkg.product.priceString}{suffix} · 7-Day Free Trial
+                              {pkg.product.priceString}{suffix}
+                              {trialText ? ` · ${trialText}` : ''}
                             </Text>
                           </View>
                         )}
@@ -213,10 +263,12 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                     ) : (
                       <View style={{ alignItems: 'center' }}>
                         <Text style={styles.monthlyButtonText}>
-                          Start 7-Day Free Trial
+                          {trialText ? `Start ${trialText}` : 'Subscribe Monthly'}
                         </Text>
                         <Text style={styles.monthlyFineprint}>
-                          Then {pkg.product.priceString}{suffix}
+                          {trialText
+                            ? `Then ${pkg.product.priceString}${suffix}`
+                            : `${pkg.product.priceString}${suffix}`}
                         </Text>
                       </View>
                     )}

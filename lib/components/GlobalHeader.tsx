@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Colors, Typography, Spacing } from '../theme/tokens';
@@ -12,8 +13,11 @@ interface GlobalHeaderProps {
 }
 
 export function GlobalHeader({ title, subtitle, onBack, rightAction }: GlobalHeaderProps) {
+  const insets = useSafeAreaInsets();
+  const topPadding = Math.max(insets.top + Spacing.xs, 44);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: topPadding }]}>
       <StatusBar style="dark" />
       <View style={styles.left}>
         {onBack ? (
@@ -51,7 +55,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: 60, // Clear status bar
     paddingBottom: Spacing.sm,
     backgroundColor: 'transparent',
   },

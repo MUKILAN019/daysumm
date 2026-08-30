@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Text, Pressable, Image, Animated, Easing 
 import { GlobalHeader } from '../components/GlobalHeader';
 import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
-import { Wand2 } from 'lucide-react-native';
+import { Wand2, Sparkles, AlertCircle } from 'lucide-react-native';
 import { StreakBadge } from '../components/StreakBadge';
 import { AmbientBackground } from '../components/AmbientBackground';
 import type { Digest } from '../functions/generateDigest';
@@ -102,17 +102,28 @@ export function DigestScreen({
               <ShimmerBox style={[styles.skeletonLine, { width: '90%' }]} />
             </View>
           ) : digestError ? (
-            <View style={styles.digestErrorCard}>
-              <Text style={styles.digestErrorText}>{digestError}</Text>
-              {isLimitError ? (
+            isLimitError ? (
+              <View style={styles.digestLimitCard}>
+                <View style={styles.digestCardHeaderRow}>
+                  <Sparkles size={18} color={Colors.PrimaryDeep} strokeWidth={2.5} />
+                  <Text style={styles.digestLimitTitle}>Daily Limit Reached (3/3)</Text>
+                </View>
+                <Text style={styles.digestLimitText}>{digestError}</Text>
                 <Pressable
                   accessibilityRole="button"
                   onPress={onUpgradePress}
-                  style={styles.digestErrorButton}
+                  style={styles.digestUpgradeButton}
                 >
-                  <Text style={styles.digestErrorButtonText}>Upgrade to Pro</Text>
+                  <Text style={styles.digestUpgradeButtonText}>Upgrade to Pro</Text>
                 </Pressable>
-              ) : (
+              </View>
+            ) : (
+              <View style={styles.digestErrorCard}>
+                <View style={styles.digestCardHeaderRow}>
+                  <AlertCircle size={18} color="#DC2626" strokeWidth={2} />
+                  <Text style={styles.digestErrorTitle}>Unable to Generate</Text>
+                </View>
+                <Text style={styles.digestErrorText}>{digestError}</Text>
                 <Pressable
                   accessibilityRole="button"
                   onPress={onGenerateDigest}
@@ -120,8 +131,8 @@ export function DigestScreen({
                 >
                   <Text style={styles.digestErrorButtonText}>Try again</Text>
                 </Pressable>
-              )}
-            </View>
+              </View>
+            )
           ) : digest ? (
             <DigestCard digest={digest} />
           ) : (
@@ -213,6 +224,49 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: Colors.Surface,
   },
+  digestCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  digestLimitCard: {
+    gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(108, 92, 231, 0.3)',
+    borderRadius: Radii.card,
+    backgroundColor: Colors.PrimaryTint,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  digestLimitTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.TextPrimary,
+  },
+  digestLimitText: {
+    color: Colors.TextSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  digestUpgradeButton: {
+    alignSelf: 'flex-start',
+    height: 40,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radii.button,
+    backgroundColor: Colors.Primary,
+    shadowColor: Colors.Primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  digestUpgradeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   digestErrorCard: {
     gap: 10,
     borderWidth: 1,
@@ -221,6 +275,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     paddingHorizontal: 16,
     paddingVertical: 14,
+  },
+  digestErrorTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#991B1B',
   },
   digestErrorText: {
     color: '#B91C1C',

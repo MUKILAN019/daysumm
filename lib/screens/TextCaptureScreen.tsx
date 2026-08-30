@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
@@ -8,9 +9,9 @@ import {
   TextInput,
   View,
   Image,
-  Platform,
 } from 'react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import * as Haptics from 'expo-haptics';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
 import { AmbientBackground } from '../components/AmbientBackground';
@@ -33,12 +34,39 @@ function hasEntryText(value: string) {
 export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenProps) {
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [focused, setFocused] = useState(false);
+  const focusAnim = useRef(new Animated.Value(0)).current;
 
   const canSave = hasEntryText(text);
 
+  function handleFocus() {
+    Animated.timing(focusAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }
+
+  function handleBlur() {
+    Animated.timing(focusAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }
+
+  const animatedBorderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(229, 231, 235, 0.8)', Colors.Primary],
+  });
+
+  const animatedShadowOpacity = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.06, 0.16],
+  });
+
   async function handleSave() {
     if (!canSave || isSaving) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSaving(true);
     try {
       await onSave(text.trim());
@@ -57,7 +85,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   const isEmpty = text.length === 0;
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.container}>
       <AmbientBackground />
       <GlobalHeader
         title="Quick Log"
@@ -72,7 +100,15 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
         showsVerticalScrollIndicator={false}
       >
         {/* Editor */}
-        <View style={[styles.inputCard, focused && styles.inputCardFocused]}>
+        <Animated.View
+          style={[
+            styles.inputCard,
+            {
+              borderColor: animatedBorderColor,
+              shadowOpacity: animatedShadowOpacity,
+            },
+          ]}
+        >
           {/* Mascot inside the text box */}
           <View style={{ position: 'absolute', bottom: 0, right: 16, zIndex: 0, opacity: 0.75 }} pointerEvents="none">
             <Image
@@ -84,21 +120,6 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
 
           <View style={styles.inputHeaderRow}>
             <Text style={styles.inputLabel}>YOUR ENTRY</Text>
-            <View
-              style={[
-                styles.counterPill,
-                text.length > MAX_CHARS && styles.counterPillOver,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.counterText,
-                  text.length > MAX_CHARS && styles.counterTextOver,
-                ]}
-              >
-                {text.length}/{MAX_CHARS}
-              </Text>
-            </View>
           </View>
 
           <TextInput
@@ -108,12 +129,12 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
             placeholderTextColor={Colors.TextMuted}
             value={text}
             onChangeText={setText}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             textAlignVertical="top"
           />
 
-        </View>
+        </Animated.View>
 
         {isEmpty ? (
           <View style={styles.hintRow}>
@@ -157,12 +178,12 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
       <View style={styles.actionBar}>
         <Pressable
           accessibilityRole="button"
-          disabled={!canSave || isSaving}
+          disabled={!canSave || isSaving || text.length > MAX_CHARS}
           onPress={handleSave}
           style={({ pressed }) => [
             styles.saveButton,
-            (!canSave || isSaving) && styles.saveButtonDisabled,
-            pressed && canSave && styles.saveButtonPressed,
+            (!canSave || isSaving || text.length > MAX_CHARS) && styles.saveButtonDisabled,
+            pressed && canSave && text.length <= MAX_CHARS && styles.saveButtonPressed,
           ]}
         >
           <Text style={styles.saveButtonText}>
@@ -271,19 +292,6 @@ const styles = StyleSheet.create({
     ...Typography.Label,
     color: Colors.TextMuted,
   },
-  counterPill: {
-    backgroundColor: Colors.PrimaryTint,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  counterPillOver: { backgroundColor: 'rgba(239,68,68,0.10)' },
-  counterText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.PrimaryDeep,
-    letterSpacing: 0.3,
-  },
   counterTextOver: { color: Colors.Danger },
   input: {
     flex: 1,
@@ -352,7 +360,7 @@ const styles = StyleSheet.create({
   /* Action bar */
   actionBar: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: 12,
+    paddingTop: 10,
     paddingBottom: 20,
     backgroundColor: Colors.Surface,
     borderTopWidth: 1,

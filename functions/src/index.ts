@@ -296,7 +296,7 @@ async function buildAndStoreDigestForUser(
         if (!isPro) {
           throw new HttpsError(
             'resource-exhausted',
-            "You've used your 3 free digests today — upgrade for unlimited.",
+            "You've reached your daily limit of 3 free AI digests today. Upgrade to Pro for unlimited digest generations!",
           );
         }
       }

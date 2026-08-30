@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Mic, Square, Pause, Play, FileText, AlertCircle, Trash2, Check, Clock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import * as Haptics from 'expo-haptics';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets, getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
 import { CustomModal } from '../components/CustomModal';
 import { LocalEntry } from '../db/entries';
@@ -97,7 +98,7 @@ export function HomeScreen({
   onDeleteEntryPress,
 }: HomeScreenProps) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(recorder);
+  const recorderState = useAudioRecorderState(recorder, 200);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRecordingSessionActive, setIsRecordingSessionActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -185,14 +186,14 @@ export function HomeScreen({
           useNativeDriver: true,
         }),
       ]).start(({ finished }) => {
-        if (finished && (recorder.isRecording || isProcessing)) {
+        if (finished && (isRecordingSessionActive || recorderState.isRecording || isProcessing)) {
           animateBar(anim);
         }
       });
     };
 
     barsAnim.forEach(animateBar);
-  }, [isRecording, isProcessing, barsAnim, recorder.isRecording]);
+  }, [isRecording, isProcessing, barsAnim, isRecordingSessionActive, recorderState.isRecording]);
 
   const dateStr = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -239,6 +240,7 @@ export function HomeScreen({
     }
     await recorder.prepareToRecordAsync();
     recorder.record();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsRecordingSessionActive(true);
     setIsPaused(false);
   }
@@ -252,12 +254,15 @@ export function HomeScreen({
 
   async function handleStop() {
     if (!isRecordingSessionActive) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsRecordingSessionActive(false);
     setIsPaused(false);
     await recorder.stop();
-    if (recorder.uri) {
+    const recordingUri = recorder.uri || recorder.getStatus().url;
+    if (recordingUri) {
       setIsProcessing(true);
-      await onRecordFinished(recorder.uri);
+      await onRecordFinished(recordingUri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setIsProcessing(false);
     }
   }
@@ -301,11 +306,7 @@ export function HomeScreen({
                     pressed && !isRecording && !isProcessing && styles.micButtonPressed,
                   ]}
                 >
-                  {isProcessing ? (
-                    <ActivityIndicator color={Colors.Background} size="large" />
-                  ) : (
-                    <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
-                  )}
+                  <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
                 </Pressable>
               </View>
 

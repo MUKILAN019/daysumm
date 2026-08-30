@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -80,7 +79,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="height"
         style={{ flex: 1 }}
       >
         <ScrollView

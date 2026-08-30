@@ -73,6 +73,7 @@ import { translateText } from './lib/functions/translateText';
 import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/tokens';
 import { CustomModal } from './lib/components/CustomModal';
 import { ScreenTransition } from './lib/components/ScreenTransition';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 10 * 1000; // 10-second debounce for entry-save syncs
@@ -595,13 +596,27 @@ export default function App() {
       const uid = getAuth().currentUser?.uid;
       refreshWidgetData(uid);
     } catch (error: unknown) {
-      const err = error as { code?: string };
-      if (err.code === 'functions/resource-exhausted') {
-        setDigestError("You've used your 3 free digests today — upgrade for unlimited.");
+      const err = error as { code?: string; message?: string; details?: unknown };
+      const codeStr = String(err?.code || '').toLowerCase();
+      const msgStr = String(err?.message || '').toLowerCase();
+      const detailsStr = JSON.stringify(err || {}).toLowerCase();
+
+      const isQuotaLimit =
+        codeStr.includes('resource-exhausted') ||
+        codeStr.includes('quota') ||
+        msgStr.includes('3 free digests') ||
+        msgStr.includes('resource-exhausted') ||
+        msgStr.includes('limit') ||
+        msgStr.includes('quota') ||
+        detailsStr.includes('resource-exhausted') ||
+        detailsStr.includes('quota');
+
+      if (isQuotaLimit) {
+        setDigestError("You've reached your daily limit of 3 free AI digests today. Upgrade to Pro for unlimited digest generations!");
         setIsLimitError(true);
       } else {
         console.warn('Digest generation failed', error);
-        setDigestError('Could not generate a digest right now. Try again.');
+        setDigestError('Could not generate a digest right now. Please try again.');
         setIsLimitError(false);
       }
     } finally {
@@ -632,79 +647,6 @@ export default function App() {
     } catch (error) {
       console.warn('Failed to refresh today digest', error);
     }
-  }
-
-  if (!authReady) {
-    return (
-      <View style={styles.loadingContainer}>
-        <StatusBar style="dark" />
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.loadingText}>Loading your account…</Text>
-      </View>
-    );
-  }
-
-  if (showGoogleSignIn) {
-    return (
-      <GoogleSignInScreen
-        isLoading={googleBusy}
-        errorMessage={googleError ?? undefined}
-        onContinue={handleGoogleLink}
-        onContinueAsGuest={handleContinueAsGuest}
-      />
-    );
-  }
-
-  if (!onboardingChecked) {
-    return (
-      <View style={styles.loadingContainer}>
-        <StatusBar style="dark" />
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.loadingText}>Setting things up…</Text>
-      </View>
-    );
-  }
-
-  if (needsOnboarding && !showNotificationStep) {
-    return <RoleSelectionScreen onSelect={handleRoleSelect} />;
-  }
-
-  if (showNotificationStep) {
-    return <NotificationPermissionScreen onContinue={handleNotificationStepContinue} />;
-  }
-
-  if (screenMode === 'digest' && openedDigestRecordId) {
-    return (
-      <DigestViewScreen
-        digestRecordId={openedDigestRecordId}
-        onBack={() => {
-          setScreenMode('capture');
-          setOpenedDigestRecordId(null);
-        }}
-      />
-    );
-  }
-
-
-  if (screenMode === 'paywall') {
-    return (
-      <PaywallScreen
-        role={userRole}
-        onBack={() => setScreenMode('capture')}
-        onPurchaseSuccess={() => {
-          setIsPro(true);
-          setScreenMode('capture');
-        }}
-      />
-    );
-  }
-
-  if (screenMode === 'personalInfo') {
-    return <PersonalInfoScreen onBack={() => setScreenMode('capture')} />;
-  }
-
-  if (screenMode === 'notificationSettings') {
-    return <NotificationSettingsScreen onBack={() => setScreenMode('capture')} />;
   }
 
   // Helper to switch tabs and keep screenMode in sync
@@ -906,109 +848,189 @@ export default function App() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {showForegroundBanner && (
-        <DigestReadyBanner
-          onPress={() => {
-            setShowForegroundBanner(false);
-            setScreenMode('digest');
+  function renderMainContent() {
+    if (!authReady) {
+      return (
+        <View style={styles.loadingContainer}>
+          <StatusBar style="dark" />
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading your account…</Text>
+        </View>
+      );
+    }
+
+    if (showGoogleSignIn) {
+      return (
+        <GoogleSignInScreen
+          isLoading={googleBusy}
+          errorMessage={googleError ?? undefined}
+          onContinue={handleGoogleLink}
+          onContinueAsGuest={handleContinueAsGuest}
+        />
+      );
+    }
+
+    if (!onboardingChecked) {
+      return (
+        <View style={styles.loadingContainer}>
+          <StatusBar style="dark" />
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Setting things up…</Text>
+        </View>
+      );
+    }
+
+    if (needsOnboarding && !showNotificationStep) {
+      return <RoleSelectionScreen onSelect={handleRoleSelect} />;
+    }
+
+    if (showNotificationStep) {
+      return <NotificationPermissionScreen onContinue={handleNotificationStepContinue} />;
+    }
+
+    if (screenMode === 'digest' && openedDigestRecordId) {
+      return (
+        <DigestViewScreen
+          digestRecordId={openedDigestRecordId}
+          onBack={() => {
+            setScreenMode('capture');
+            setOpenedDigestRecordId(null);
           }}
         />
-      )}
+      );
+    }
 
-      <EntryDetailSheet
-        entry={selectedEntry}
-        visible={!!selectedEntry}
-        onClose={() => setSelectedEntry(null)}
-        onSave={async (params: EntryDetailSaveParams) => {
-          const uid = getAuth().currentUser?.uid;
-          if (!uid) return;
+    if (screenMode === 'paywall') {
+      return (
+        <PaywallScreen
+          role={userRole}
+          onBack={() => setScreenMode('capture')}
+          onPurchaseSuccess={() => {
+            setIsPro(true);
+            setScreenMode('capture');
+          }}
+        />
+      );
+    }
 
-          const { localId, newText, newTags, didTextChange, didUserSetTags } = params;
+    if (screenMode === 'personalInfo') {
+      return <PersonalInfoScreen onBack={() => setScreenMode('capture')} />;
+    }
 
-          if (didTextChange && didUserSetTags) {
-            // Case A: Text changed + User set tags. Translate text, update tags.
-            // Fast optimistic update
-            await updateEntryTextAndTags(localId, uid, newText, newTags);
-            await refreshEntries();
+    if (screenMode === 'notificationSettings') {
+      return <NotificationSettingsScreen onBack={() => setScreenMode('capture')} />;
+    }
 
-            // Background translation
-            try {
-              const textEn = await translateText(newText);
-              await updateEntryTextAndTags(localId, uid, newText, newTags, textEn);
-            } catch (err) {
-              console.warn('Translate failed in Case A', err);
+    return (
+      <View style={styles.container}>
+        {showForegroundBanner && (
+          <DigestReadyBanner
+            onPress={() => {
+              setShowForegroundBanner(false);
+              setScreenMode('digest');
+            }}
+          />
+        )}
+
+        <EntryDetailSheet
+          entry={selectedEntry}
+          visible={!!selectedEntry}
+          onClose={() => setSelectedEntry(null)}
+          onSave={async (params: EntryDetailSaveParams) => {
+            const uid = getAuth().currentUser?.uid;
+            if (!uid) return;
+
+            const { localId, newText, newTags, didTextChange, didUserSetTags } = params;
+
+            if (didTextChange && didUserSetTags) {
+              // Case A: Text changed + User set tags. Translate text, update tags.
+              // Fast optimistic update
+              await updateEntryTextAndTags(localId, uid, newText, newTags);
+              await refreshEntries();
+
+              // Background translation
+              try {
+                const textEn = await translateText(newText);
+                await updateEntryTextAndTags(localId, uid, newText, newTags, textEn);
+              } catch (err) {
+                console.warn('Translate failed in Case A', err);
+              }
+              runSync('edit-case-a');
+            } else if (didTextChange && !didUserSetTags) {
+              // Case B: Text changed, tags untouched. Clear tags and textEn, re-classify.
+              await updateEntryText(localId, uid, newText);
+              runSync('edit-case-b');
+            } else if (!didTextChange && didUserSetTags) {
+              // Case C: Tags changed, text untouched. Update tags locally.
+              const entry = entries.find(e => e.localId === localId);
+              const currentClassifierVersion = entry?.classifierVersion ?? 1;
+              const currentTextEn = entry?.textEn;
+              await updateEntryClassification(
+                localId,
+                uid,
+                newTags,
+                1.0, // Confidence is 1.0 because user set it
+                currentClassifierVersion,
+                currentTextEn,
+                true,
+                false
+              );
+              runSync('edit-case-c');
+            } else if (!didTextChange && !didUserSetTags) {
+              // Case D: No-op Save. User looked and said it's fine.
+              await markEntryUserCorrected(localId, uid);
+              runSync('edit-case-noop');
             }
-            runSync('edit-case-a');
-          } else if (didTextChange && !didUserSetTags) {
-            // Case B: Text changed, tags untouched. Clear tags and textEn, re-classify.
-            await updateEntryText(localId, uid, newText);
-            runSync('edit-case-b');
-          } else if (!didTextChange && didUserSetTags) {
-            // Case C: Tags changed, text untouched. Update tags locally.
-            const entry = entries.find(e => e.localId === localId);
-            const currentClassifierVersion = entry?.classifierVersion ?? 1;
-            const currentTextEn = entry?.textEn;
-            await updateEntryClassification(
-              localId,
-              uid,
-              newTags,
-              1.0, // Confidence is 1.0 because user set it
-              currentClassifierVersion,
-              currentTextEn,
-              true,
-              false
-            );
-            runSync('edit-case-c');
-          } else if (!didTextChange && !didUserSetTags) {
-            // Case D: No-op Save. User looked and said it's fine.
-            await markEntryUserCorrected(localId, uid);
-            runSync('edit-case-noop');
-          }
-          await refreshEntries();
-        }}
-      />
+            await refreshEntries();
+          }}
+        />
 
-      {/* Main content area */}
-      <View style={styles.contentArea}>
-        <ScreenTransition key={activeTab}>
-          {renderTabContent()}
-        </ScreenTransition>
-      </View>
-
-      {/* Bottom tab bar */}
-      <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
-
-      {deletedEntryToast ? (
-        <View style={styles.undoToast}>
-          <Text style={styles.undoToastText}>Entry deleted</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={handleUndoDelete}
-            style={({ pressed }) => [
-              styles.undoToastAction,
-              pressed && styles.undoToastActionPressed,
-            ]}
-          >
-            <Text style={styles.undoToastActionText}>Undo</Text>
-          </Pressable>
+        {/* Main content area */}
+        <View style={styles.contentArea}>
+          <ScreenTransition key={activeTab}>
+            {renderTabContent()}
+          </ScreenTransition>
         </View>
-      ) : null}
 
-      <CustomModal
-        visible={!!entryToDelete}
-        title="Delete entry?"
-        message="This entry will be removed from today's list."
-        type="warning"
-        primaryButtonText="Delete"
-        onPrimaryPress={confirmDeleteEntry}
-        secondaryButtonText="Cancel"
-        onSecondaryPress={() => setEntryToDelete(null)}
-      />
+        {/* Bottom tab bar */}
+        <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
-      <StatusBar style="dark" />
-    </View>
+        {deletedEntryToast ? (
+          <View style={styles.undoToast}>
+            <Text style={styles.undoToastText}>Entry deleted</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleUndoDelete}
+              style={({ pressed }) => [
+                styles.undoToastAction,
+                pressed && styles.undoToastActionPressed,
+              ]}
+            >
+              <Text style={styles.undoToastActionText}>Undo</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <CustomModal
+          visible={!!entryToDelete}
+          title="Delete entry?"
+          message="This entry will be removed from today's list."
+          type="warning"
+          primaryButtonText="Delete"
+          onPrimaryPress={confirmDeleteEntry}
+          secondaryButtonText="Cancel"
+          onSecondaryPress={() => setEntryToDelete(null)}
+        />
+
+        <StatusBar style="dark" />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaProvider initialMetrics={{ insets: { top: 0, right: 0, bottom: 0, left: 0 }, frame: { x: 0, y: 0, width: 0, height: 0 } }}>
+      {renderMainContent()}
+    </SafeAreaProvider>
   );
 }
 

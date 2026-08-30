@@ -11,7 +11,7 @@ import {
   Image,
   Modal,
 } from 'react-native';
-import { ChevronLeft, ChevronRight, X, Check } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, X, Check, Lock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
@@ -82,9 +82,10 @@ export function DigestHistoryScreen({
 
   useEffect(() => {
     if (showPaywallSheet) {
-      Animated.timing(paywallSlide, {
+      Animated.spring(paywallSlide, {
         toValue: 0,
-        duration: 300,
+        damping: 18,
+        stiffness: 140,
         useNativeDriver: true,
       }).start();
     }
@@ -263,10 +264,18 @@ export function DigestHistoryScreen({
           return (
             <View key={`day-${day}`} style={styles.dayCellWrapper}>
               <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={style?.isLocked ? `Day ${day}, locked (Pro feature)` : `Day ${day}`}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 onPress={() => handleDayPress(day)}
                 style={[styles.dayCell, { backgroundColor: style?.bg }]}
               >
                 <Text style={[styles.dayText, { color: style?.text }]}>{day}</Text>
+                {style?.isLocked && (
+                  <View style={styles.lockBadge}>
+                    <Lock size={13} color="#64748B" strokeWidth={2.2} />
+                  </View>
+                )}
               </Pressable>
             </View>
           );
@@ -457,8 +466,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 16,
+    position: 'relative',
   },
   dayText: { ...Typography.Body, fontWeight: '500' },
+  lockBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 20,
+    height: 20,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#94A3B8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   entriesScroll: { flex: 1 },
   entriesContent: { padding: Spacing.screenPadding, gap: Spacing.sm },
   emptyEntries: {

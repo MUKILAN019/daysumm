@@ -11,7 +11,6 @@ import {
   Text,
   TextInput,
   View,
-  Platform,
 } from 'react-native';
 import { Mic, FileText, X, Sparkles } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
@@ -200,7 +199,7 @@ export function EntryDetailSheet({
           <View style={styles.sheet}>
             <KeyboardAvoidingView
               style={styles.keyboardWrap}
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              behavior="height"
             >
               {/* Teal accent band with drag handle */}
               <View style={styles.topBand}>

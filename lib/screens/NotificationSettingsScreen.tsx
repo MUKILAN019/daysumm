@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Clock, Info } from 'lucide-react-native';
+import { Clock, Info, Sparkles } from 'lucide-react-native';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { fetchUserSettings, updateNotificationTime } from '../firestore/userSettings';
@@ -38,6 +38,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
   defaultDate.setHours(17, 0, 0, 0);
   const [date, setDate] = useState(defaultDate);
   const [showPicker, setShowPicker] = useState(false);
+
 
   useEffect(() => {
     async function loadSettings() {
@@ -106,7 +107,11 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
           await updateDailyUsageForTimeChange(user.uid, dateKey, timeChangesAfterPush + 1);
         }
 
-        showModal('All set', 'Your daily digest time has been updated.', 'success');
+        showModal(
+          'Delivery Time Saved',
+          `Your daily digest will now arrive around ${timeLabel} every day.`,
+          'success'
+        );
       }
     } catch (error) {
       console.warn('Failed to save notification time:', error);
@@ -145,6 +150,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
+
             {/* Time section */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>DELIVERY TIME</Text>
@@ -165,15 +171,33 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               </Pressable>
 
               {showPicker && (
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={date}
-                  mode="time"
-                  is24Hour={false}
-                  display="default"
-                  onChange={onChange}
-                />
+                <View style={styles.pickerCard}>
+                  <DateTimePicker
+                    testID="dateTimePicker"
+                    value={date}
+                    mode="time"
+                    is24Hour={false}
+                    display="default"
+                    onChange={onChange}
+                  />
+                </View>
               )}
+
+              {/* Live Outcome Preview */}
+              <View style={styles.previewCard}>
+                <Sparkles size={16} color={Colors.PrimaryDeep} strokeWidth={2} />
+                <Text style={styles.previewText}>
+                  Your daily digest will arrive around <Text style={styles.previewTimeText}>{timeLabel}</Text>
+                </Text>
+              </View>
+
+              {/* Inline Cutoff Tip */}
+              <View style={styles.inlineTipRow}>
+                <Info size={14} color={Colors.TextMuted} strokeWidth={2} />
+                <Text style={styles.inlineTipText}>
+                  Delivery time cannot be changed within <Text style={{ fontWeight: '600', color: Colors.TextPrimary }}>20 minutes</Text> of scheduled time.
+                </Text>
+              </View>
             </View>
 
             {/* Info section */}
@@ -184,13 +208,6 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
                 <Text style={styles.infoText}>
                   Not getting notifications? Go to{' '}
                   <Text style={styles.infoTextBold}>Settings › App Management › DaySumm › Permissions › Notifications</Text>.
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Info size={16} color={Colors.TextMuted} strokeWidth={2} />
-                <Text style={styles.infoText}>
-                  Delivery time cannot be changed within{' '}
-                  <Text style={styles.infoTextBold}>20 minutes</Text> of the scheduled time.
                 </Text>
               </View>
             </View>
@@ -263,6 +280,47 @@ const styles = StyleSheet.create({
   timeCardPressed: {
     borderColor: Colors.Primary,
     backgroundColor: Colors.PrimaryTint,
+  },
+
+  pickerCard: {
+    backgroundColor: Colors.Card,
+    borderRadius: Radii.card,
+    borderWidth: 1,
+    borderColor: Colors.Border,
+    padding: Spacing.sm,
+    alignItems: 'center',
+  },
+  previewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.PrimaryTint,
+    borderRadius: Radii.card,
+    borderWidth: 1,
+    borderColor: 'rgba(108,92,231,0.2)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  previewText: {
+    ...Typography.Secondary,
+    color: Colors.TextPrimary,
+    flex: 1,
+  },
+  previewTimeText: {
+    fontWeight: '800',
+    color: Colors.PrimaryDeep,
+  },
+  inlineTipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 4,
+  },
+  inlineTipText: {
+    ...Typography.Secondary,
+    fontSize: 12.5,
+    color: Colors.TextMuted,
+    flex: 1,
   },
   timeIconWrap: {
     width: 44,
