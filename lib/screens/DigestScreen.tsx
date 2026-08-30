@@ -120,7 +120,7 @@ export function DigestScreen({
             ) : (
               <View style={styles.digestErrorCard}>
                 <View style={styles.digestCardHeaderRow}>
-                  <AlertCircle size={18} color="#DC2626" strokeWidth={2} />
+                  <AlertCircle size={18} color={Colors.TagBlockerText} strokeWidth={2} />
                   <Text style={styles.digestErrorTitle}>Unable to Generate</Text>
                 </View>
                 <Text style={styles.digestErrorText}>{digestError}</Text>
@@ -263,26 +263,26 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   digestUpgradeButtonText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 14,
     fontWeight: '700',
   },
   digestErrorCard: {
     gap: 10,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: Colors.DangerBorder,
     borderRadius: Radii.card,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.DangerBg,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   digestErrorTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#991B1B',
+    color: Colors.DangerDeep,
   },
   digestErrorText: {
-    color: '#B91C1C',
+    color: Colors.DangerDark,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -293,10 +293,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#DC2626',
+    backgroundColor: Colors.TagBlockerText,
   },
   digestErrorButtonText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 13,
     fontWeight: '700',
   },

@@ -112,7 +112,7 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
               ]}
             >
               {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={Colors.White} />
               ) : (
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               )}
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   saveButtonText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 16,
     fontWeight: '700',
   },

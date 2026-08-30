@@ -876,7 +876,7 @@ export default function App() {
       return (
         <View style={styles.loadingContainer}>
           <StatusBar style="dark" />
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color={Colors.BluePrimary} />
           <Text style={styles.loadingText}>Loading your account…</Text>
         </View>
       );
@@ -897,7 +897,7 @@ export default function App() {
       return (
         <View style={styles.loadingContainer}>
           <StatusBar style="dark" />
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color={Colors.BluePrimary} />
           <Text style={styles.loadingText}>Setting things up…</Text>
         </View>
       );
@@ -1061,7 +1061,7 @@ const styles = StyleSheet.create({
   // ── Root shells ──────────────────────────────────────────────
   container: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.GrayBg,
   },
   contentArea: {
     flex: 1,
@@ -1071,7 +1071,7 @@ const styles = StyleSheet.create({
   // ── Capture tab (home) ────────────────────────────────────────
   captureScroll: {
     flex: 1,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.GrayBg,
   },
   captureContent: {
     paddingHorizontal: 20,
@@ -1088,12 +1088,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    color: '#111827',
+    color: Colors.TextDark,
     fontSize: 32,
     fontWeight: '700',
   },
   subtitle: {
-    color: '#6B7280',
+    color: Colors.TextSubtle,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 2,
@@ -1101,14 +1101,14 @@ const styles = StyleSheet.create({
 
   // Input card with floating mic
   inputCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.White,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.Border,
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 56, // room for mic button
-    shadowColor: '#000',
+    shadowColor: Colors.Ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 140,
-    color: '#111827',
+    color: Colors.TextDark,
     fontSize: 16,
     lineHeight: 24,
   },
@@ -1127,17 +1127,17 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#2563EB',
+    backgroundColor: Colors.BluePrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
+    shadowColor: Colors.BluePrimary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 6,
   },
   micFloatButtonPressed: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: Colors.BlueDark,
   },
   micFloatIcon: {
     fontSize: 20,
@@ -1147,34 +1147,34 @@ const styles = StyleSheet.create({
   saveCta: {
     height: 52,
     borderRadius: 12,
-    backgroundColor: '#2563EB',
+    backgroundColor: Colors.BluePrimary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
+    shadowColor: Colors.BluePrimary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   saveCtaDisabled: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.Border,
     shadowOpacity: 0,
     elevation: 0,
   },
   saveCtaPressed: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: Colors.BlueDark,
   },
   saveCtaText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
   saveCtaTextDisabled: {
-    color: '#9CA3AF',
+    color: Colors.TextMuted,
   },
   savedMessage: {
-    color: '#4F3FD6',
+    color: Colors.PrimaryDeep,
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
@@ -1230,11 +1230,11 @@ const styles = StyleSheet.create({
   digestSectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
+    color: Colors.TextDark,
   },
   digestSectionSub: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: Colors.TextMuted,
     marginTop: 1,
   },
   generateButton: {
@@ -1243,8 +1243,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 10,
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
+    backgroundColor: Colors.BluePrimary,
+    shadowColor: Colors.BluePrimary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -1256,19 +1256,19 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   generateButtonPressed: {
-    backgroundColor: '#1D4ED8',
+    backgroundColor: Colors.BlueDark,
   },
   generateButtonText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 13,
     fontWeight: '700',
   },
   skeletonCard: {
     gap: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.Border,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.White,
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -1276,26 +1276,26 @@ const styles = StyleSheet.create({
     height: 18,
     width: '70%',
     borderRadius: 6,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.Border,
   },
   skeletonLine: {
     height: 11,
     width: '100%',
     borderRadius: 6,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: Colors.TagNoteBg,
   },
   sampleBanner: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: Colors.BlueLight,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: Colors.BlueBorder,
     paddingHorizontal: 16,
     paddingVertical: 14,
     alignItems: 'center',
   },
   sampleBannerText: {
     fontSize: 14,
-    color: '#1D4ED8',
+    color: Colors.BlueDark,
     textAlign: 'center',
     lineHeight: 20,
     fontWeight: '500',
@@ -1303,14 +1303,14 @@ const styles = StyleSheet.create({
   digestErrorCard: {
     gap: 10,
     borderWidth: 1,
-    borderColor: '#FCA5A5',
+    borderColor: Colors.DangerBorder,
     borderRadius: 14,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.DangerBg,
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
   digestErrorText: {
-    color: '#B91C1C',
+    color: Colors.DangerDark,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -1321,18 +1321,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-    backgroundColor: '#DC2626',
+    backgroundColor: Colors.TagBlockerText,
   },
   digestErrorButtonText: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontSize: 13,
     fontWeight: '700',
   },
   digestEmptyState: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: Colors.GraySubtle,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.Border,
     borderStyle: 'dashed',
     paddingHorizontal: 16,
     paddingVertical: 20,
@@ -1340,7 +1340,7 @@ const styles = StyleSheet.create({
   },
   digestEmptyText: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: Colors.TextMuted,
     textAlign: 'center',
     lineHeight: 19,
   },
@@ -1352,7 +1352,7 @@ const styles = StyleSheet.create({
   recentTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6B7280',
+    color: Colors.TextSubtle,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -1361,25 +1361,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyStateText: {
-    color: '#9CA3AF',
+    color: Colors.TextMuted,
     fontSize: 14,
   },
   entryItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.White,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: Colors.Border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 4,
   },
   entryText: {
-    color: '#111827',
+    color: Colors.TextDark,
     fontSize: 14,
     lineHeight: 20,
   },
   entryMeta: {
-    color: '#9CA3AF',
+    color: Colors.TextMuted,
     fontSize: 11,
     fontWeight: '600',
   },
@@ -1392,7 +1392,7 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   centeredMessageText: {
-    color: '#6B7280',
+    color: Colors.TextSubtle,
     fontSize: 15,
     textAlign: 'center',
   },
@@ -1400,11 +1400,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.GrayBg,
   },
   loadingText: {
     marginTop: 18,
-    color: '#4B5563',
+    color: Colors.TextSecondary,
     fontSize: 16,
   },
 });

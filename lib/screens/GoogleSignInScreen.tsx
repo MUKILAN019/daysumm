@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     paddingTop: 22,
     paddingBottom: 30,
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: Colors.Ink,
     shadowOpacity: 0.18,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: -8 },
@@ -339,14 +339,14 @@ const styles = StyleSheet.create({
   panelTitle: { fontSize: 19, fontWeight: '800', color: Colors.TextPrimary, textAlign: 'center' },
 
   errorChip: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.DangerBg,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: Colors.DangerBorderSoft,
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
-  errorText: { color: '#B91C1C', fontSize: 13.5, textAlign: 'center' },
+  errorText: { color: Colors.DangerDark, fontSize: 13.5, textAlign: 'center' },
 
   primaryButton: {
     minHeight: 56,

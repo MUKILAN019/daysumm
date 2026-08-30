@@ -201,7 +201,7 @@ export function DigestHistoryScreen({
     let bg = 'transparent';
     let text = isWeekend ? Colors.TextSecondary : Colors.TextPrimary;
 
-    if (isFuture || isLocked) text = '#CBD5E1';
+    if (isFuture || isLocked) text = Colors.SlateMuted;
     else if (hasData) {
       bg = Colors.PrimaryTint;
       text = Colors.PrimaryDeep;
@@ -236,7 +236,7 @@ export function DigestHistoryScreen({
             onPress={handlePrevMonth}
             style={({ pressed }) => [styles.navBtn, pressed && styles.navBtnPressed]}
           >
-            <ChevronLeft size={24} color={!isPro && !canGoBack ? '#CBD5E1' : Colors.TextPrimary} />
+            <ChevronLeft size={24} color={!isPro && !canGoBack ? Colors.SlateMuted : Colors.TextPrimary} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -244,7 +244,7 @@ export function DigestHistoryScreen({
             disabled={!canGoForward}
             style={({ pressed }) => [styles.navBtn, pressed && styles.navBtnPressed]}
           >
-            <ChevronRight size={24} color={canGoForward ? Colors.TextPrimary : '#CBD5E1'} />
+            <ChevronRight size={24} color={canGoForward ? Colors.TextPrimary : Colors.SlateMuted} />
           </Pressable>
         </View>
       </View>
@@ -273,7 +273,7 @@ export function DigestHistoryScreen({
                 <Text style={[styles.dayText, { color: style?.text }]}>{day}</Text>
                 {style?.isLocked && (
                   <View style={styles.lockBadge}>
-                    <Lock size={13} color="#64748B" strokeWidth={2.2} />
+                    <Lock size={13} color={Colors.SlateText} strokeWidth={2.2} />
                   </View>
                 )}
               </Pressable>
@@ -475,13 +475,13 @@ const styles = StyleSheet.create({
     right: -5,
     width: 20,
     height: 20,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: Colors.SlateBg,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#94A3B8',
-    shadowColor: '#000',
+    borderColor: Colors.SlateBorder,
+    shadowColor: Colors.Ink,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: SCREEN_HEIGHT * 0.85,
-    shadowColor: '#064E3B',
+    shadowColor: Colors.Ink,
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.18,
     shadowRadius: 20,
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   upgradeButtonPressed: { opacity: 0.9 },
   upgradeButtonText: {
     ...Typography.Body,
-    color: '#FFFFFF',
+    color: Colors.White,
     fontWeight: '700',
     letterSpacing: 0.3,
   },

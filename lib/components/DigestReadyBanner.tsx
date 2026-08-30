@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { Colors } from '../theme/tokens';
 
 interface DigestReadyBannerProps {
   onPress: () => void;
@@ -18,12 +19,12 @@ const styles = StyleSheet.create({
     top: 48,
     left: 16,
     right: 16,
-    backgroundColor: '#111827',
+    backgroundColor: Colors.TextDark,
     borderRadius: 10,
     paddingVertical: 14,
     paddingHorizontal: 16,
     zIndex: 50,
     elevation: 8,
   },
-  text: { color: '#FFFFFF', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  text: { color: Colors.White, fontSize: 14, fontWeight: '600', textAlign: 'center' },
 });

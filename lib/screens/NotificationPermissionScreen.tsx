@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.Border,
     backgroundColor: Colors.White,
   },
-  timeRowPressed: { backgroundColor: '#F9FAFB' },
+  timeRowPressed: { backgroundColor: Colors.GraySubtle },
   timeIcon: {
     width: 38,
     height: 38,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 30,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: Colors.TagNoteBg,
     backgroundColor: Colors.White,
   },
   button: {

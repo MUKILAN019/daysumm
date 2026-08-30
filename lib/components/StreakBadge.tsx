@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { Flame } from 'lucide-react-native';
-import { Colors } from '../theme/tokens';
+import { Colors, StreakTokens } from '../theme/tokens';
 
 interface StreakBadgeProps {
   currentStreak: number;
@@ -38,31 +38,24 @@ export function StreakBadge({ currentStreak }: StreakBadgeProps) {
   if (currentStreak === 0) return null;
 
   // Milestone color schemes
-  let bg = '#FFF0F3';
-  let border = '#FFE4E9';
+  let tier = StreakTokens.Tier1;
   let flameColor = Colors.Accent;
-  let textColor = '#BE123C';
-  let glowColor = '#F59E0B';
 
   if (currentStreak >= 100) {
-    bg = '#FFEDD5';
-    border = '#F97316';
-    flameColor = '#EA580C';
-    textColor = '#C2410C';
-    glowColor = '#F97316';
+    tier = StreakTokens.Tier2;
+    flameColor = tier.flame;
   } else if (currentStreak >= 30) {
-    bg = '#FEF9C3';
-    border = '#EAB308';
-    flameColor = '#D97706';
-    textColor = '#854D0E';
-    glowColor = '#EAB308';
+    tier = StreakTokens.Tier3;
+    flameColor = tier.flame;
   } else if (currentStreak >= 7) {
-    bg = '#FEF3C7';
-    border = '#F59E0B';
-    flameColor = '#EA580C';
-    textColor = '#B45309';
-    glowColor = '#F59E0B';
+    tier = StreakTokens.Tier4;
+    flameColor = tier.flame;
   }
+
+  const bg = tier.bg;
+  const border = tier.border;
+  const textColor = tier.textColor;
+  const glowColor = tier.glowColor;
 
   const glowScale = pulseAnim.interpolate({
     inputRange: [0, 1],

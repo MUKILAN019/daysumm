@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   optionSelected: { borderColor: Colors.Primary, backgroundColor: Colors.PrimaryTint },
-  optionPressed: { backgroundColor: '#F9FAFB' },
+  optionPressed: { backgroundColor: Colors.GraySubtle },
   optionText: { fontSize: 15, fontWeight: '600', color: Colors.TextPrimary },
   optionTextSelected: { color: Colors.PrimaryDark },
   radio: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#D1D5DB',
+    borderColor: Colors.GrayDisabled,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  otherSubmitDisabled: { backgroundColor: '#C7C2F0' },
+  otherSubmitDisabled: { backgroundColor: Colors.PrimaryDisabled },
   otherSubmitText: { color: Colors.White, fontSize: 15, fontWeight: '700' },
 
   footerNote: { fontSize: 12, color: Colors.TextMuted, textAlign: 'center', marginTop: 24 },

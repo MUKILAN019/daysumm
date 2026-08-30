@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   chipTextSelected: {
-    color: '#FFFFFF',
+    color: Colors.White,
     fontWeight: '700',
   },
   actions: {
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     ...Typography.Body,
-    color: '#FFFFFF',
+    color: Colors.White,
     fontWeight: '700',
     letterSpacing: 0.3,
   },

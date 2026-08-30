@@ -20,6 +20,40 @@ export const Colors = {
   Ink: '#14131A',
   White: '#FFFFFF',
 
+  // Action & Highlight Palette
+  BluePrimary: '#2563EB',
+  BlueDark: '#1D4ED8',
+  BlueLight: '#EFF6FF',
+  BlueBorder: '#BFDBFE',
+
+  // Slate Neutrals
+  SlateMuted: '#CBD5E1',
+  SlateText: '#64748B',
+  SlateBorder: '#94A3B8',
+  SlateBg: '#F1F5F9',
+
+  // Danger & Error Palette
+  DangerDark: '#B91C1C',
+  DangerDeep: '#991B1B',
+  DangerBg: '#FEF2F2',
+  DangerBorder: '#FCA5A5',
+  DangerSoftBg: '#FEE2E2',
+  DangerBorderSoft: '#FECACA',
+
+  // Warning & Amber Palette
+  WarningLight: '#FFF8D6',
+  WarningBg: '#FEF3C7',
+  WarningBorder: '#F59E0B',
+  WarningText: '#B45309',
+
+  // Extended Neutrals
+  GrayBg: '#F7F8FA',
+  GraySubtle: '#F9FAFB',
+  GrayDisabled: '#D1D5DB',
+  PrimaryDisabled: '#C7C2F0',
+  TextDark: '#111827',
+  TextSubtle: '#6B7280',
+
   // Tag Badge tokens (Task 3)
   TagBlockerBg: '#FEF2F2',
   TagBlockerText: '#DC2626',
@@ -41,6 +75,38 @@ export const Colors = {
   TagNoteText: '#4B5563',
   TagNoteBorder: '#E5E7EB',
 };
+
+export const StreakTokens = {
+  Tier1: {
+    bg: '#FFF0F3',
+    border: '#FFE4E9',
+    flame: '#BE123C',
+    textColor: '#BE123C',
+    glowColor: '#F59E0B',
+  },
+  Tier2: {
+    bg: '#FFEDD5',
+    border: '#F97316',
+    flame: '#EA580C',
+    textColor: '#C2410C',
+    glowColor: '#F97316',
+  },
+  Tier3: {
+    bg: '#FEF9C3',
+    border: '#EAB308',
+    flame: '#D97706',
+    textColor: '#854D0E',
+    glowColor: '#EAB308',
+  },
+  Tier4: {
+    bg: '#FEF3C7',
+    border: '#F59E0B',
+    flame: '#EA580C',
+    textColor: '#B45309',
+    glowColor: '#F59E0B',
+  },
+};
+
 
 const fontFamily = 'Roboto';
 

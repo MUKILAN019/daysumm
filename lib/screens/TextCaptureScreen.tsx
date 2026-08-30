@@ -10,7 +10,7 @@ import {
   View,
   Image,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { Colors, Elevation, Typography, Spacing, Radii } from '../theme/tokens';
 import * as Haptics from 'expo-haptics';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 16,
     minHeight: 220,
-    shadowColor: '#0F172A',
+    shadowColor: Elevation.shadowColor,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     color: Colors.TextSecondary,
     fontWeight: '600',
   },
-  tagTextActive: { color: '#FFFFFF' },
+  tagTextActive: { color: Colors.White },
 
   /* Action bar */
   actionBar: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     ...Typography.Body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.White,
     letterSpacing: 0.3,
   },
 });

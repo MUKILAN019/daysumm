@@ -233,9 +233,9 @@ const styles = StyleSheet.create({
   proBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.WarningBg,
     borderWidth: 1.5,
-    borderColor: '#F59E0B',
+    borderColor: Colors.WarningBorder,
     borderRadius: Radii.card,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -262,13 +262,13 @@ const styles = StyleSheet.create({
   proBannerTitle: {
     ...Typography.Body,
     fontWeight: '800',
-    color: '#111827',
+    color: Colors.TextDark,
     marginBottom: 4,
   },
   proBannerText: {
     ...Typography.Secondary,
     fontSize: 13,
-    color: '#4B5563',
+    color: Colors.TextSecondary,
     lineHeight: 18,
   },
   section: {
@@ -314,15 +314,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: Colors.DangerBg,
     borderWidth: 1.5,
-    borderColor: '#FCA5A5',
+    borderColor: Colors.DangerBorder,
     borderRadius: Radii.card,
     paddingVertical: 14,
     paddingHorizontal: Spacing.md,
   },
   signOutCardPressed: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: Colors.DangerSoftBg,
   },
   signOutCardText: {
     ...Typography.Body,

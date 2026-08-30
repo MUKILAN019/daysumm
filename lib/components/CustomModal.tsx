@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable, Image, type ImageSourcePropType } from 'react-native';
-import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { Colors, Elevation, Spacing, Typography, Radii } from '../theme/tokens';
 
 export type CustomModalType = 'info' | 'warning' | 'success';
 
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
+    shadowColor: Elevation.shadowColor,
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.2,
     shadowRadius: 28,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     ...Typography.Body,
-    color: '#FFFFFF',
+    color: Colors.White,
     fontWeight: '700',
   },
   secondaryButtonText: {

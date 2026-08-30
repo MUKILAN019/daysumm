@@ -213,7 +213,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                   return (
                     <View key={pkg.identifier} style={styles.annualPackageWrapper}>
                       <View style={styles.bestValueRibbon}>
-                        <Sparkles size={11} color="#B45309" strokeWidth={2.5} />
+                        <Sparkles size={11} color={Colors.WarningText} strokeWidth={2.5} />
                         <Text style={styles.bestValueText}>BEST VALUE</Text>
                       </View>
                       <Pressable
@@ -227,7 +227,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                         ]}
                       >
                         {isPurchasing ? (
-                          <ActivityIndicator color="#FFFFFF" />
+                          <ActivityIndicator color={Colors.White} />
                         ) : (
                           <View style={{ alignItems: 'center', gap: 4 }}>
                             <View style={styles.calloutRow}>
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#FFF8D6',
+    backgroundColor: Colors.WarningLight,
     shadowColor: Colors.ProGold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
@@ -426,9 +426,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.WarningBg,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: Colors.WarningBorder,
     paddingHorizontal: 12,
     paddingVertical: 3,
     borderRadius: 999,
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   bestValueText: {
     fontSize: 10.5,
     fontWeight: '800',
-    color: '#B45309',
+    color: Colors.WarningText,
     letterSpacing: 0.8,
   },
   annualPackageButton: {
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   annualButtonTitle: {
-    color: '#FFFFFF',
+    color: Colors.White,
     ...Typography.Body,
     fontWeight: '800',
     fontSize: 16.5,

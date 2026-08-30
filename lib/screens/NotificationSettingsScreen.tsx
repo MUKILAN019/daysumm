@@ -226,7 +226,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               ]}
             >
               {saving ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={Colors.White} />
               ) : (
                 <Text style={styles.saveButtonText}>Save time</Text>
               )}
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     ...Typography.Body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: Colors.White,
     letterSpacing: 0.3,
   },
 });
