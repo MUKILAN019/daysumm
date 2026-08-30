@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   type GestureResponderEvent,
@@ -10,7 +11,7 @@ import {
   FlatList,
   Image,
 } from 'react-native';
-import { Mic, Square, Pause, Play, FileText, AlertCircle, Trash2 } from 'lucide-react-native';
+import { Mic, Square, Pause, Play, FileText, AlertCircle, Trash2, Check, Clock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets, getRecordingPermissionsAsync, requestRecordingPermissionsAsync } from 'expo-audio';
 import { CustomModal } from '../components/CustomModal';
@@ -35,6 +36,50 @@ const TAG_LABELS: Record<string, string> = {
   decision: 'Decision',
   note: 'Note',
 };
+
+function getTagStyle(tag: string) {
+  switch (tag) {
+    case 'blocker':
+      return { bg: Colors.TagBlockerBg, text: Colors.TagBlockerText, border: Colors.TagBlockerBorder };
+    case 'highlight':
+      return { bg: Colors.TagHighlightBg, text: Colors.TagHighlightText, border: Colors.TagHighlightBorder };
+    case 'actionItem':
+      return { bg: Colors.TagActionBg, text: Colors.TagActionText, border: Colors.TagActionBorder };
+    case 'decision':
+      return { bg: Colors.TagDecisionBg, text: Colors.TagDecisionText, border: Colors.TagDecisionBorder };
+    case 'note':
+    default:
+      return { bg: Colors.TagNoteBg, text: Colors.TagNoteText, border: Colors.TagNoteBorder };
+  }
+}
+
+function AnimatedEntryItem({ children }: { children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 360,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, translateY]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {children}
+    </Animated.View>
+  );
+}
 
 function formatTime(millis: number) {
   const totalSeconds = Math.floor(millis / 1000);
@@ -63,6 +108,7 @@ export function HomeScreen({
 
   const isRecording = recorderState.isRecording;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const processingAnim = useRef(new Animated.Value(1)).current;
   const barsAnim = useRef([
     new Animated.Value(0.2),
     new Animated.Value(0.4),
@@ -97,9 +143,35 @@ export function HomeScreen({
     return () => loop.stop();
   }, [isRecording, pulseAnim]);
 
+  // Processing pulse animation
+  useEffect(() => {
+    if (!isProcessing) {
+      processingAnim.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(processingAnim, {
+          toValue: 1.15,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(processingAnim, {
+          toValue: 1,
+          duration: 650,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isProcessing, processingAnim]);
+
   // Waveform animation
   useEffect(() => {
-    if (!isRecording) {
+    if (!isRecording && !isProcessing) {
       barsAnim.forEach((anim) => anim.setValue(0.2));
       return;
     }
@@ -113,14 +185,14 @@ export function HomeScreen({
           useNativeDriver: true,
         }),
       ]).start(({ finished }) => {
-        if (finished && recorder.isRecording) {
+        if (finished && (recorder.isRecording || isProcessing)) {
           animateBar(anim);
         }
       });
     };
 
     barsAnim.forEach(animateBar);
-  }, [isRecording, barsAnim, recorder.isRecording]);
+  }, [isRecording, isProcessing, barsAnim, recorder.isRecording]);
 
   const dateStr = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -213,20 +285,27 @@ export function HomeScreen({
                   style={[
                     styles.micHalo,
                     {
-                      transform: [{ scale: pulseAnim }],
-                      opacity: isRecording ? 1 : 0,
+                      transform: [{ scale: isProcessing ? processingAnim : pulseAnim }],
+                      opacity: isRecording || isProcessing ? 1 : 0,
+                      backgroundColor: isProcessing ? '#DDD6FE' : Colors.PrimaryTint,
                     },
                   ]}
                 />
                 <Pressable
                   accessibilityRole="button"
                   onPress={handleMicPress}
+                  disabled={isProcessing}
                   style={({ pressed }) => [
                     styles.micButton,
-                    pressed && !isRecording && styles.micButtonPressed,
+                    isProcessing && { backgroundColor: Colors.Primary },
+                    pressed && !isRecording && !isProcessing && styles.micButtonPressed,
                   ]}
                 >
-                  <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
+                  {isProcessing ? (
+                    <ActivityIndicator color={Colors.Background} size="large" />
+                  ) : (
+                    <Mic size={40} strokeWidth={1.75} color={Colors.Background} />
+                  )}
                 </Pressable>
               </View>
 
@@ -239,6 +318,7 @@ export function HomeScreen({
                       styles.waveformBar,
                       {
                         transform: [{ scaleY: anim }],
+                        backgroundColor: isProcessing ? Colors.Primary : Colors.Primary,
                       },
                     ]}
                   />
@@ -260,10 +340,13 @@ export function HomeScreen({
                     <Square size={16} strokeWidth={2.5} color={Colors.Background} fill={Colors.Background} />
                   </Pressable>
                 </View>
+              ) : isProcessing ? (
+                <View style={styles.processingStatusContainer}>
+                  <ActivityIndicator size="small" color={Colors.Primary} />
+                  <Text style={styles.processingStatusText}>Processing voice log…</Text>
+                </View>
               ) : (
-                <Text style={styles.hintText}>
-                  {isProcessing ? 'Processing...' : 'Tap to record'}
-                </Text>
+                <Text style={styles.hintText}>Tap to record</Text>
               )}
             </View>
 
@@ -281,54 +364,80 @@ export function HomeScreen({
         }
         ItemSeparatorComponent={() => <View style={{ height: Spacing.sm }} />}
         renderItem={({ item: entry }) => (
-          <Pressable
-            style={styles.entryItem}
-            onPress={() => onEntryPress?.(entry)}
-          >
-            <View style={styles.entryIconWrapper}>
-              {entry.source === 'voice' ? (
-                <Mic size={14} color={Colors.PrimaryDeep} />
-              ) : (
-                <FileText size={14} color={Colors.PrimaryDeep} />
-              )}
-            </View>
-            <View style={styles.entryTextContent}>
-              <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
-              {(entry.tags && entry.tags.length > 0) || (((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected) ? (
-                <View style={styles.tagsContainer}>
-                  {entry.tags?.map(tag => (
-                    <View key={tag} style={styles.tagBadge}>
-                      <Text style={styles.tagBadgeText}>{TAG_LABELS[tag] || tag}</Text>
-                    </View>
-                  ))}
-                  {((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected && (
-                    <View style={styles.reviewBadge}>
-                      <AlertCircle size={10} color={Colors.Warning} strokeWidth={2.5} />
-                      <Text style={styles.reviewBadgeText}>Needs review</Text>
-                    </View>
-                  )}
-                </View>
-              ) : null}
-              <Text style={styles.entryMeta}>
-                {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {entry.synced ? 'Synced' : 'Local'}
-              </Text>
-            </View>
+          <AnimatedEntryItem key={entry.localId}>
             <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Delete entry"
-              hitSlop={8}
-              onPress={(event: GestureResponderEvent) => {
-                event.stopPropagation();
-                onDeleteEntryPress?.(entry);
-              }}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                pressed && styles.deleteButtonPressed,
-              ]}
+              style={styles.entryItem}
+              onPress={() => onEntryPress?.(entry)}
             >
-              <Trash2 size={16} color={Colors.Danger} strokeWidth={2} />
+              <View style={styles.entryIconWrapper}>
+                {entry.source === 'voice' ? (
+                  <Mic size={14} color={Colors.PrimaryDeep} />
+                ) : (
+                  <FileText size={14} color={Colors.PrimaryDeep} />
+                )}
+              </View>
+              <View style={styles.entryTextContent}>
+                <Text style={styles.entryText} numberOfLines={2}>{entry.text}</Text>
+                {(entry.tags && entry.tags.length > 0) || (((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected) ? (
+                  <View style={styles.tagsContainer}>
+                    {entry.tags?.map(tag => {
+                      const styleInfo = getTagStyle(tag);
+                      return (
+                        <View
+                          key={tag}
+                          style={[
+                            styles.tagBadge,
+                            {
+                              backgroundColor: styleInfo.bg,
+                              borderColor: styleInfo.border,
+                              borderWidth: 1,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.tagBadgeText, { color: styleInfo.text }]}>
+                            {TAG_LABELS[tag] || tag}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                    {((entry.confidence !== undefined && entry.confidence < 0.6) || entry.needsReview) && !entry.userCorrected && (
+                      <View style={styles.reviewBadge}>
+                        <AlertCircle size={10} color={Colors.Warning} strokeWidth={2.5} />
+                        <Text style={styles.reviewBadgeText}>Needs review</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : null}
+                <View style={styles.entryMetaRow}>
+                  <Text style={styles.entryMeta}>
+                    {new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                  <View style={styles.syncIconContainer} accessibilityLabel={entry.synced ? "Synced" : "Local entry"}>
+                    {entry.synced ? (
+                      <Check size={12} color={Colors.Success} strokeWidth={2.5} />
+                    ) : (
+                      <Clock size={12} color={Colors.TextMuted} strokeWidth={2} />
+                    )}
+                  </View>
+                </View>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete entry"
+                hitSlop={8}
+                onPress={(event: GestureResponderEvent) => {
+                  event.stopPropagation();
+                  onDeleteEntryPress?.(entry);
+                }}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  pressed && styles.deleteButtonPressed,
+                ]}
+              >
+                <Trash2 size={16} color={Colors.Danger} strokeWidth={2} />
+              </Pressable>
             </Pressable>
-          </Pressable>
+          </AnimatedEntryItem>
         )}
       />
       {/* Mic Rationale Modal */}
@@ -456,7 +565,21 @@ const styles = StyleSheet.create({
   hintText: {
     ...Typography.Secondary,
     color: Colors.TextMuted,
-    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  processingStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.PrimaryTint,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: Radii.button,
+  },
+  processingStatusText: {
+    ...Typography.Secondary,
+    color: Colors.PrimaryDeep,
+    fontWeight: '700',
   },
   recentSection: {
     width: '100%',
@@ -520,10 +643,19 @@ const styles = StyleSheet.create({
     color: Colors.TextPrimary,
     lineHeight: 20,
   },
+  entryMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   entryMeta: {
     ...Typography.Label,
     color: Colors.TextMuted,
-    marginTop: 2,
+  },
+  syncIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tagsContainer: {
     flexDirection: 'row',

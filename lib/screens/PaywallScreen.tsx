@@ -9,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
-import { CheckCircle2, Sparkles, Star } from 'lucide-react-native';
+import { CheckCircle2, Sparkles, Star, Zap } from 'lucide-react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
@@ -157,8 +157,45 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
               {packages.map((pkg) => {
                 const isPurchasing = purchasingPackageId === pkg.identifier;
                 const isMonthly = pkg.packageType === 'MONTHLY';
-                const suffix = pkg.packageType === 'ANNUAL' ? '/year' : '/month';
-                
+                const isAnnual = pkg.packageType === 'ANNUAL';
+                const suffix = isAnnual ? '/year' : '/month';
+
+                if (isAnnual) {
+                  return (
+                    <View key={pkg.identifier} style={styles.annualPackageWrapper}>
+                      <View style={styles.bestValueRibbon}>
+                        <Sparkles size={11} color="#B45309" strokeWidth={2.5} />
+                        <Text style={styles.bestValueText}>BEST VALUE</Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={purchasingPackageId !== null}
+                        onPress={() => handlePurchase(pkg)}
+                        style={({ pressed }) => [
+                          styles.annualPackageButton,
+                          pressed && styles.packageButtonPressed,
+                          isPurchasing && styles.packageButtonDisabled,
+                        ]}
+                      >
+                        {isPurchasing ? (
+                          <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                          <View style={{ alignItems: 'center', gap: 4 }}>
+                            <View style={styles.calloutRow}>
+                              <Sparkles size={15} color={Colors.ProGold} strokeWidth={2.5} />
+                              <Text style={styles.annualButtonTitle}>Unlimited Digests</Text>
+                              <Zap size={14} color={Colors.ProGold} strokeWidth={2.5} />
+                            </View>
+                            <Text style={styles.annualPriceText}>
+                              {pkg.product.priceString}{suffix} · 7-Day Free Trial
+                            </Text>
+                          </View>
+                        )}
+                      </Pressable>
+                    </View>
+                  );
+                }
+
                 return (
                   <Pressable
                     key={pkg.identifier}
@@ -166,25 +203,21 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                     disabled={purchasingPackageId !== null}
                     onPress={() => handlePurchase(pkg)}
                     style={({ pressed }) => [
-                      styles.packageButton,
-                      pressed && styles.packageButtonPressed,
+                      styles.monthlyPackageButton,
+                      pressed && styles.monthlyPackageButtonPressed,
                       isPurchasing && styles.packageButtonDisabled,
                     ]}
                   >
                     {isPurchasing ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color={Colors.Primary} />
                     ) : (
                       <View style={{ alignItems: 'center' }}>
-                        <Text style={styles.packageButtonText}>
-                          {isMonthly 
-                            ? 'Start 7-Day Free Trial' 
-                            : `Get Pro — ${pkg.product.priceString}${suffix}`}
+                        <Text style={styles.monthlyButtonText}>
+                          Start 7-Day Free Trial
                         </Text>
-                        {isMonthly && (
-                          <Text style={[styles.fineprint, { color: 'rgba(255,255,255,0.8)', marginTop: 2 }]}>
-                            Then {pkg.product.priceString}{suffix}
-                          </Text>
-                        )}
+                        <Text style={styles.monthlyFineprint}>
+                          Then {pkg.product.priceString}{suffix}
+                        </Text>
                       </View>
                     )}
                   </Pressable>
@@ -327,36 +360,96 @@ const styles = StyleSheet.create({
     color: Colors.TextPrimary,
   },
 
-  purchaseSection: { gap: Spacing.sm },
-  packageList: { gap: 10 },
-  packageButton: {
-    minHeight: 56,
-    borderRadius: Radii.button,
+  purchaseSection: { gap: Spacing.md },
+  packageList: { gap: 14 },
+
+  annualPackageWrapper: {
+    position: 'relative',
+    marginTop: 8,
+  },
+  bestValueRibbon: {
+    position: 'absolute',
+    top: -10,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+    borderRadius: 999,
+    zIndex: 10,
+  },
+  bestValueText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#B45309',
+    letterSpacing: 0.8,
+  },
+  annualPackageButton: {
+    minHeight: 64,
+    borderRadius: 20,
     backgroundColor: Colors.Primary,
+    borderWidth: 2,
+    borderColor: Colors.ProGold,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.md,
-    shadowColor: Colors.PrimaryDeep,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 10,
-    elevation: 5,
+    paddingVertical: 10,
+    shadowColor: Colors.ProGold,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  packageButtonPressed: { backgroundColor: Colors.PrimaryDark },
-  packageButtonDisabled: { opacity: 0.7 },
-  packageButtonText: {
+  calloutRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  annualButtonTitle: {
     color: '#FFFFFF',
     ...Typography.Body,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontWeight: '800',
+    fontSize: 16.5,
   },
-  fineprint: {
+  annualPriceText: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+
+  monthlyPackageButton: {
+    minHeight: 52,
+    borderRadius: 20,
+    backgroundColor: Colors.Surface,
+    borderWidth: 1.5,
+    borderColor: Colors.Border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+  },
+  monthlyPackageButtonPressed: {
+    backgroundColor: Colors.Background,
+  },
+  monthlyButtonText: {
+    color: Colors.TextPrimary,
+    ...Typography.Body,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  monthlyFineprint: {
     ...Typography.Secondary,
     fontSize: 12,
     color: Colors.TextMuted,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 2,
   },
+  packageButtonPressed: { backgroundColor: Colors.PrimaryDark },
+  packageButtonDisabled: { opacity: 0.7 },
 
   errorText: {
     ...Typography.Secondary,

@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Colors } from '../theme/tokens';
 import { ScreenTransition } from '../components/ScreenTransition';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { StatusBar } from 'expo-status-bar';
@@ -20,18 +21,6 @@ interface RoleSelectionScreenProps {
 }
 
 const ROLE_OPTIONS = ['Software Engineer', 'Manager', 'Freelancer', 'Other'];
-
-const C = {
-  primary: '#6C5CE7',
-  primaryDeep: '#4B3FC4',
-  primaryDark: '#2E2470',
-  tint: '#EFECFE',
-  ink: '#111827',
-  body: '#4B5563',
-  line: '#E5E7EB',
-  white: '#FFFFFF',
-  muted: '#9CA3AF',
-};
 
 const HEADER_HEIGHT = 148;
 
@@ -126,7 +115,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
                     </Text>
                     <View style={[styles.radio, isSelected && styles.radioSelected]}>
                       {isSelected && isSaving && role !== 'Other' ? (
-                        <ActivityIndicator size="small" color={C.primary} />
+                        <ActivityIndicator size="small" color={Colors.Primary} />
                       ) : isSelected ? (
                         <View style={styles.radioInner} />
                       ) : null}
@@ -141,7 +130,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
                 <TextInput
                   autoFocus
                   placeholder="Tell us your role…"
-                  placeholderTextColor={C.muted}
+                  placeholderTextColor={Colors.TextMuted}
                   style={styles.otherInput}
                   value={otherText}
                   onChangeText={setOtherText}
@@ -160,7 +149,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
                   ]}
                 >
                   {isSaving ? (
-                    <ActivityIndicator color={C.white} />
+                    <ActivityIndicator color={Colors.White} />
                   ) : (
                     <Text style={styles.otherSubmitText}>Continue</Text>
                   )}
@@ -177,7 +166,7 @@ export function RoleSelectionScreen({ onSelect }: RoleSelectionScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.white },
+  container: { flex: 1, backgroundColor: Colors.White },
 
   headerLayer: {
     position: 'absolute',
@@ -188,7 +177,7 @@ const styles = StyleSheet.create({
   },
   header: {
     height: HEADER_HEIGHT,
-    backgroundColor: C.primaryDeep,
+    backgroundColor: Colors.PrimaryDeep,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     paddingTop: 52,
@@ -198,8 +187,8 @@ const styles = StyleSheet.create({
   },
   progressRow: { flexDirection: 'row', gap: 6 },
   progressDot: { width: 24, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' },
-  progressDotActive: { backgroundColor: C.white },
-  progressDotDone: { backgroundColor: C.white },
+  progressDotActive: { backgroundColor: Colors.White },
+  progressDotDone: { backgroundColor: Colors.White },
   headerStep: {
     marginTop: 12,
     color: 'rgba(255,255,255,0.85)',
@@ -227,14 +216,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: C.ink,
+    color: Colors.TextPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: C.body,
+    color: Colors.TextSecondary,
     marginBottom: 22,
     textAlign: 'center',
   },
@@ -245,15 +234,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: C.line,
-    backgroundColor: C.white,
+    borderColor: Colors.Border,
+    backgroundColor: Colors.White,
     minHeight: 60,
     paddingHorizontal: 20,
   },
-  optionSelected: { borderColor: C.primary, backgroundColor: C.tint },
+  optionSelected: { borderColor: Colors.Primary, backgroundColor: Colors.PrimaryTint },
   optionPressed: { backgroundColor: '#F9FAFB' },
-  optionText: { fontSize: 15, fontWeight: '600', color: C.ink },
-  optionTextSelected: { color: C.primaryDark },
+  optionText: { fontSize: 15, fontWeight: '600', color: Colors.TextPrimary },
+  optionTextSelected: { color: Colors.PrimaryDark },
   radio: {
     width: 22,
     height: 22,
@@ -263,29 +252,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioSelected: { borderColor: C.primary },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
+  radioSelected: { borderColor: Colors.Primary },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.Primary },
 
   otherRow: { marginTop: 14, gap: 10 },
   otherInput: {
     borderWidth: 1.5,
-    borderColor: C.line,
+    borderColor: Colors.Border,
     borderRadius: 16,
     minHeight: 52,
     paddingHorizontal: 18,
     fontSize: 15,
-    color: C.ink,
-    backgroundColor: C.white,
+    color: Colors.TextPrimary,
+    backgroundColor: Colors.White,
   },
   otherSubmitButton: {
     minHeight: 52,
     borderRadius: 999,
-    backgroundColor: C.primary,
+    backgroundColor: Colors.Primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   otherSubmitDisabled: { backgroundColor: '#C7C2F0' },
-  otherSubmitText: { color: C.white, fontSize: 15, fontWeight: '700' },
+  otherSubmitText: { color: Colors.White, fontSize: 15, fontWeight: '700' },
 
-  footerNote: { fontSize: 12, color: C.muted, textAlign: 'center', marginTop: 24 },
+  footerNote: { fontSize: 12, color: Colors.TextMuted, textAlign: 'center', marginTop: 24 },
 });

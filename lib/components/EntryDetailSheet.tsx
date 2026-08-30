@@ -25,6 +25,22 @@ const TAG_OPTIONS: { key: string; label: string }[] = [
   { key: 'note', label: 'Note' },
 ];
 
+function getTagStyle(tag: string) {
+  switch (tag) {
+    case 'blocker':
+      return { bg: Colors.TagBlockerBg, text: Colors.TagBlockerText, border: Colors.TagBlockerBorder };
+    case 'highlight':
+      return { bg: Colors.TagHighlightBg, text: Colors.TagHighlightText, border: Colors.TagHighlightBorder };
+    case 'actionItem':
+      return { bg: Colors.TagActionBg, text: Colors.TagActionText, border: Colors.TagActionBorder };
+    case 'decision':
+      return { bg: Colors.TagDecisionBg, text: Colors.TagDecisionText, border: Colors.TagDecisionBorder };
+    case 'note':
+    default:
+      return { bg: Colors.TagNoteBg, text: Colors.TagNoteText, border: Colors.TagNoteBorder };
+  }
+}
+
 function getConfidencePhrase(confidence?: number): string | null {
   if (confidence === undefined || confidence === null) return null;
   if (confidence < 0.6) return 'Not sure — worth a quick check';
@@ -279,16 +295,26 @@ export function EntryDetailSheet({
                   <View style={styles.chipContainer}>
                     {TAG_OPTIONS.map((tag) => {
                       const isSelected = selectedTags.includes(tag.key);
+                      const styleInfo = getTagStyle(tag.key);
                       return (
                         <Pressable
                           key={tag.key}
                           onPress={() => toggleTag(tag.key)}
-                          style={[styles.chip, isSelected && styles.chipSelected]}
+                          style={[
+                            styles.chip,
+                            isSelected && {
+                              backgroundColor: styleInfo.bg,
+                              borderColor: styleInfo.border,
+                            },
+                          ]}
                         >
                           <Text
                             style={[
                               styles.chipText,
-                              isSelected && styles.chipTextSelected,
+                              isSelected && {
+                                color: styleInfo.text,
+                                fontWeight: '700',
+                              },
                             ]}
                           >
                             {tag.label}

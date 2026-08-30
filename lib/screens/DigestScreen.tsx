@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Text, Pressable, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Text, Pressable, Image, Animated, Easing } from 'react-native';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
@@ -7,6 +7,40 @@ import { Wand2 } from 'lucide-react-native';
 import { StreakBadge } from '../components/StreakBadge';
 import { AmbientBackground } from '../components/AmbientBackground';
 import type { Digest } from '../functions/generateDigest';
+
+function ShimmerBox({ style }: { style: any }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 850,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration: 850,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [anim]);
+
+  const opacity = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.95],
+  });
+
+  return (
+    <Animated.View style={[style, { opacity, backgroundColor: Colors.Border }]} />
+  );
+}
 
 interface DigestScreenProps {
   digest: Digest | null;
@@ -60,11 +94,12 @@ export function DigestScreen({
 
           {isGeneratingDigest ? (
             <View style={styles.skeletonCard}>
-              <View style={styles.skeletonHeadline} />
-              <View style={styles.skeletonLine} />
-              <View style={[styles.skeletonLine, { width: '85%' }]} />
-              <View style={[styles.skeletonLine, { width: '70%' }]} />
-              <View style={styles.skeletonLine} />
+              <ShimmerBox style={styles.skeletonHeadline} />
+              <ShimmerBox style={styles.skeletonLine} />
+              <ShimmerBox style={[styles.skeletonLine, { width: '85%' }]} />
+              <ShimmerBox style={[styles.skeletonLine, { width: '70%' }]} />
+              <ShimmerBox style={styles.skeletonLine} />
+              <ShimmerBox style={[styles.skeletonLine, { width: '90%' }]} />
             </View>
           ) : digestError ? (
             <View style={styles.digestErrorCard}>

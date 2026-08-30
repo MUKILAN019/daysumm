@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Share as ShareIcon } from 'lucide-react-native';
 
 import type { Digest } from '../functions/generateDigest';
@@ -44,7 +44,38 @@ export function DigestCard({ digest }: DigestCardProps) {
     { title: 'Action items', items: digest.actionItems },
     { title: 'Decisions', items: digest.decisions },
     { title: 'Blockers', items: digest.blockers },
-  ];
+  ].filter(
+    (s) =>
+      s.items.length > 0 &&
+      !(
+        s.items.length === 1 &&
+        (s.items[0].trim().toLowerCase() === 'none' ||
+          s.items[0].trim().toLowerCase() === 'null')
+      )
+  );
+
+  const hasStatusUpdate =
+    digest.statusUpdate &&
+    digest.statusUpdate.trim().toLowerCase() !== 'none' &&
+    digest.statusUpdate.trim().toLowerCase() !== 'null';
+
+  const totalAnimatedItems = 1 + sections.length + (hasStatusUpdate ? 1 : 0);
+  const animValues = useRef<Animated.Value[]>(
+    Array.from({ length: 8 }, () => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    animValues.forEach((anim) => anim.setValue(0));
+    const animations = animValues.slice(0, totalAnimatedItems).map((anim) =>
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      })
+    );
+    Animated.stagger(90, animations).start();
+  }, [digest, totalAnimatedItems, animValues]);
 
   async function handleShare() {
     try {
@@ -58,26 +89,56 @@ export function DigestCard({ digest }: DigestCardProps) {
 
   return (
     <View style={styles.card}>
-      <View style={styles.headerRow}>
+      <Animated.View
+        style={[
+          styles.headerRow,
+          {
+            opacity: animValues[0],
+            transform: [
+              {
+                translateY: animValues[0].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+              },
+              {
+                scale: animValues[0].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.94, 1.0],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Text style={styles.headline}>{digest.headline}</Text>
         <Pressable accessibilityRole="button" onPress={handleShare} style={styles.shareButton}>
           <ShareIcon size={16} color={Colors.PrimaryDeep} />
           <Text style={styles.shareButtonText}>Share</Text>
         </Pressable>
-      </View>
+      </Animated.View>
 
-      {sections
-        .filter(
-          (s) =>
-            s.items.length > 0 &&
-            !(
-              s.items.length === 1 &&
-              (s.items[0].trim().toLowerCase() === 'none' ||
-                s.items[0].trim().toLowerCase() === 'null')
-            )
-        )
-        .map((section) => (
-          <View key={section.title} style={styles.section}>
+      {sections.map((section, idx) => {
+        const animIndex = idx + 1;
+        const anim = animValues[animIndex] || animValues[0];
+        return (
+          <Animated.View
+            key={section.title}
+            style={[
+              styles.section,
+              {
+                opacity: anim,
+                transform: [
+                  {
+                    translateY: anim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <Text style={styles.sectionTitle}>{section.title}</Text>
             {section.items.map((item) => (
               <View key={item} style={styles.bulletRow}>
@@ -85,20 +146,38 @@ export function DigestCard({ digest }: DigestCardProps) {
                 <Text style={styles.bulletItem}>{item}</Text>
               </View>
             ))}
-          </View>
-        ))}
+          </Animated.View>
+        );
+      })}
 
-      {digest.statusUpdate &&
-        digest.statusUpdate.trim().toLowerCase() !== 'none' &&
-        digest.statusUpdate.trim().toLowerCase() !== 'null' && (
-          <View style={styles.section}>
+      {hasStatusUpdate && (() => {
+        const animIndex = 1 + sections.length;
+        const anim = animValues[animIndex] || animValues[0];
+        return (
+          <Animated.View
+            style={[
+              styles.section,
+              {
+                opacity: anim,
+                transform: [
+                  {
+                    translateY: anim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
             <Text style={styles.sectionTitle}>Status update</Text>
             <View style={styles.bulletRow}>
               <View style={styles.bulletPoint} />
               <Text style={styles.bulletItem}>{digest.statusUpdate}</Text>
             </View>
-          </View>
-        )}
+          </Animated.View>
+        );
+      })()}
     </View>
   );
 }

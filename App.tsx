@@ -72,6 +72,7 @@ import { EntryDetailSheet, type EntryDetailSaveParams } from './lib/components/E
 import { translateText } from './lib/functions/translateText';
 import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/tokens';
 import { CustomModal } from './lib/components/CustomModal';
+import { ScreenTransition } from './lib/components/ScreenTransition';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 10 * 1000; // 10-second debounce for entry-save syncs
@@ -971,7 +972,9 @@ export default function App() {
 
       {/* Main content area */}
       <View style={styles.contentArea}>
-        {renderTabContent()}
+        <ScreenTransition key={activeTab}>
+          {renderTabContent()}
+        </ScreenTransition>
       </View>
 
       {/* Bottom tab bar */}

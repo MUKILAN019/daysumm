@@ -13,22 +13,11 @@ import { Clock, Check } from 'lucide-react-native';
 import { ScreenTransition } from '../components/ScreenTransition';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { StatusBar } from 'expo-status-bar';
+import { Colors } from '../theme/tokens';
 
 interface NotificationPermissionScreenProps {
   onContinue: (time: string) => Promise<void>;
 }
-
-const C = {
-  primary: '#6C5CE7',
-  primaryDeep: '#4B3FC4',
-  primaryDark: '#2E2470',
-  tint: '#EFECFE',
-  ink: '#111827',
-  body: '#4B5563',
-  line: '#E5E7EB',
-  white: '#FFFFFF',
-  muted: '#9CA3AF',
-};
 
 const TOP_HEIGHT = 148;
 
@@ -103,7 +92,7 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
             style={({ pressed }) => [styles.timeRow, pressed && styles.timeRowPressed]}
           >
             <View style={styles.timeIcon}>
-              <Clock size={18} color={C.primary} strokeWidth={2} />
+              <Clock size={18} color={Colors.Primary} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.timeLabel}>Daily digest time</Text>
@@ -140,7 +129,7 @@ export function NotificationPermissionScreen({ onContinue }: NotificationPermiss
             ]}
           >
             {isRequesting ? (
-              <ActivityIndicator color={C.white} />
+              <ActivityIndicator color={Colors.White} />
             ) : (
               <Text style={styles.buttonText}>Enable Notifications</Text>
             )}
@@ -155,7 +144,7 @@ function FeatureRow({ label }: { label: string }) {
   return (
     <View style={styles.featureRow}>
       <View style={styles.checkDot}>
-        <Check size={12} color={C.primary} strokeWidth={3} />
+        <Check size={12} color={Colors.Primary} strokeWidth={3} />
       </View>
       <Text style={styles.featureText}>{label}</Text>
     </View>
@@ -163,13 +152,13 @@ function FeatureRow({ label }: { label: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.primaryDeep },
+  container: { flex: 1, backgroundColor: Colors.PrimaryDeep },
 
   top: { height: TOP_HEIGHT, alignItems: 'center', paddingTop: 52 },
   progressRow: { flexDirection: 'row', gap: 6 },
   progressDot: { width: 24, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.35)' },
-  progressDotActive: { backgroundColor: C.white },
-  progressDotDone: { backgroundColor: C.white },
+  progressDotActive: { backgroundColor: Colors.White },
+  progressDotDone: { backgroundColor: Colors.White },
   headerStep: {
     marginTop: 12,
     color: 'rgba(255,255,255,0.85)',
@@ -181,7 +170,7 @@ const styles = StyleSheet.create({
 
   sheet: {
     flex: 1,
-    backgroundColor: C.white,
+    backgroundColor: Colors.White,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
   },
@@ -204,21 +193,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
-    color: C.primary,
+    color: Colors.Primary,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: C.ink,
+    color: Colors.TextPrimary,
     marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 14.5,
     lineHeight: 21,
-    color: C.body,
+    color: Colors.TextSecondary,
     marginBottom: 22,
     textAlign: 'center',
   },
@@ -229,13 +218,13 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: C.tint,
-    borderColor: C.primary,
+    backgroundColor: Colors.PrimaryTint,
+    borderColor: Colors.Primary,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureText: { flex: 1, fontSize: 14, lineHeight: 20, color: '#374151', fontWeight: '500' },
+  featureText: { flex: 1, fontSize: 14, lineHeight: 20, color: Colors.TextSecondary, fontWeight: '500' },
 
   timeRow: {
     alignSelf: 'stretch',
@@ -246,27 +235,27 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: C.line,
-    backgroundColor: C.white,
+    borderColor: Colors.Border,
+    backgroundColor: Colors.White,
   },
   timeRowPressed: { backgroundColor: '#F9FAFB' },
   timeIcon: {
     width: 38,
     height: 38,
     borderRadius: 14,
-    backgroundColor: C.tint,
+    backgroundColor: Colors.PrimaryTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timeLabel: { fontSize: 15, fontWeight: '700', color: C.ink },
-  timeHint: { fontSize: 12, color: C.muted, marginTop: 2 },
+  timeLabel: { fontSize: 15, fontWeight: '700', color: Colors.TextPrimary },
+  timeHint: { fontSize: 12, color: Colors.TextMuted, marginTop: 2 },
   timePill: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: C.tint,
+    backgroundColor: Colors.PrimaryTint,
   },
-  timePillText: { fontSize: 15, fontWeight: '800', color: C.primaryDark },
+  timePillText: { fontSize: 15, fontWeight: '800', color: Colors.PrimaryDark },
 
   actionBar: {
     paddingHorizontal: 24,
@@ -274,22 +263,22 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    backgroundColor: C.white,
+    backgroundColor: Colors.White,
   },
   button: {
     width: '100%',
     minHeight: 54,
     borderRadius: 999,
-    backgroundColor: C.primary,
+    backgroundColor: Colors.Primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.primary,
+    shadowColor: Colors.Primary,
     shadowOpacity: 0.3,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
   },
-  buttonPressed: { backgroundColor: C.primaryDeep },
+  buttonPressed: { backgroundColor: Colors.PrimaryDeep },
   buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: C.white, fontSize: 16, fontWeight: '700' },
+  buttonText: { color: Colors.White, fontSize: 16, fontWeight: '700' },
 });

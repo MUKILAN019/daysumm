@@ -14,6 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Mic, Sparkles, CalendarDays, ShieldCheck } from 'lucide-react-native';
 import { AmbientBackground } from '../components/AmbientBackground';
 import { StatusBar } from 'expo-status-bar';
+import { Colors } from '../theme/tokens';
 
 interface GoogleSignInScreenProps {
   onContinue: () => void;
@@ -21,16 +22,6 @@ interface GoogleSignInScreenProps {
   isLoading: boolean;
   errorMessage?: string | null;
 }
-
-const C = {
-  primary: '#6C5CE7',
-  primaryDeep: '#4B3FC4',
-  primaryDark: '#2E2470',
-  tint: '#EFECFE',
-  ink: '#14131A',
-  white: '#FFFFFF',
-  muted: '#6B7280',
-};
 
 function GoogleLogo({ size = 20 }: { size?: number }) {
   return (
@@ -179,21 +170,21 @@ export function GoogleSignInScreen({
           <View style={styles.rail}>
             <View style={styles.railItem}>
               <View style={styles.railIcon}>
-                <Mic size={16} color={C.white} strokeWidth={2} />
+                <Mic size={16} color={Colors.White} strokeWidth={2} />
               </View>
               <Text style={styles.railText}>Talk it{'\n'}out</Text>
             </View>
             <View style={styles.railDivider} />
             <View style={styles.railItem}>
               <View style={styles.railIcon}>
-                <Sparkles size={16} color={C.white} strokeWidth={2} />
+                <Sparkles size={16} color={Colors.White} strokeWidth={2} />
               </View>
               <Text style={styles.railText}>AI{'\n'}summary</Text>
             </View>
             <View style={styles.railDivider} />
             <View style={styles.railItem}>
               <View style={styles.railIcon}>
-                <CalendarDays size={16} color={C.white} strokeWidth={2} />
+                <CalendarDays size={16} color={Colors.White} strokeWidth={2} />
               </View>
               <Text style={styles.railText}>Replay{'\n'}any day</Text>
             </View>
@@ -237,13 +228,13 @@ export function GoogleSignInScreen({
 
         {isLoading ? (
           <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={C.muted} />
+            <ActivityIndicator size="small" color={Colors.TextMuted} />
             <Text style={styles.loadingText}>Signing you in…</Text>
           </View>
         ) : null}
 
         <View style={styles.trustRow}>
-          <ShieldCheck size={14} color={C.muted} strokeWidth={2} />
+          <ShieldCheck size={14} color={Colors.TextMuted} strokeWidth={2} />
           <Text style={styles.trustText}>Your entries stay private on your device</Text>
         </View>
       </Animated.View>
@@ -252,7 +243,7 @@ export function GoogleSignInScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.primaryDeep },
+  container: { flex: 1, backgroundColor: Colors.PrimaryDeep },
 
   /* Hero */
   heroScroll: { flex: 1 },
@@ -289,7 +280,7 @@ const styles = StyleSheet.create({
   },
   mascot: { width: 200, height: 200 },
 
-  brand: { marginTop: 10, fontSize: 38, fontWeight: '800', color: C.white, letterSpacing: 0.2 },
+  brand: { marginTop: 10, fontSize: 38, fontWeight: '800', color: Colors.White, letterSpacing: 0.2 },
   tagline: {
     marginTop: 8,
     fontSize: 15,
@@ -332,7 +323,7 @@ const styles = StyleSheet.create({
 
   /* Docked action panel */
   panel: {
-    backgroundColor: C.white,
+    backgroundColor: Colors.White,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 22,
@@ -345,7 +336,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -8 },
     elevation: 18,
   },
-  panelTitle: { fontSize: 19, fontWeight: '800', color: C.ink, textAlign: 'center' },
+  panelTitle: { fontSize: 19, fontWeight: '800', color: Colors.TextPrimary, textAlign: 'center' },
 
   errorChip: {
     backgroundColor: '#FEF2F2',
@@ -360,10 +351,10 @@ const styles = StyleSheet.create({
   primaryButton: {
     minHeight: 56,
     borderRadius: 999,
-    backgroundColor: C.primary,
+    backgroundColor: Colors.Primary,
     justifyContent: 'center',
     paddingHorizontal: 8,
-    shadowColor: C.primary,
+    shadowColor: Colors.Primary,
     shadowOpacity: 0.35,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
@@ -379,7 +370,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: C.white,
+    backgroundColor: Colors.White,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -388,7 +379,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '700',
-    color: C.white,
+    color: Colors.White,
   },
   inlineSpinner: { width: 36, alignItems: 'center' },
 
@@ -397,9 +388,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.tint,
+    backgroundColor: Colors.PrimaryTint,
   },
-  ghostButtonText: { fontSize: 15, fontWeight: '700', color: C.primaryDark },
+  ghostButtonText: { fontSize: 15, fontWeight: '700', color: Colors.PrimaryDark },
   buttonDisabled: { opacity: 0.65 },
 
   trustRow: {
@@ -409,7 +400,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 2,
   },
-  trustText: { fontSize: 12, color: C.muted },
+  trustText: { fontSize: 12, color: Colors.TextMuted },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -419,7 +410,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 13,
-    color: C.muted,
+    color: Colors.TextMuted,
     fontWeight: '500',
   },
 });
