@@ -56,9 +56,10 @@ import { DigestHistoryScreen } from './lib/screens/DigestHistoryScreen';
 import { Linking } from 'react-native';
 import { StreakBadge } from './lib/components/StreakBadge';
 import { fetchCurrentStreak } from './lib/firestore/userStats';
+import Purchases, { type CustomerInfo } from 'react-native-purchases';
 import { configureRevenueCat } from './lib/purchases/revenueCat';
 import { PaywallScreen } from './lib/screens/PaywallScreen';
-import { hasProEntitlementCached } from './lib/purchases/checkEntitlement';
+import { hasProEntitlementCached, isProEntitled, refreshEntitlement } from './lib/purchases/checkEntitlement';
 import { BottomTabBar, type TabName } from './lib/components/BottomTabBar';
 import { SettingsScreen } from './lib/screens/SettingsScreen';
 import { markSampleDigestSeen } from './lib/db/entries';
@@ -226,6 +227,7 @@ export default function App() {
         refreshWidgetData(uid);
         refreshStreak();
         refreshTodayDigest();
+        refreshEntitlementState();
       }
 
       // Flush any pending debounced sync before the app goes to background
@@ -261,6 +263,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const customerInfoListener = (info: CustomerInfo) => {
+      setIsPro(isProEntitled(info));
+    };
+
+    Purchases.addCustomerInfoUpdateListener(customerInfoListener);
+
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(customerInfoListener);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!authReady || showGoogleSignIn) {
       return;
     }
@@ -278,7 +292,7 @@ export default function App() {
         setOnboardingChecked(true);
         refreshStreak();
         refreshTodayDigest();
-        hasProEntitlementCached().then(setIsPro);
+        refreshEntitlement().then(setIsPro);
       })
       .catch((error: unknown) => {
         console.warn('Failed to fetch user settings', error);
@@ -646,6 +660,15 @@ export default function App() {
       }
     } catch (error) {
       console.warn('Failed to refresh today digest', error);
+    }
+  }
+
+  async function refreshEntitlementState() {
+    try {
+      const entitled = await refreshEntitlement();
+      setIsPro(entitled);
+    } catch (error) {
+      console.warn('Failed to refresh entitlement state', error);
     }
   }
 
