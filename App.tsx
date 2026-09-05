@@ -16,6 +16,7 @@ import {
   type AppStateStatus,
   ActivityIndicator,
   Alert,
+  BackHandler,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -447,6 +448,30 @@ export default function App() {
       subscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const onBackPress = () => {
+      if (entryToDelete) {
+        setEntryToDelete(null);
+        return true;
+      }
+      if (selectedEntry) {
+        setSelectedEntry(null);
+        return true;
+      }
+      if (screenMode !== 'capture') {
+        if (screenMode === 'digest' && openedDigestRecordId) {
+          setOpenedDigestRecordId(null);
+        }
+        setScreenMode('capture');
+        return true;
+      }
+      return false;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backHandler.remove();
+  }, [entryToDelete, selectedEntry, screenMode, openedDigestRecordId]);
 
   async function handleSave() {
     const trimmedText = text.trim();
