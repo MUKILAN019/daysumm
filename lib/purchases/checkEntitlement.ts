@@ -5,12 +5,6 @@ export function isProEntitled(customerInfo: CustomerInfo): boolean {
   if (!pro) {
     return false;
   }
-  if (pro.expirationDate) {
-    const expiresAt = new Date(pro.expirationDate).getTime();
-    if (!isNaN(expiresAt) && expiresAt <= Date.now()) {
-      return false;
-    }
-  }
   return true;
 }
 

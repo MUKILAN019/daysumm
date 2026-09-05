@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image, Linking } 
 import { getAuth, signOut } from '@react-native-firebase/auth';
 import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
 import Purchases from 'react-native-purchases';
+import { logoutRevenueCat } from '../purchases/revenueCat';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
@@ -37,11 +38,11 @@ export function SettingsScreen({
     if (signOutBusy) return;
     setSignOutBusy(true);
     try {
-      const isAnon = await Purchases.isAnonymous();
-      if (!isAnon) {
-        await Purchases.logOut();
+      const auth = getAuth();
+      if (auth.currentUser) {
+        await logoutRevenueCat();
+        await signOut(auth);
       }
-      await signOut(getAuth());
     } catch (error) {
       console.warn('Sign out failed', error);
     } finally {

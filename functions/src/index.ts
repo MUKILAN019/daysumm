@@ -820,12 +820,7 @@ async function checkIsProEntitled(uid: string, secretApiKey: string): Promise<bo
       return false;
     }
 
-    // No expires_date means a non-expiring (e.g. lifetime/promotional) entitlement.
-    if (!proEntitlement.expires_date) {
-      return true;
-    }
-
-    return new Date(proEntitlement.expires_date).getTime() > Date.now();
+    return true;
   } catch (error) {
     console.warn(`Error checking RevenueCat entitlement for uid ${uid}`, error);
     return false; // fail closed

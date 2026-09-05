@@ -26,3 +26,8 @@ export function configureRevenueCat(appUserID: string): void {
       console.warn('Failed to switch RevenueCat identity', error);
     });
 }
+
+export async function logoutRevenueCat(): Promise<void> {
+  await Purchases.logOut();
+  configuredUid = 'ANONYMOUS_LOGGED_OUT';
+}

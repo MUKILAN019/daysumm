@@ -249,6 +249,7 @@ export default function App() {
     const intervalId = setInterval(() => {
       if (appStateRef.current === 'active') {
         runSync('interval');
+        refreshEntitlementState();
       }
     }, FIFTEEN_MINUTES_MS);
 
@@ -298,6 +299,7 @@ export default function App() {
         console.warn('Failed to fetch user settings', error);
         setNeedsOnboarding(false);
         setOnboardingChecked(true);
+        refreshEntitlement().then(setIsPro);
       });
   }, [authReady, showGoogleSignIn]);
 
