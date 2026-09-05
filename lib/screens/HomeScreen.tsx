@@ -19,7 +19,7 @@ import { CustomModal } from '../components/CustomModal';
 import { LocalEntry } from '../db/entries';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 
 interface HomeScreenProps {
   userName?: string;
@@ -269,7 +269,7 @@ export function HomeScreen({
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader 
         title="Voice Log" 
         subtitle="Record your thoughts"
@@ -481,7 +481,7 @@ export function HomeScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
+    backgroundColor: 'transparent',
   },
   content: {
     paddingHorizontal: Spacing.screenPadding,
@@ -603,7 +603,6 @@ const styles = StyleSheet.create({
   emptyState: {
     paddingVertical: Spacing.xl,
     alignItems: 'center',
-    gap: Spacing.md,
   },
   emptyStateImage: {
     width: 140,
@@ -613,6 +612,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     ...Typography.Secondary,
     color: Colors.TextMuted,
+    marginTop: -24,
   },
   entryItem: {
     width: '100%',

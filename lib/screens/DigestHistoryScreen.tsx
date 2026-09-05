@@ -15,7 +15,7 @@ import { ChevronLeft, ChevronRight, X, Check, Lock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 import type { Digest } from '../functions/generateDigest';
 
 interface DigestHistoryScreenProps {
@@ -219,7 +219,7 @@ export function DigestHistoryScreen({
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       {/* Calendar Header */}
       <View style={styles.calendarHeader}>
         <View style={styles.monthTitleRow}>
@@ -401,7 +401,7 @@ export function DigestHistoryScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.Background },
+  container: { flex: 1, backgroundColor: 'transparent' },
 
   // ---------- Calendar ----------
   calendarHeader: {
@@ -493,11 +493,14 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.md,
     marginTop: Spacing.xl,
   },
   emptyHistoryMascot: { width: 140, height: 140, opacity: 0.9 },
-  emptyEntriesText: { ...Typography.Secondary, color: Colors.TextMuted },
+  emptyEntriesText: { 
+    ...Typography.Secondary, 
+    color: Colors.TextMuted,
+    marginTop: -24,
+  },
 
   // ---------- Paywall Sheet (mirrors EntryDetailSheet) ----------
   overlay: {

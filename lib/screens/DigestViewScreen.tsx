@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GlobalHeader } from '../components/GlobalHeader';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 
 import { DigestCard } from '../components/DigestCard';
 import { fetchDigestRecordById } from '../firestore/digestRecords';
@@ -53,7 +53,7 @@ export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenPro
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader title="Digest" onBack={onBack} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -74,7 +74,7 @@ export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenPro
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.Background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.screenPadding, paddingTop: Spacing.sm, paddingBottom: Spacing.xxl },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: Spacing.xxl },

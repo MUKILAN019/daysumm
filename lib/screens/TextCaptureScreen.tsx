@@ -14,7 +14,7 @@ import { Colors, Elevation, Typography, Spacing, Radii } from '../theme/tokens';
 import * as Haptics from 'expo-haptics';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 
 interface TextCaptureScreenProps {
   currentStreak: number;
@@ -86,7 +86,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
 
   return (
     <KeyboardAvoidingView style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader
         title="Quick Log"
         subtitle="Jot down your recent work"
@@ -200,7 +200,7 @@ const MASCOT = 92;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
+    backgroundColor: 'transparent',
   },
   scroll: { flex: 1 },
   scrollContent: {

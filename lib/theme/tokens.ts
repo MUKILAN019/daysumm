@@ -3,36 +3,49 @@ export const Colors = {
   PrimaryDark: '#2E2470',
   PrimaryDeep: '#4B3FC4',
   PrimaryTint: '#EFECFE',
+
   Accent: '#FF7A9C',
-  Background: '#F7F6FB',
+
+  /*
+   * A softly tinted lavender canvas rather than plain white.
+   * This makes the dot grid and foreground content feel intentional
+   * without competing with the black cat artwork.
+   */
+  Background: '#F3F1FA',
+
   Surface: '#FFFFFF',
   Card: '#FFFFFF',
   Border: '#E5E7EB',
+
   TextPrimary: '#14131A',
   TextSecondary: '#4B5563',
   TextMuted: '#9CA3AF',
+
   Divider: '#E5E7EB',
+
   Success: '#22B07D',
   Warning: '#E8A33D',
   Danger: '#E05561',
   Info: '#0EA5E9',
+
   ProGold: '#F0A93B',
+
   Ink: '#14131A',
   White: '#FFFFFF',
 
-  // Action & Highlight Palette
+  // Action and highlight palette
   BluePrimary: '#2563EB',
   BlueDark: '#1D4ED8',
   BlueLight: '#EFF6FF',
   BlueBorder: '#BFDBFE',
 
-  // Slate Neutrals
+  // Slate neutrals
   SlateMuted: '#CBD5E1',
   SlateText: '#64748B',
   SlateBorder: '#94A3B8',
   SlateBg: '#F1F5F9',
 
-  // Danger & Error Palette
+  // Danger and error palette
   DangerDark: '#B91C1C',
   DangerDeep: '#991B1B',
   DangerBg: '#FEF2F2',
@@ -40,13 +53,13 @@ export const Colors = {
   DangerSoftBg: '#FEE2E2',
   DangerBorderSoft: '#FECACA',
 
-  // Warning & Amber Palette
+  // Warning and amber palette
   WarningLight: '#FFF8D6',
   WarningBg: '#FEF3C7',
   WarningBorder: '#F59E0B',
   WarningText: '#B45309',
 
-  // Extended Neutrals
+  // Extended neutrals
   GrayBg: '#F7F8FA',
   GraySubtle: '#F9FAFB',
   GrayDisabled: '#D1D5DB',
@@ -54,7 +67,7 @@ export const Colors = {
   TextDark: '#111827',
   TextSubtle: '#6B7280',
 
-  // Tag Badge tokens (Task 3)
+  // Entry tag colors
   TagBlockerBg: '#FEF2F2',
   TagBlockerText: '#DC2626',
   TagBlockerBorder: '#FCA5A5',
@@ -84,6 +97,7 @@ export const StreakTokens = {
     textColor: '#BE123C',
     glowColor: '#F59E0B',
   },
+
   Tier2: {
     bg: '#FFEDD5',
     border: '#F97316',
@@ -91,6 +105,7 @@ export const StreakTokens = {
     textColor: '#C2410C',
     glowColor: '#F97316',
   },
+
   Tier3: {
     bg: '#FEF9C3',
     border: '#EAB308',
@@ -98,6 +113,7 @@ export const StreakTokens = {
     textColor: '#854D0E',
     glowColor: '#EAB308',
   },
+
   Tier4: {
     bg: '#FEF3C7',
     border: '#F59E0B',
@@ -106,7 +122,6 @@ export const StreakTokens = {
     glowColor: '#F59E0B',
   },
 };
-
 
 const fontFamily = 'Roboto';
 
@@ -118,6 +133,7 @@ export const Typography = {
     lineHeight: 32 * 1.4,
     letterSpacing: 0,
   },
+
   ScreenTitle: {
     fontFamily,
     fontSize: 28,
@@ -125,6 +141,7 @@ export const Typography = {
     lineHeight: 28 * 1.4,
     letterSpacing: 0,
   },
+
   SectionHeader: {
     fontFamily,
     fontSize: 20,
@@ -132,6 +149,7 @@ export const Typography = {
     lineHeight: 20 * 1.4,
     letterSpacing: 0,
   },
+
   Body: {
     fontFamily,
     fontSize: 16,
@@ -139,6 +157,7 @@ export const Typography = {
     lineHeight: 16 * 1.4,
     letterSpacing: 0,
   },
+
   Secondary: {
     fontFamily,
     fontSize: 14,
@@ -146,6 +165,7 @@ export const Typography = {
     lineHeight: 14 * 1.4,
     letterSpacing: 0,
   },
+
   Label: {
     fontFamily,
     fontSize: 12,
@@ -175,7 +195,10 @@ export const Radii = {
 
 export const Elevation = {
   shadowColor: '#0F172A',
-  shadowOffset: { width: 0, height: 1 },
+  shadowOffset: {
+    width: 0,
+    height: 1,
+  },
   shadowOpacity: 0.06,
   shadowRadius: 3,
   elevation: 2,

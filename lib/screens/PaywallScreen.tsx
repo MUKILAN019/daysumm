@@ -16,7 +16,7 @@ import { getAuth } from '@react-native-firebase/auth';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 
 interface PaywallScreenProps {
   role: string | null;
@@ -142,7 +142,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader title="Upgrade to Pro" onBack={onBack} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} bounces={false}>
@@ -312,7 +312,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
 const MEDALLION = 132;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.Background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   content: {
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,

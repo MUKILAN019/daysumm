@@ -7,7 +7,7 @@ import { logoutRevenueCat } from '../purchases/revenueCat';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 import { StreakBadge } from '../components/StreakBadge';
 
 interface SettingsScreenProps {
@@ -94,7 +94,7 @@ export function SettingsScreen({
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader
         title="Profile"
         rightAction={<StreakBadge currentStreak={currentStreak} />}
@@ -191,7 +191,7 @@ export function SettingsScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,

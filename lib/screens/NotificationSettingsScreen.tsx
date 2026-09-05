@@ -8,7 +8,7 @@ import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { fetchUserSettings, updateNotificationTime } from '../firestore/userSettings';
 import { fetchDailyUsage, updateDailyUsageForTimeChange } from '../firestore/dailyUsage';
 import { CustomModal, CustomModalType } from '../components/CustomModal';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 
 interface NotificationSettingsScreenProps {
   onBack: () => void;
@@ -136,7 +136,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader title="Notifications" onBack={onBack} />
 
       {loading ? (
@@ -248,7 +248,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.Background },
+  container: { flex: 1, backgroundColor: 'transparent' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flex: 1 },
   content: {

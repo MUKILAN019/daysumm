@@ -5,7 +5,7 @@ import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
 import { Wand2, Sparkles, AlertCircle } from 'lucide-react-native';
 import { StreakBadge } from '../components/StreakBadge';
-import { AmbientBackground } from '../components/AmbientBackground';
+import { MainBackground } from '../components/MainBackground';
 import type { Digest } from '../functions/generateDigest';
 
 function ShimmerBox({ style }: { style: any }) {
@@ -63,7 +63,7 @@ export function DigestScreen({
 }: DigestScreenProps) {
   return (
     <View style={styles.container}>
-      <AmbientBackground />
+      <MainBackground />
       <GlobalHeader
         title="Daily Digest"
         subtitle="Your day at a glance"
@@ -154,7 +154,7 @@ export function DigestScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.Background,
+    backgroundColor: 'transparent',
   },
   scroll: {
     flex: 1,
@@ -309,7 +309,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 32,
     alignItems: 'center',
-    gap: Spacing.md,
   },
   digestEmptyMascot: {
     width: 140,
@@ -319,6 +318,7 @@ const styles = StyleSheet.create({
   digestEmptyText: {
     ...Typography.Secondary,
     color: Colors.TextMuted,
+    marginTop: -24,
     textAlign: 'center',
     lineHeight: 19,
   },
