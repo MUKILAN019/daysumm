@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Mic, FileText, X, Sparkles } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import type { LocalEntry } from '../db/entries';
 
 const TAG_OPTIONS: { key: string; label: string }[] = [
@@ -78,6 +79,7 @@ export function EntryDetailSheet({
   onClose,
   onSave,
 }: EntryDetailSheetProps) {
+  const { colors } = useTheme();
   const [editText, setEditText] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [didUserSetTags, setDidUserSetTags] = useState(false);
@@ -101,9 +103,10 @@ export function EntryDetailSheet({
       originalTextRef.current = text;
       originalTagsRef.current = [...tags];
 
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 300,
+        damping: 18,
+        stiffness: 140,
         useNativeDriver: true,
       }).start();
     }
@@ -196,14 +199,14 @@ export function EntryDetailSheet({
             />
           </View>
 
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { backgroundColor: colors.Card }]}>
             <KeyboardAvoidingView
               style={styles.keyboardWrap}
               behavior="height"
             >
               {/* Teal accent band with drag handle */}
-              <View style={styles.topBand}>
-                <View style={styles.handle} />
+              <View style={[styles.topBand, { backgroundColor: colors.Surface, borderBottomColor: colors.Border }]}>
+                <View style={[styles.handle, { backgroundColor: colors.TextSecondary }]} />
               </View>
 
                 <ScrollView
@@ -214,38 +217,39 @@ export function EntryDetailSheet({
                 >
                 {/* Header: source pill + close */}
                 <View style={styles.header}>
-                  <View style={styles.sourcePill}>
+                  <View style={[styles.sourcePill, { backgroundColor: colors.PrimaryTint, borderColor: colors.Border }]}>
                     {entry.source === 'voice' ? (
-                      <Mic size={13} color={Colors.PrimaryDeep} strokeWidth={2} />
+                      <Mic size={13} color={colors.PrimaryDeep} strokeWidth={2} />
                     ) : (
-                      <FileText size={13} color={Colors.PrimaryDeep} strokeWidth={2} />
+                      <FileText size={13} color={colors.PrimaryDeep} strokeWidth={2} />
                     )}
-                    <Text style={styles.sourcePillText}>
+                    <Text style={[styles.sourcePillText, { color: colors.PrimaryDeep }]}>
                       {entry.source === 'voice' ? 'Voice' : 'Text'}
                     </Text>
-                    <View style={styles.dot} />
-                    <Text style={styles.sourcePillMeta}>
+                    <View style={[styles.dot, { backgroundColor: colors.PrimaryDeep }]} />
+                    <Text style={[styles.sourcePillMeta, { color: colors.TextSecondary }]}>
                       {dateStr} · {timestamp}
                     </Text>
                   </View>
                   <Pressable
                     onPress={handleClose}
-                    style={styles.closeButton}
+                    style={[styles.closeButton, { backgroundColor: colors.Surface, borderColor: colors.Border }]}
                     hitSlop={10}
                   >
-                    <X size={18} color={Colors.TextSecondary} strokeWidth={2.2} />
+                    <X size={18} color={colors.TextSecondary} strokeWidth={2.2} />
                   </Pressable>
                 </View>
 
                 <View
                   style={[
                     styles.textInputContainer,
+                    { backgroundColor: colors.Surface, borderColor: colors.Border },
                     emptyError && styles.textInputContainerError,
                   ]}
                 >
                   <TextInput
                     ref={inputRef}
-                    style={styles.textInput}
+                    style={[styles.textInput, { color: colors.TextPrimary }]}
                     multiline
                     value={editText}
                     onChangeText={(val) => {
@@ -253,9 +257,9 @@ export function EntryDetailSheet({
                       if (emptyError && val.trim()) setEmptyError(false);
                     }}
                     placeholder="What happened today?"
-                    placeholderTextColor={Colors.TextMuted}
+                    placeholderTextColor={colors.TextMuted}
                     textAlignVertical="top"
-                    selectionColor={Colors.Primary}
+                    selectionColor={colors.Primary}
                     autoCorrect={false}
                     autoCapitalize="sentences"
                     returnKeyType="default"
@@ -266,12 +270,12 @@ export function EntryDetailSheet({
                 )}
 
                 {/* AI Analysis section */}
-                <View style={styles.analysisCard}>
+                <View style={[styles.analysisCard, { backgroundColor: colors.Surface, borderColor: colors.Border }]}>
                   <View style={styles.analysisHeader}>
-                    <View style={styles.analysisIconBadge}>
-                      <Sparkles size={13} color={Colors.PrimaryDeep} strokeWidth={2.2} />
+                    <View style={[styles.analysisIconBadge, { backgroundColor: colors.PrimaryTint }]}>
+                      <Sparkles size={13} color={colors.PrimaryDeep} strokeWidth={2.2} />
                     </View>
-                    <Text style={styles.analysisTitle}>AI Analysis</Text>
+                    <Text style={[styles.analysisTitle, { color: colors.TextPrimary }]}>AI Analysis</Text>
                     {confidencePhrase && (
                       <View
                         style={[
@@ -289,7 +293,7 @@ export function EntryDetailSheet({
                     )}
                   </View>
 
-                  <Text style={styles.chipHint}>Tap to tag this entry</Text>
+                  <Text style={[styles.chipHint, { color: colors.TextMuted }]}>Tap to tag this entry</Text>
 
                   <View style={styles.chipContainer}>
                     {TAG_OPTIONS.map((tag) => {
@@ -301,6 +305,7 @@ export function EntryDetailSheet({
                           onPress={() => toggleTag(tag.key)}
                           style={[
                             styles.chip,
+                            { backgroundColor: colors.Card, borderColor: colors.Border },
                             isSelected && {
                               backgroundColor: styleInfo.bg,
                               borderColor: styleInfo.border,
@@ -310,6 +315,7 @@ export function EntryDetailSheet({
                           <Text
                             style={[
                               styles.chipText,
+                              { color: colors.TextSecondary },
                               isSelected && {
                                 color: styleInfo.text,
                                 fontWeight: '700',
@@ -326,22 +332,24 @@ export function EntryDetailSheet({
               </ScrollView>
 
               {/* Action buttons */}
-              <View style={styles.actions}>
+              <View style={[styles.actions, { borderTopColor: colors.Border, backgroundColor: colors.Card }]}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.actionButton,
                     styles.cancelButton,
-                    pressed && styles.cancelButtonPressed,
+                    { backgroundColor: colors.Surface, borderColor: colors.Border },
+                    pressed && { backgroundColor: colors.Border },
                   ]}
                   onPress={handleClose}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.TextPrimary }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [
                     styles.actionButton,
                     styles.saveButton,
-                    pressed && styles.saveButtonPressed,
+                    { backgroundColor: colors.Primary },
+                    pressed && { backgroundColor: colors.PrimaryDeep },
                     isSaving && styles.saveButtonDisabled,
                   ]}
                   onPress={handleSave}
