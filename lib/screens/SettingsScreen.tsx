@@ -16,6 +16,7 @@ interface SettingsScreenProps {
   onUpgradePress: () => void;
   onPersonalInformationPress: () => void;
   onNotificationSettingsPress: () => void;
+  onSignOut?: () => void;
 }
 
 export function SettingsScreen({ 
@@ -23,7 +24,8 @@ export function SettingsScreen({
   isPro, 
   onUpgradePress,
   onPersonalInformationPress,
-  onNotificationSettingsPress
+  onNotificationSettingsPress,
+  onSignOut,
 }: SettingsScreenProps) {
   const auth = getAuth();
   const user = auth.currentUser;
@@ -38,10 +40,14 @@ export function SettingsScreen({
     if (signOutBusy) return;
     setSignOutBusy(true);
     try {
-      const auth = getAuth();
-      if (auth.currentUser) {
-        await logoutRevenueCat();
-        await signOut(auth);
+      if (onSignOut) {
+        await onSignOut();
+      } else {
+        const auth = getAuth();
+        if (auth.currentUser) {
+          await logoutRevenueCat();
+          await signOut(auth);
+        }
       }
     } catch (error) {
       console.warn('Sign out failed', error);
