@@ -64,7 +64,7 @@ import { hasProEntitlementCached, isProEntitled, refreshEntitlement } from './li
 import { BottomTabBar, type TabName } from './lib/components/BottomTabBar';
 import { SettingsScreen } from './lib/screens/SettingsScreen';
 import { markSampleDigestSeen } from './lib/db/entries';
-import { transcribeAudio } from './lib/functions/transcribeAudio';
+import { transcribeAudio, TranscriptionTimeoutError, TranscriptionOfflineError } from './lib/functions/transcribeAudio';
 import { DigestScreen } from './lib/screens/DigestScreen';
 import { generateDigest, type Digest } from './lib/functions/generateDigest';
 import { PersonalInfoScreen } from './lib/screens/PersonalInfoScreen';
@@ -76,6 +76,14 @@ import { Colors, Elevation, Radii, Spacing, Typography } from './lib/theme/token
 import { CustomModal } from './lib/components/CustomModal';
 import { ScreenTransition } from './lib/components/ScreenTransition';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 const SYNC_DEBOUNCE_MS = 10 * 1000; // 10-second debounce for entry-save syncs
@@ -83,6 +91,14 @@ const DELETE_UNDO_MS = 4500;
 const GOOGLE_WEB_CLIENT_ID = '710945440659-br81lghmsqm8lmrg0f441a1vtq68rln8.apps.googleusercontent.com';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
   const [text, setText] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
   const [entries, setEntries] = useState<LocalEntry[]>([]);
@@ -708,24 +724,43 @@ export default function App() {
   const userName = getAuth().currentUser?.displayName || 'User';
 
   async function handleRecordFinished(uri: string) {
+    const uid = getAuth().currentUser?.uid;
+    if (!uid) return;
+
     try {
       const { text, textEn } = await transcribeAudio(uri);
       const trimmedText = text.trim();
       if (!trimmedText) {
-        console.warn('No speech detected in recording.');
+        setSavedMessage('No speech detected in recording.');
+        setTimeout(() => setSavedMessage(''), 3500);
         return;
       }
-      
-      const uid = getAuth().currentUser?.uid;
-      if (!uid) return;
 
       await insertEntry(trimmedText, 'voice', uid, textEn);
       await refreshEntries();
       scheduleDebouncedSync('voice-save');
       await refreshWidgetData(uid);
+      setSavedMessage('Voice note saved & transcribed!');
+      setTimeout(() => setSavedMessage(''), 3500);
     } catch (error) {
-      console.warn('Voice transcription/save failed', error);
-      alert('Transcription failed. Please try again.');
+      console.warn('Voice transcription failed/timed out, saving fallback voice entry', error);
+      const isTimeout = error instanceof TranscriptionTimeoutError;
+      const isOffline = error instanceof TranscriptionOfflineError;
+
+      const fallbackText = '[Voice Entry - Saved Offline] Tap to edit or transcribe.';
+      const fallbackEntry = await insertEntry(fallbackText, 'voice', uid);
+      await markEntryUserCorrected(fallbackEntry.localId, uid);
+      await refreshEntries();
+      await refreshWidgetData(uid);
+
+      if (isOffline) {
+        setSavedMessage('Offline: Voice note saved! Tap to edit or transcribe later.');
+      } else if (isTimeout) {
+        setSavedMessage('Transcription timed out. Voice note saved safely locally!');
+      } else {
+        setSavedMessage('Cloud transcription failed. Voice note saved safely locally!');
+      }
+      setTimeout(() => setSavedMessage(''), 5000);
     }
   }
 

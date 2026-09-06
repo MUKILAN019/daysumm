@@ -123,53 +123,53 @@ export const StreakTokens = {
   },
 };
 
-const fontFamily = 'Roboto';
+export const FontFamily = {
+  Regular: 'PlusJakartaSans_400Regular',
+  Medium: 'PlusJakartaSans_500Medium',
+  SemiBold: 'PlusJakartaSans_600SemiBold',
+  Bold: 'PlusJakartaSans_700Bold',
+  ExtraBold: 'PlusJakartaSans_800ExtraBold',
+};
 
 export const Typography = {
   Display: {
-    fontFamily,
+    fontFamily: FontFamily.ExtraBold,
     fontSize: 32,
-    fontWeight: '700' as const,
-    lineHeight: 32 * 1.4,
-    letterSpacing: 0,
+    lineHeight: 32 * 1.35,
+    letterSpacing: -0.5,
   },
 
   ScreenTitle: {
-    fontFamily,
-    fontSize: 28,
-    fontWeight: '700' as const,
-    lineHeight: 28 * 1.4,
-    letterSpacing: 0,
+    fontFamily: FontFamily.Bold,
+    fontSize: 26,
+    lineHeight: 26 * 1.35,
+    letterSpacing: -0.3,
   },
 
   SectionHeader: {
-    fontFamily,
-    fontSize: 20,
-    fontWeight: '600' as const,
-    lineHeight: 20 * 1.4,
-    letterSpacing: 0,
+    fontFamily: FontFamily.SemiBold,
+    fontSize: 19,
+    lineHeight: 19 * 1.4,
+    letterSpacing: -0.2,
   },
 
   Body: {
-    fontFamily,
-    fontSize: 16,
-    fontWeight: '500' as const,
-    lineHeight: 16 * 1.4,
+    fontFamily: FontFamily.Medium,
+    fontSize: 15,
+    lineHeight: 15 * 1.45,
     letterSpacing: 0,
   },
 
   Secondary: {
-    fontFamily,
+    fontFamily: FontFamily.Medium,
     fontSize: 14,
-    fontWeight: '500' as const,
     lineHeight: 14 * 1.4,
     letterSpacing: 0,
   },
 
   Label: {
-    fontFamily,
+    fontFamily: FontFamily.SemiBold,
     fontSize: 12,
-    fontWeight: '600' as const,
     lineHeight: 12 * 1.4,
     letterSpacing: 0.5,
     textTransform: 'uppercase' as const,
