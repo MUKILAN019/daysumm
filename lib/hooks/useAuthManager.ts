@@ -222,25 +222,18 @@ export function useAuthManager() {
 
   async function handleRoleSelect(role: string) {
     setPendingRole(role);
-    const granted = await requestNotificationPermission();
-    const tz = getUserTimezone();
-    if (granted) {
-      const currentUser = getAuth().currentUser;
-      if (currentUser) {
-        await completeOnboarding(currentUser.uid, role, tz);
-        setUserRole(role);
-      }
-      setNeedsOnboarding(false);
-    } else {
-      setShowNotificationStep(true);
-    }
+    // Always show the notification step so the user can pick their preferred
+    // digest time — permission is requested when they tap "Enable Notifications".
+    setShowNotificationStep(true);
   }
 
-  async function handleNotificationPermissionComplete() {
+  async function handleNotificationPermissionComplete(time: string) {
+    // Request the OS notification permission at this point.
+    await requestNotificationPermission();
     const currentUser = getAuth().currentUser;
     const tz = getUserTimezone();
     if (currentUser && pendingRole) {
-      await completeOnboarding(currentUser.uid, pendingRole, tz);
+      await completeOnboarding(currentUser.uid, pendingRole, tz, time);
       setUserRole(pendingRole);
     }
     setShowNotificationStep(false);

@@ -264,17 +264,37 @@ function AppShell({ uid, authState }: AppShellProps) {
       <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
       {entriesState.deletedEntryToast ? (
-        <View style={[styles.undoToast, { backgroundColor: isDark ? '#2A2840' : '#1E293B' }]}>
-          <Text style={[styles.undoToastText, { color: colors.TextPrimary }]}>Entry deleted</Text>
+        <View
+          style={[
+            styles.undoToast,
+            {
+              backgroundColor: isDark ? '#1E1C2E' : Colors.White,
+              borderColor: isDark ? '#2D2B40' : Colors.Border,
+              shadowColor: isDark ? '#000' : '#0F172A',
+              shadowOpacity: isDark ? 0.35 : 0.1,
+            },
+          ]}
+        >
+          <Text style={[styles.undoToastText, { color: isDark ? '#EEE8FF' : Colors.TextPrimary }]}>
+            Entry deleted
+          </Text>
           <Pressable
             accessibilityRole="button"
             onPress={entriesState.handleUndoDelete}
             style={({ pressed }) => [
               styles.undoToastAction,
+              { backgroundColor: isDark ? 'rgba(139,127,245,0.18)' : Colors.BlueLight },
               pressed && styles.undoToastActionPressed,
             ]}
           >
-            <Text style={styles.undoToastActionText}>Undo</Text>
+            <Text
+              style={[
+                styles.undoToastActionText,
+                { color: isDark ? '#8B7FF5' : Colors.BluePrimary },
+              ]}
+            >
+              Undo
+            </Text>
           </Pressable>
         </View>
       ) : null}
@@ -298,7 +318,7 @@ function AppShell({ uid, authState }: AppShellProps) {
         onSecondaryPress={() => entriesState.setEntryToDelete(null)}
       />
 
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
     </View>
   );
 }
@@ -359,7 +379,7 @@ export default function App() {
     }
 
     if (authState.showNotificationStep) {
-      return <NotificationPermissionScreen onContinue={authState.handleNotificationPermissionComplete} />;
+      return <NotificationPermissionScreen onContinue={(time) => authState.handleNotificationPermissionComplete(time)} />;
     }
 
     // AppShell is keyed by uid — React will fully unmount + remount it
@@ -413,37 +433,32 @@ const styles = StyleSheet.create({
     bottom: 84,
     left: 20,
     right: 20,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
+    borderRadius: 14,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 6,
     zIndex: 999,
   },
   undoToastText: {
-    color: Colors.White,
     fontSize: 14,
     fontWeight: '500',
   },
   undoToastAction: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
   },
   undoToastActionPressed: {
     opacity: 0.7,
   },
   undoToastActionText: {
-    color: '#60A5FA',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
