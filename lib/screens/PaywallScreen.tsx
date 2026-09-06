@@ -14,6 +14,7 @@ import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 import { CheckCircle2, Sparkles, Star, Zap } from 'lucide-react-native';
 import { getAuth } from '@react-native-firebase/auth';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
 import { MainBackground } from '../components/MainBackground';
@@ -56,6 +57,7 @@ function getTrialText(pkg: PurchasesPackage): string | null {
 }
 
 export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreenProps) {
+  const { colors } = useTheme();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [isLoadingOffering, setIsLoadingOffering] = useState(true);
   const [purchasingPackageId, setPurchasingPackageId] = useState<string | null>(null);
@@ -161,11 +163,11 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
             />
           </View>
           <Text style={styles.eyebrow}>DaySumm Pro</Text>
-          <Text style={styles.headline}>{getHeadlineForRole(role)}</Text>
+          <Text style={[styles.headline, { color: colors.TextPrimary }]}>{getHeadlineForRole(role)}</Text>
         </View>
 
         {/* Features */}
-        <View style={styles.featureList}>
+        <View style={[styles.featureList, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
           {PRO_FEATURES.map((feature, idx) => {
             const anim = featureAnimValues[idx] || featureAnimValues[0];
             return (
@@ -173,7 +175,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                 key={feature}
                 style={[
                   styles.featureRow,
-                  idx < PRO_FEATURES.length - 1 && styles.featureRowDivider,
+                  idx < PRO_FEATURES.length - 1 && [styles.featureRowDivider, { borderBottomColor: colors.Divider }],
                   {
                     opacity: anim,
                     transform: [
@@ -187,8 +189,8 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                   },
                 ]}
               >
-                <CheckCircle2 size={20} color={Colors.Primary} />
-                <Text style={styles.featureText}>{feature}</Text>
+                <CheckCircle2 size={20} color={colors.Primary} />
+                <Text style={[styles.featureText, { color: colors.TextPrimary }]}>{feature}</Text>
               </Animated.View>
             );
           })}
@@ -197,7 +199,7 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
         {/* Purchase */}
         <View style={styles.purchaseSection}>
           {isLoadingOffering ? (
-            <ActivityIndicator size="large" color={Colors.Primary} />
+            <ActivityIndicator size="large" color={colors.Primary} />
           ) : packages.length === 0 ? (
             <Text style={styles.errorText}>{errorMessage ?? 'No plans available right now.'}</Text>
           ) : (
@@ -222,7 +224,8 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                         onPress={() => handlePurchase(pkg)}
                         style={({ pressed }) => [
                           styles.annualPackageButton,
-                          pressed && styles.packageButtonPressed,
+                          { backgroundColor: colors.Primary },
+                          pressed && { backgroundColor: colors.PrimaryDeep },
                           isPurchasing && styles.packageButtonDisabled,
                         ]}
                       >
@@ -254,18 +257,19 @@ export function PaywallScreen({ role, onBack, onPurchaseSuccess }: PaywallScreen
                     onPress={() => handlePurchase(pkg)}
                     style={({ pressed }) => [
                       styles.monthlyPackageButton,
-                      pressed && styles.monthlyPackageButtonPressed,
+                      { backgroundColor: colors.Surface, borderColor: colors.Border },
+                      pressed && { backgroundColor: colors.Card },
                       isPurchasing && styles.packageButtonDisabled,
                     ]}
                   >
                     {isPurchasing ? (
-                      <ActivityIndicator color={Colors.Primary} />
+                      <ActivityIndicator color={colors.Primary} />
                     ) : (
                       <View style={{ alignItems: 'center' }}>
-                        <Text style={styles.monthlyButtonText}>
+                        <Text style={[styles.monthlyButtonText, { color: colors.TextPrimary }]}>
                           {trialText ? `Start ${trialText}` : 'Subscribe Monthly'}
                         </Text>
-                        <Text style={styles.monthlyFineprint}>
+                        <Text style={[styles.monthlyFineprint, { color: colors.TextMuted }]}>
                           {trialText
                             ? `Then ${pkg.product.priceString}${suffix}`
                             : `${pkg.product.priceString}${suffix}`}

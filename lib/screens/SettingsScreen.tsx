@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image, Linking } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Alert, Image, Linking, Animated, Switch } from 'react-native';
 import { getAuth, signOut } from '@react-native-firebase/auth';
-import { User, Bell, Crown, Mail, ChevronRight, LogOut } from 'lucide-react-native';
+import { User, Bell, Crown, Mail, ChevronRight, LogOut, Sun, Moon } from 'lucide-react-native';
 import Purchases from 'react-native-purchases';
 import { logoutRevenueCat } from '../purchases/revenueCat';
-import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { Typography, Spacing, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { CustomModal } from '../components/CustomModal';
 import { MainBackground } from '../components/MainBackground';
@@ -27,6 +28,7 @@ export function SettingsScreen({
   onNotificationSettingsPress,
   onSignOut,
 }: SettingsScreenProps) {
+  const { colors, isDark, toggleTheme } = useTheme();
   const auth = getAuth();
   const user = auth.currentUser;
   const isGuest = user ? (user.isAnonymous || user.providerData.length === 0) : true;
@@ -88,12 +90,12 @@ export function SettingsScreen({
         onPress={onPress}
         style={({ pressed }) => [
           styles.row,
-          pressed && styles.rowPressed,
+          { backgroundColor: pressed ? colors.Surface : 'transparent' },
         ]}
       >
-        <Icon size={20} color={destructive ? Colors.Danger : Colors.TextMuted} />
-        <Text style={[styles.rowLabel, destructive && { color: Colors.Danger }]}>{label}</Text>
-        <ChevronRight size={20} color={Colors.TextMuted} />
+        <Icon size={20} color={destructive ? colors.Danger : colors.TextMuted} />
+        <Text style={[styles.rowLabel, { color: destructive ? colors.Danger : colors.TextPrimary }]}>{label}</Text>
+        <ChevronRight size={20} color={colors.TextMuted} />
       </Pressable>
     );
   }
@@ -103,42 +105,45 @@ export function SettingsScreen({
       <MainBackground />
       <GlobalHeader
         title="Profile"
-        rightAction={<StreakBadge currentStreak={currentStreak} />}
+        rightAction={currentStreak > 0 ? <StreakBadge currentStreak={currentStreak} /> : undefined}
       />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
 
       {/* User Summary */}
       <View style={styles.userSummary}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initial}</Text>
+        <View style={[styles.avatar, { backgroundColor: colors.Primary }]}>
+          <Text style={[styles.avatarText, { color: '#FFFFFF' }]}>{initial}</Text>
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{displayName}</Text>
-          <Text style={styles.planStatus}>{isPro ? 'Pro plan' : 'Free plan'}</Text>
+          <Text style={[styles.userName, { color: colors.TextPrimary }]}>{displayName}</Text>
+          <Text style={[styles.planStatus, { color: colors.TextMuted }]}>{isPro ? 'Pro plan' : 'Free plan'}</Text>
         </View>
       </View>
 
       {/* Pro Banner */}
       {!isPro && (
         <Pressable 
-          style={({ pressed }) => [styles.proBanner, pressed && styles.proBannerPressed]} 
+          style={({ pressed }) => [styles.proBanner, {
+            backgroundColor: colors.WarningBg,
+            borderColor: colors.WarningBorder,
+          }, pressed && styles.proBannerPressed]} 
           onPress={onUpgradePress}
         >
           <Image source={require('../../assets/cat-king.png')} style={styles.proBannerImage} resizeMode="contain" />
           <View style={styles.proBannerContent}>
-            <Text style={styles.proBannerTitle}>Unlock DaySumm Pro</Text>
-            <Text style={styles.proBannerText}>Get unlimited history and faster AI processing.</Text>
+            <Text style={[styles.proBannerTitle, { color: colors.TextDark }]}>Unlock DaySumm Pro</Text>
+            <Text style={[styles.proBannerText, { color: colors.TextSecondary }]}>Get unlimited history and faster AI processing.</Text>
           </View>
-          <ChevronRight size={20} color={Colors.ProGold} />
+          <ChevronRight size={20} color={colors.ProGold} />
         </Pressable>
       )}
 
       {/* Account Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Account</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionHeader, { color: colors.TextMuted }]}>Account</Text>
+        <View style={[styles.card, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
           <SettingsRow icon={User} label="Personal Information" onPress={handlePersonalInfoPress} />
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.Divider }]} />
           <SettingsRow 
             icon={Crown} 
             label="Subscription" 
@@ -149,35 +154,55 @@ export function SettingsScreen({
 
       {/* Preferences Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Preferences</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionHeader, { color: colors.TextMuted }]}>Preferences</Text>
+        <View style={[styles.card, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
+          <View style={styles.row}>
+            {isDark ? (
+              <Moon size={20} color={colors.ProGold} />
+            ) : (
+              <Sun size={20} color={colors.Primary} />
+            )}
+            <Text style={[styles.rowLabel, { color: colors.TextPrimary }]}>Dark Mode</Text>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: '#D1D5DB', true: colors.Primary }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={[styles.divider, { backgroundColor: colors.Divider }]} />
           <SettingsRow icon={Bell} label="Notifications" onPress={onNotificationSettingsPress} />
         </View>
       </View>
 
       {/* Support Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Support</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionHeader, { color: colors.TextMuted }]}>Support</Text>
+        <View style={[styles.card, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
           <SettingsRow icon={Mail} label="Contact Us" onPress={handleContactUs} />
         </View>
       </View>
 
       {/* Danger Zone Section */}
       <View style={styles.section}>
-        <Text style={[styles.sectionHeader, { color: Colors.Danger }]}>Account Actions</Text>
+        <Text style={[styles.sectionHeader, { color: colors.Danger }]}>Account Actions</Text>
         <Pressable
           accessibilityRole="button"
           onPress={handleSignOut}
           disabled={signOutBusy}
           style={({ pressed }) => [
             styles.signOutCard,
-            pressed && styles.signOutCardPressed,
+            {
+              backgroundColor: pressed ? colors.DangerSoftBg : colors.DangerBg,
+              borderColor: colors.DangerBorder,
+            },
             signOutBusy && { opacity: 0.7 },
           ]}
         >
-          <LogOut size={18} color={Colors.Danger} strokeWidth={2} />
-          <Text style={styles.signOutCardText}>{signOutBusy ? 'Signing out...' : 'Sign Out'}</Text>
+          <LogOut size={18} color={colors.Danger} strokeWidth={2} />
+          <Text style={[styles.signOutCardText, { color: colors.Danger }]}>
+            {signOutBusy ? 'Signing out...' : 'Sign Out'}
+          </Text>
         </Pressable>
       </View>
       </ScrollView>
@@ -207,6 +232,19 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     paddingBottom: Spacing.xxl,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  themeToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
   userSummary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -217,37 +255,30 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.Primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     ...Typography.ScreenTitle,
-    color: Colors.Background,
   },
   userInfo: {
     justifyContent: 'center',
   },
   userName: {
     ...Typography.SectionHeader,
-    color: Colors.TextPrimary,
     marginBottom: 2,
   },
   planStatus: {
     ...Typography.Secondary,
-    color: Colors.TextMuted,
   },
   proBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.WarningBg,
     borderWidth: 1.5,
-    borderColor: Colors.WarningBorder,
     borderRadius: Radii.card,
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginBottom: Spacing.xl,
-    shadowColor: Colors.ProGold,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 8,
@@ -269,13 +300,11 @@ const styles = StyleSheet.create({
   proBannerTitle: {
     ...Typography.Body,
     fontWeight: '800',
-    color: Colors.TextDark,
     marginBottom: 4,
   },
   proBannerText: {
     ...Typography.Secondary,
     fontSize: 13,
-    color: Colors.TextSecondary,
     lineHeight: 18,
   },
   section: {
@@ -284,16 +313,13 @@ const styles = StyleSheet.create({
   sectionHeader: {
     ...Typography.Secondary,
     fontWeight: '600',
-    color: Colors.TextMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
     paddingLeft: 4,
   },
   card: {
-    backgroundColor: Colors.Card,
     borderWidth: 1,
-    borderColor: Colors.Border,
     borderRadius: Radii.card,
     overflow: 'hidden',
   },
@@ -303,37 +329,26 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     gap: Spacing.md,
   },
-  rowPressed: {
-    backgroundColor: Colors.Surface,
-  },
   rowLabel: {
     flex: 1,
     ...Typography.Body,
-    color: Colors.TextPrimary,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.Divider,
-    marginLeft: 52, // icon width + gap + padding
+    marginLeft: 52,
   },
   signOutCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.DangerBg,
     borderWidth: 1.5,
-    borderColor: Colors.DangerBorder,
     borderRadius: Radii.card,
     paddingVertical: 14,
     paddingHorizontal: Spacing.md,
   },
-  signOutCardPressed: {
-    backgroundColor: Colors.DangerSoftBg,
-  },
   signOutCardText: {
     ...Typography.Body,
     fontWeight: '700',
-    color: Colors.Danger,
   },
 });

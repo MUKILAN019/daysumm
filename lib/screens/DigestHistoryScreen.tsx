@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { ChevronLeft, ChevronRight, X, Check, Lock } from 'lucide-react-native';
 import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { fetchDigestHistory, type DigestHistoryEntry } from '../firestore/digestHistory';
 import { DigestCard } from '../components/DigestCard';
 import { MainBackground } from '../components/MainBackground';
@@ -67,6 +68,7 @@ export function DigestHistoryScreen({
   refreshKey = 0,
   todayDigest = null,
 }: DigestHistoryScreenProps) {
+  const { colors } = useTheme();
   const todayKey = getTodayDateKey();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -199,20 +201,20 @@ export function DigestHistoryScreen({
     const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
 
     let bg = 'transparent';
-    let text = isWeekend ? Colors.TextSecondary : Colors.TextPrimary;
+    let text = isWeekend ? colors.TextSecondary : colors.TextPrimary;
 
     if (isFuture || isLocked) text = Colors.SlateMuted;
     else if (hasData) {
-      bg = Colors.PrimaryTint;
-      text = Colors.PrimaryDeep;
+      bg = colors.PrimaryTint;
+      text = colors.PrimaryDeep;
     }
     if (isSelected) {
-      bg = Colors.PrimaryTint;
-      text = Colors.PrimaryDeep;
+      bg = colors.PrimaryTint;
+      text = colors.PrimaryDeep;
     }
     if (isToday) {
-      bg = Colors.Primary;
-      text = Colors.Background;
+      bg = colors.Primary;
+      text = colors.Background;
     }
     return { bg, text, isLocked };
   }
@@ -223,7 +225,7 @@ export function DigestHistoryScreen({
       {/* Calendar Header */}
       <View style={styles.calendarHeader}>
         <View style={styles.monthTitleRow}>
-          <Text style={styles.monthTitle}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
+          <Text style={[styles.monthTitle, { color: colors.TextPrimary }]}>{MONTH_NAMES[viewMonth]} {viewYear}</Text>
           {isPro && (
             <View style={styles.proBadge}>
               <Text style={styles.proBadgeText}>PRO</Text>
@@ -234,17 +236,17 @@ export function DigestHistoryScreen({
           <Pressable
             accessibilityRole="button"
             onPress={handlePrevMonth}
-            style={({ pressed }) => [styles.navBtn, pressed && styles.navBtnPressed]}
+            style={({ pressed }) => [styles.navBtn, pressed && { backgroundColor: colors.Surface }]}
           >
-            <ChevronLeft size={24} color={!isPro && !canGoBack ? Colors.SlateMuted : Colors.TextPrimary} />
+            <ChevronLeft size={24} color={!isPro && !canGoBack ? Colors.SlateMuted : colors.TextPrimary} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
             onPress={handleNextMonth}
             disabled={!canGoForward}
-            style={({ pressed }) => [styles.navBtn, pressed && styles.navBtnPressed]}
+            style={({ pressed }) => [styles.navBtn, pressed && { backgroundColor: colors.Surface }]}
           >
-            <ChevronRight size={24} color={canGoForward ? Colors.TextPrimary : Colors.SlateMuted} />
+            <ChevronRight size={24} color={canGoForward ? colors.TextPrimary : Colors.SlateMuted} />
           </Pressable>
         </View>
       </View>
@@ -252,12 +254,12 @@ export function DigestHistoryScreen({
       {/* Weekdays */}
       <View style={styles.weekdaysRow}>
         {WEEKDAY_LABELS.map((w) => (
-          <Text key={w} style={styles.weekdayText}>{w}</Text>
+          <Text key={w} style={[styles.weekdayText, { color: colors.TextMuted }]}>{w}</Text>
         ))}
       </View>
 
       {/* Grid */}
-      <View style={styles.grid}>
+      <View style={[styles.grid, { borderBottomColor: colors.Divider }]}>
         {calendarGrid.map((day, idx) => {
           if (!day) return <View key={`empty-${idx}`} style={styles.dayCellWrapper} />;
           const style = getDayStyle(day);
@@ -285,7 +287,7 @@ export function DigestHistoryScreen({
       {/* Digest View */}
       <ScrollView style={styles.entriesScroll} contentContainerStyle={styles.entriesContent}>
         {isLoading ? (
-          <ActivityIndicator color={Colors.Primary} />
+          <ActivityIndicator color={colors.Primary} />
         ) : selectedDigest ? (
           <DigestCard digest={selectedDigest} />
         ) : (
@@ -295,7 +297,7 @@ export function DigestHistoryScreen({
               style={styles.emptyHistoryMascot}
               resizeMode="contain"
             />
-            <Text style={styles.emptyEntriesText}>No digest for this day</Text>
+            <Text style={[styles.emptyEntriesText, { color: colors.TextMuted }]}>No digest for this day</Text>
           </View>
         )}
       </ScrollView>
@@ -322,9 +324,9 @@ export function DigestHistoryScreen({
               />
             </View>
 
-            <View style={styles.sheet}>
+            <View style={[styles.sheet, { backgroundColor: colors.Card }]}>
               {/* Teal accent band with drag handle */}
-              <View style={styles.topBand}>
+              <View style={[styles.topBand, { backgroundColor: colors.Surface, borderBottomColor: colors.Border }]}>
                 <View style={styles.handle} />
               </View>
 
@@ -339,44 +341,45 @@ export function DigestHistoryScreen({
                     <View style={styles.pillDotGold} />
                     <Text style={styles.sourcePillText}>DaySumm Pro</Text>
                   </View>
-                  <Pressable onPress={closePaywall} style={styles.closeButton} hitSlop={10}>
-                    <X size={18} color={Colors.TextSecondary} strokeWidth={2.2} />
+                  <Pressable onPress={closePaywall} style={[styles.closeButton, { backgroundColor: colors.Surface, borderColor: colors.Border }]} hitSlop={10}>
+                    <X size={18} color={colors.TextSecondary} strokeWidth={2.2} />
                   </Pressable>
                 </View>
 
                 {/* Title */}
-                <Text style={styles.title}>Unlock your full history</Text>
-                <Text style={styles.subtitle}>
+                <Text style={[styles.title, { color: colors.TextPrimary }]}>Unlock your full history</Text>
+                <Text style={[styles.subtitle, { color: colors.TextSecondary }]}>
                   Free plan shows the last 3 days. Go Pro to time-travel across every day you've captured.
                 </Text>
 
                 {/* Section label */}
-                <Text style={styles.sectionLabel}>What you get</Text>
+                <Text style={[styles.sectionLabel, { color: colors.TextSecondary }]}>What you get</Text>
 
                 {/* Feature card */}
-                <View style={styles.featureCard}>
+                <View style={[styles.featureCard, { backgroundColor: colors.Surface, borderColor: colors.Border }]}>
                   {PAYWALL_FEATURES.map((f) => (
                     <View key={f} style={styles.featureRow}>
-                      <View style={styles.checkBadge}>
-                        <Check size={12} color={Colors.PrimaryDeep} strokeWidth={3} />
+                      <View style={[styles.checkBadge, { backgroundColor: colors.PrimaryTint }]}>
+                        <Check size={12} color={colors.PrimaryDeep} strokeWidth={3} />
                       </View>
-                      <Text style={styles.featureText}>{f}</Text>
+                      <Text style={[styles.featureText, { color: colors.TextPrimary }]}>{f}</Text>
                     </View>
                   ))}
                 </View>
               </ScrollView>
 
               {/* Action buttons */}
-              <View style={styles.actions}>
+              <View style={[styles.actions, { borderTopColor: colors.Border, backgroundColor: colors.Card }]}>
                 <Pressable
                   style={({ pressed }) => [
                     styles.actionButton,
                     styles.cancelButton,
-                    pressed && styles.cancelButtonPressed,
+                    { backgroundColor: colors.Surface, borderColor: colors.Border },
+                    pressed && { backgroundColor: colors.Border },
                   ]}
                   onPress={closePaywall}
                 >
-                  <Text style={styles.cancelButtonText}>Not now</Text>
+                  <Text style={[styles.cancelButtonText, { color: colors.TextPrimary }]}>Not now</Text>
                 </Pressable>
                 <Pressable
                   style={({ pressed }) => [

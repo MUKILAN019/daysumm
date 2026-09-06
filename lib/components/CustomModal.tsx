@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable, Image, type ImageSourcePropType } from 'react-native';
-import { Colors, Elevation, Spacing, Typography, Radii } from '../theme/tokens';
+import { Elevation, Spacing, Typography, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 
 export type CustomModalType = 'info' | 'warning' | 'success';
 
@@ -29,6 +30,8 @@ export function CustomModal({
   children,
   customMascot,
 }: CustomModalProps) {
+  const { colors, isDark } = useTheme();
+
   return (
     <Modal
       transparent
@@ -37,10 +40,13 @@ export function CustomModal({
       onRequestClose={onPrimaryPress}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Teal header band with cat mascot */}
-          <View style={styles.headerBand}>
-            <View style={styles.headerBandInner} />
+        <View style={[styles.modalContainer, {
+          backgroundColor: colors.Card,
+          shadowColor: Elevation.shadowColor,
+        }]}>
+          {/* Header band with cat mascot */}
+          <View style={[styles.headerBand, { backgroundColor: isDark ? colors.PrimaryTint : colors.PrimaryTint }]}>
+            <View style={[styles.headerBandInner, { backgroundColor: isDark ? colors.PrimaryTint : colors.PrimaryTint }]} />
             <Image
               source={customMascot ?? require('../../assets/cat-modal-friendly.png')}
               style={styles.mascot}
@@ -49,8 +55,8 @@ export function CustomModal({
           </View>
 
           <View style={styles.body}>
-            <Text style={styles.title}>{title}</Text>
-            {message ? <Text style={styles.message}>{message}</Text> : null}
+            <Text style={[styles.title, { color: colors.TextPrimary }]}>{title}</Text>
+            {message ? <Text style={[styles.message, { color: colors.TextSecondary }]}>{message}</Text> : null}
 
             {children ? <View style={styles.childrenContainer}>{children}</View> : null}
 
@@ -59,8 +65,8 @@ export function CustomModal({
                 style={({ pressed }) => [
                   styles.button,
                   styles.primaryButton,
-                  pressed && styles.primaryButtonPressed,
-                  type === 'warning' && styles.primaryButtonWarning,
+                  { backgroundColor: type === 'warning' ? colors.ProGold : colors.Primary },
+                  pressed && { backgroundColor: type === 'warning' ? colors.WarningBorder : colors.PrimaryDeep },
                 ]}
                 onPress={onPrimaryPress}
               >
@@ -70,12 +76,15 @@ export function CustomModal({
                 <Pressable
                   style={({ pressed }) => [
                     styles.button,
-                    styles.secondaryButton,
-                    pressed && styles.secondaryButtonPressed,
+                    {
+                      backgroundColor: pressed ? colors.Border : colors.Surface,
+                      borderWidth: 1,
+                      borderColor: colors.Border,
+                    },
                   ]}
                   onPress={onSecondaryPress}
                 >
-                  <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                  <Text style={[styles.buttonText, { color: colors.TextPrimary }]}>
                     {secondaryButtonText}
                   </Text>
                 </Pressable>
@@ -93,26 +102,23 @@ const MASCOT_SIZE = 104;
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
   },
   modalContainer: {
-    backgroundColor: Colors.Card,
     borderRadius: Radii.sheet,
     width: '100%',
     maxWidth: 360,
     overflow: 'hidden',
-    shadowColor: Elevation.shadowColor,
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 28,
     elevation: 14,
   },
   headerBand: {
     height: 88,
-    backgroundColor: Colors.PrimaryTint,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
@@ -122,7 +128,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 60,
-    backgroundColor: Colors.PrimaryTint,
   },
   mascot: {
     width: MASCOT_SIZE,
@@ -139,13 +144,11 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.ScreenTitle,
     fontSize: 20,
-    color: Colors.TextPrimary,
     marginBottom: Spacing.sm,
     textAlign: 'center',
   },
   message: {
     ...Typography.Body,
-    color: Colors.TextSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     lineHeight: 22,
@@ -167,29 +170,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  primaryButton: {
-    backgroundColor: Colors.Primary,
-  },
-  primaryButtonPressed: {
-    backgroundColor: Colors.PrimaryDeep,
-  },
-  primaryButtonWarning: {
-    backgroundColor: Colors.ProGold,
-  },
-  secondaryButton: {
-    backgroundColor: Colors.Surface,
-    borderWidth: 1,
-    borderColor: Colors.Border,
-  },
-  secondaryButtonPressed: {
-    backgroundColor: Colors.Border,
-  },
+  primaryButton: {},
   buttonText: {
     ...Typography.Body,
-    color: Colors.White,
+    color: '#FFFFFF',
     fontWeight: '700',
-  },
-  secondaryButtonText: {
-    color: Colors.TextPrimary,
   },
 });

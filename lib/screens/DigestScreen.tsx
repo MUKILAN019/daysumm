@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Text, Pressable, Image, Animated, Easing 
 import { GlobalHeader } from '../components/GlobalHeader';
 import { DigestCard } from '../components/DigestCard';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { Wand2, Sparkles, AlertCircle } from 'lucide-react-native';
 import { StreakBadge } from '../components/StreakBadge';
 import { MainBackground } from '../components/MainBackground';
@@ -37,8 +38,10 @@ function ShimmerBox({ style }: { style: any }) {
     outputRange: [0.35, 0.95],
   });
 
+  const { colors } = useTheme();
+
   return (
-    <Animated.View style={[style, { opacity, backgroundColor: Colors.Border }]} />
+    <Animated.View style={[style, { opacity, backgroundColor: colors.Border }]} />
   );
 }
 
@@ -61,6 +64,7 @@ export function DigestScreen({
   onGenerateDigest,
   onUpgradePress,
 }: DigestScreenProps) {
+  const { colors } = useTheme();
   return (
     <View style={styles.container}>
       <MainBackground />
@@ -73,7 +77,7 @@ export function DigestScreen({
         <View style={styles.digestWrapper}>
           <View style={styles.digestSectionHeader}>
             <View style={styles.digestSectionTitleRow}>
-              <Text style={styles.digestSectionTitle}>Today's Summary</Text>
+              <Text style={[styles.digestSectionTitle, { color: colors.TextPrimary }]}>Today's Summary</Text>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -81,19 +85,19 @@ export function DigestScreen({
               onPress={onGenerateDigest}
               style={({ pressed }) => [
                 styles.generateButton,
-                isGeneratingDigest && styles.generateButtonDisabled,
-                pressed && !isGeneratingDigest && styles.generateButtonPressed,
+                { backgroundColor: isGeneratingDigest ? colors.GrayDisabled : colors.Primary },
+                pressed && !isGeneratingDigest && { backgroundColor: colors.PrimaryDark },
               ]}
             >
-              {!isGeneratingDigest && !digest && <Wand2 size={16} color={Colors.Background} style={{ marginRight: 6 }} />}
-              <Text style={styles.generateButtonText}>
-                {isGeneratingDigest ? 'Generating…' : digest ? '↻ Refresh' : 'Generate'}
+              {!isGeneratingDigest && !digest && <Wand2 size={16} color="#FFFFFF" style={{ marginRight: 6 }} />}
+              <Text style={[styles.generateButtonText, { color: '#FFFFFF' }]}>
+                {isGeneratingDigest ? 'Generating…' : digest ? '\u21bb Refresh' : 'Generate'}
               </Text>
             </Pressable>
           </View>
 
           {isGeneratingDigest ? (
-            <View style={styles.skeletonCard}>
+            <View style={[styles.skeletonCard, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
               <ShimmerBox style={styles.skeletonHeadline} />
               <ShimmerBox style={styles.skeletonLine} />
               <ShimmerBox style={[styles.skeletonLine, { width: '85%' }]} />
@@ -103,31 +107,31 @@ export function DigestScreen({
             </View>
           ) : digestError ? (
             isLimitError ? (
-              <View style={styles.digestLimitCard}>
+              <View style={[styles.digestLimitCard, { backgroundColor: colors.PrimaryTint, borderColor: colors.Border }]}>
                 <View style={styles.digestCardHeaderRow}>
-                  <Sparkles size={18} color={Colors.PrimaryDeep} strokeWidth={2.5} />
-                  <Text style={styles.digestLimitTitle}>Daily Limit Reached (3/3)</Text>
+                  <Sparkles size={18} color={colors.PrimaryDeep} strokeWidth={2.5} />
+                  <Text style={[styles.digestLimitTitle, { color: colors.PrimaryDeep }]}>Daily Limit Reached (3/3)</Text>
                 </View>
-                <Text style={styles.digestLimitText}>{digestError}</Text>
+                <Text style={[styles.digestLimitText, { color: colors.TextSecondary }]}>{digestError}</Text>
                 <Pressable
                   accessibilityRole="button"
                   onPress={onUpgradePress}
-                  style={styles.digestUpgradeButton}
+                  style={[styles.digestUpgradeButton, { backgroundColor: colors.Primary }]}
                 >
                   <Text style={styles.digestUpgradeButtonText}>Upgrade to Pro</Text>
                 </Pressable>
               </View>
             ) : (
-              <View style={styles.digestErrorCard}>
+              <View style={[styles.digestErrorCard, { backgroundColor: colors.DangerBg, borderColor: colors.DangerBorder }]}>
                 <View style={styles.digestCardHeaderRow}>
-                  <AlertCircle size={18} color={Colors.TagBlockerText} strokeWidth={2} />
-                  <Text style={styles.digestErrorTitle}>Unable to Generate</Text>
+                  <AlertCircle size={18} color={colors.Danger} strokeWidth={2} />
+                  <Text style={[styles.digestErrorTitle, { color: colors.Danger }]}>Unable to Generate</Text>
                 </View>
-                <Text style={styles.digestErrorText}>{digestError}</Text>
+                <Text style={[styles.digestErrorText, { color: colors.TextSecondary }]}>{digestError}</Text>
                 <Pressable
                   accessibilityRole="button"
                   onPress={onGenerateDigest}
-                  style={styles.digestErrorButton}
+                  style={[styles.digestErrorButton, { backgroundColor: colors.Danger }]}
                 >
                   <Text style={styles.digestErrorButtonText}>Try again</Text>
                 </Pressable>
@@ -137,12 +141,12 @@ export function DigestScreen({
             <DigestCard digest={digest} />
           ) : (
             <View style={styles.digestEmptyState}>
-              <Image 
-                source={require('../../assets/cat-lying-waiting.png')} 
-                style={styles.digestEmptyMascot} 
-                resizeMode="contain" 
+              <Image
+                source={require('../../assets/cat-lying-waiting.png')}
+                style={styles.digestEmptyMascot}
+                resizeMode="contain"
               />
-              <Text style={styles.digestEmptyText}>No digest yet</Text>
+              <Text style={[styles.digestEmptyText, { color: colors.TextMuted }]}>No digest yet</Text>
             </View>
           )}
         </View>

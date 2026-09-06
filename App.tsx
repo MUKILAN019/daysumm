@@ -41,6 +41,7 @@ import { NotificationSettingsScreen } from './lib/screens/NotificationSettingsSc
 import { EntryDetailSheet, type EntryDetailSaveParams } from './lib/components/EntryDetailSheet';
 import { translateText } from './lib/functions/translateText';
 import { Colors } from './lib/theme/tokens';
+import { ThemeProvider, useTheme } from './lib/theme/ThemeContext';
 import { CustomModal } from './lib/components/CustomModal';
 import { ScreenTransition } from './lib/components/ScreenTransition';
 import {
@@ -61,6 +62,7 @@ interface AppShellProps {
 }
 
 function AppShell({ uid, authState }: AppShellProps) {
+  const { isDark, colors } = useTheme();
   const entriesState = useEntriesManager();
   const digestState = useDigestManager(authState.isPro, entriesState.entries.length);
 
@@ -195,7 +197,7 @@ function AppShell({ uid, authState }: AppShellProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.GrayBg }]}>
       {digestState.showForegroundBanner && (
         <DigestReadyBanner
           onPress={() => {
@@ -262,8 +264,8 @@ function AppShell({ uid, authState }: AppShellProps) {
       <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
 
       {entriesState.deletedEntryToast ? (
-        <View style={styles.undoToast}>
-          <Text style={styles.undoToastText}>Entry deleted</Text>
+        <View style={[styles.undoToast, { backgroundColor: isDark ? '#2A2840' : '#1E293B' }]}>
+          <Text style={[styles.undoToastText, { color: colors.TextPrimary }]}>Entry deleted</Text>
           <Pressable
             accessibilityRole="button"
             onPress={entriesState.handleUndoDelete}
@@ -372,7 +374,11 @@ export default function App() {
       );
     }
 
-    return <AppShell key={uid} uid={uid} authState={authState} />;
+    return (
+      <ThemeProvider>
+        <AppShell key={uid} uid={uid} authState={authState} />
+      </ThemeProvider>
+    );
   }
 
   return (

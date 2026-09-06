@@ -16,6 +16,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { Colors } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 
 interface MainBackgroundProps {
   isDarkTheme?: boolean;
@@ -27,10 +28,13 @@ const DOT_RADIUS = 0.9;
 const TOP_WASH_HEIGHT_RATIO = 0.24;
 
 export const MainBackground = memo(function MainBackground({
-  isDarkTheme = false,
+  isDarkTheme: isDarkProp = false,
   animated = true,
 }: MainBackgroundProps) {
   const { width, height } = useWindowDimensions();
+  // ThemeContext takes precedence over the prop
+  const { isDark: isDarkCtx } = useTheme();
+  const isDarkTheme = isDarkCtx ?? isDarkProp;
 
   const entranceOpacity = useRef(
     new Animated.Value(animated ? 0 : 1),

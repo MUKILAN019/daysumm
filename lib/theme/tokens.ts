@@ -1,3 +1,5 @@
+export type ThemeColors = typeof Colors;
+
 export const Colors = {
   Primary: '#6C5CE7',
   PrimaryDark: '#2E2470',
@@ -203,3 +205,86 @@ export const Elevation = {
   shadowRadius: 3,
   elevation: 2,
 };
+
+// ---------------------------------------------------------------------------
+// Dark mode palette — deep indigo-black with DaySumm's purple brand preserved
+// ---------------------------------------------------------------------------
+export const DarkColors: ThemeColors = {
+  Primary: '#8B7FF5',
+  PrimaryDark: '#5B4FD0',
+  PrimaryDeep: '#7A6FE8',
+  PrimaryTint: '#2A2456',
+
+  Accent: '#FF7A9C',
+
+  Background: '#0D0C14',
+  Surface: '#17162A',
+  Card: '#1E1C2E',
+  Border: '#2D2B40',
+
+  TextPrimary: '#EEE8FF',
+  TextSecondary: '#9E9BB8',
+  TextMuted: '#6B6885',
+
+  Divider: '#2D2B40',
+
+  Success: '#2CCF8E',
+  Warning: '#F0B040',
+  Danger: '#F06878',
+  Info: '#38B2E0',
+
+  ProGold: '#F0B040',
+
+  Ink: '#0D0C14',
+  White: '#FFFFFF',
+
+  BluePrimary: '#5B91F8',
+  BlueDark: '#4478E8',
+  BlueLight: '#14203A',
+  BlueBorder: '#263A60',
+
+  SlateMuted: '#3D3B50',
+  SlateText: '#8A88A0',
+  SlateBorder: '#4A4860',
+  SlateBg: '#17162A',
+
+  DangerDark: '#E84040',
+  DangerDeep: '#D02828',
+  DangerBg: '#2A1520',
+  DangerBorder: '#8B3040',
+  DangerSoftBg: '#351A22',
+  DangerBorderSoft: '#7A2C38',
+
+  WarningLight: '#2A2010',
+  WarningBg: '#231E0E',
+  WarningBorder: '#C07828',
+  WarningText: '#E0A848',
+
+  GrayBg: '#0D0C14',
+  GraySubtle: '#17162A',
+  GrayDisabled: '#3D3B50',
+  PrimaryDisabled: '#3D3870',
+  TextDark: '#EEE8FF',
+  TextSubtle: '#8A88A0',
+
+  TagBlockerBg: '#2A1520',
+  TagBlockerText: '#F06878',
+  TagBlockerBorder: '#8B3040',
+
+  TagHighlightBg: '#0E2420',
+  TagHighlightText: '#2CCF8E',
+  TagHighlightBorder: '#1A5A40',
+
+  TagActionBg: '#231E0E',
+  TagActionText: '#E0A848',
+  TagActionBorder: '#6A5020',
+
+  TagDecisionBg: '#0E1A30',
+  TagDecisionText: '#5B91F8',
+  TagDecisionBorder: '#1A3060',
+
+  TagNoteBg: '#1E1C2E',
+  TagNoteText: '#9E9BB8',
+  TagNoteBorder: '#2D2B40',
+};
+

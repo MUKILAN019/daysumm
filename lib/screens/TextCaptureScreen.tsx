@@ -11,6 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Colors, Elevation, Typography, Spacing, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import * as Haptics from 'expo-haptics';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { StreakBadge } from '../components/StreakBadge';
@@ -32,6 +33,7 @@ function hasEntryText(value: string) {
 }
 
 export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenProps) {
+  const { colors } = useTheme();
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const focusAnim = useRef(new Animated.Value(0)).current;
@@ -39,24 +41,16 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
   const canSave = hasEntryText(text);
 
   function handleFocus() {
-    Animated.timing(focusAnim, {
-      toValue: 1,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(focusAnim, { toValue: 1, duration: 220, useNativeDriver: false }).start();
   }
 
   function handleBlur() {
-    Animated.timing(focusAnim, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
   }
 
   const animatedBorderColor = focusAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(229, 231, 235, 0.8)', Colors.Primary],
+    outputRange: [colors.Border, colors.Primary],
   });
 
   const animatedShadowOpacity = focusAnim.interpolate({
@@ -103,43 +97,34 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
         <Animated.View
           style={[
             styles.inputCard,
-            {
-              borderColor: animatedBorderColor,
-              shadowOpacity: animatedShadowOpacity,
-            },
+            { backgroundColor: colors.Card, borderColor: animatedBorderColor, shadowOpacity: animatedShadowOpacity },
           ]}
         >
-          {/* Mascot inside the text box */}
           <View style={{ position: 'absolute', bottom: 0, right: 16, zIndex: 0, opacity: 0.75 }} pointerEvents="none">
-            <Image
-              source={require('../../assets/cat-peek.png')}
-              style={{ width: 100, height: 80 }}
-              resizeMode="contain"
-            />
+            <Image source={require('../../assets/cat-peek.png')} style={{ width: 100, height: 80 }} resizeMode="contain" />
           </View>
 
           <View style={styles.inputHeaderRow}>
-            <Text style={styles.inputLabel}>YOUR ENTRY</Text>
+            <Text style={[styles.inputLabel, { color: colors.TextMuted }]}>YOUR ENTRY</Text>
           </View>
 
           <TextInput
-            style={[styles.input, { zIndex: 1 }]}
+            style={[styles.input, { color: colors.TextPrimary, zIndex: 1 }]}
             multiline
             placeholder="What did you finish, decide, or promise today?"
-            placeholderTextColor={Colors.TextMuted}
+            placeholderTextColor={colors.TextMuted}
             value={text}
             onChangeText={setText}
             onFocus={handleFocus}
             onBlur={handleBlur}
             textAlignVertical="top"
           />
-
         </Animated.View>
 
-        {isEmpty ? (
+        {text.length === 0 ? (
           <View style={styles.hintRow}>
-            <View style={styles.hintDot} />
-            <Text style={styles.hintText}>
+            <View style={[styles.hintDot, { backgroundColor: colors.Accent }]} />
+            <Text style={[styles.hintText, { color: colors.TextMuted }]}>
               Tip: start with a verb, like shipped, decided, or blocked.
             </Text>
           </View>
@@ -147,7 +132,7 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
 
         {/* Tags */}
         <View style={styles.tagsBlock}>
-          <Text style={styles.sectionLabel}>QUICK TAGS</Text>
+          <Text style={[styles.sectionLabel, { color: colors.TextMuted }]}>QUICK TAGS</Text>
           <View style={styles.tagsRow}>
             {SUGGESTED_TAGS.map((tag) => {
               const active = text.includes(`#${tag}`);
@@ -159,12 +144,12 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
                   onPress={() => handleTagPress(tag)}
                   style={({ pressed }) => [
                     styles.tagChip,
+                    { backgroundColor: active ? colors.Primary : colors.Surface, borderColor: active ? colors.Primary : colors.Border },
                     !hasEntryText(text) && styles.tagChipDisabled,
-                    active && styles.tagChipActive,
-                    pressed && styles.tagChipPressed,
+                    pressed && !active && { backgroundColor: colors.PrimaryTint },
                   ]}
                 >
-                  <Text style={[styles.tagText, active && styles.tagTextActive]}>
+                  <Text style={[styles.tagText, { color: active ? '#FFFFFF' : colors.TextSecondary }]}>
                     {active ? tag : `+ ${tag}`}
                   </Text>
                 </Pressable>
@@ -175,15 +160,15 @@ export function TextCaptureScreen({ currentStreak, onSave }: TextCaptureScreenPr
       </ScrollView>
 
       {/* Sticky action bar */}
-      <View style={styles.actionBar}>
+      <View style={[styles.actionBar, { backgroundColor: colors.Surface, borderTopColor: colors.Divider }]}>
         <Pressable
           accessibilityRole="button"
           disabled={!canSave || isSaving || text.length > MAX_CHARS}
           onPress={handleSave}
           style={({ pressed }) => [
             styles.saveButton,
-            (!canSave || isSaving || text.length > MAX_CHARS) && styles.saveButtonDisabled,
-            pressed && canSave && text.length <= MAX_CHARS && styles.saveButtonPressed,
+            { backgroundColor: (!canSave || isSaving || text.length > MAX_CHARS) ? colors.Border : colors.Primary },
+            pressed && canSave && text.length <= MAX_CHARS && { backgroundColor: colors.PrimaryDark },
           ]}
         >
           <Text style={styles.saveButtonText}>

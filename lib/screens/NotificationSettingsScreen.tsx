@@ -5,6 +5,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Clock, Info, Sparkles } from 'lucide-react-native';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { fetchUserSettings, updateNotificationTime } from '../firestore/userSettings';
 import { fetchDailyUsage, updateDailyUsageForTimeChange } from '../firestore/dailyUsage';
 import { CustomModal, CustomModalType } from '../components/CustomModal';
@@ -15,6 +16,7 @@ interface NotificationSettingsScreenProps {
 }
 
 export function NotificationSettingsScreen({ onBack }: NotificationSettingsScreenProps) {
+  const { colors } = useTheme();
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -141,7 +143,7 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={Colors.Primary} />
+          <ActivityIndicator size="large" color={colors.Primary} />
         </View>
       ) : (
         <>
@@ -153,25 +155,29 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
 
             {/* Time section */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>DELIVERY TIME</Text>
+              <Text style={[styles.sectionLabel, { color: colors.TextMuted }]}>DELIVERY TIME</Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setShowPicker(true)}
-                style={({ pressed }) => [styles.timeCard, pressed && styles.timeCardPressed]}
+                style={({ pressed }) => [
+                  styles.timeCard,
+                  { backgroundColor: colors.Card, borderColor: colors.Border },
+                  pressed && { borderColor: colors.Primary, backgroundColor: colors.PrimaryTint },
+                ]}
               >
-                <View style={styles.timeIconWrap}>
-                  <Clock size={20} color={Colors.PrimaryDeep} strokeWidth={2} />
+                <View style={[styles.timeIconWrap, { backgroundColor: colors.PrimaryTint }]}>
+                  <Clock size={20} color={colors.PrimaryDeep} strokeWidth={2} />
                 </View>
                 <View style={styles.timeTextCol}>
-                  <Text style={styles.timeValue}>{timeLabel}</Text>
-                  <Text style={[styles.timeCaption, isDirty && styles.timeCaptionDirty]}>
+                  <Text style={[styles.timeValue, { color: colors.TextPrimary }]}>{timeLabel}</Text>
+                  <Text style={[styles.timeCaption, { color: colors.TextMuted }, isDirty && styles.timeCaptionDirty]}>
                     {isDirty ? 'Unsaved — tap Save to confirm' : 'Tap to change time'}
                   </Text>
                 </View>
               </Pressable>
 
               {showPicker && (
-                <View style={styles.pickerCard}>
+                <View style={[styles.pickerCard, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
                   <DateTimePicker
                     testID="dateTimePicker"
                     value={date}
@@ -184,45 +190,46 @@ export function NotificationSettingsScreen({ onBack }: NotificationSettingsScree
               )}
 
               {/* Live Outcome Preview */}
-              <View style={styles.previewCard}>
-                <Sparkles size={16} color={Colors.PrimaryDeep} strokeWidth={2} />
-                <Text style={styles.previewText}>
-                  Your daily digest will arrive around <Text style={styles.previewTimeText}>{timeLabel}</Text>
+              <View style={[styles.previewCard, { backgroundColor: colors.PrimaryTint, borderColor: colors.Border }]}>
+                <Sparkles size={16} color={colors.PrimaryDeep} strokeWidth={2} />
+                <Text style={[styles.previewText, { color: colors.TextPrimary }]}>
+                  Your daily digest will arrive around <Text style={[styles.previewTimeText, { color: colors.PrimaryDeep }]}>{timeLabel}</Text>
                 </Text>
               </View>
 
               {/* Inline Cutoff Tip */}
               <View style={styles.inlineTipRow}>
-                <Info size={14} color={Colors.TextMuted} strokeWidth={2} />
-                <Text style={styles.inlineTipText}>
-                  Delivery time cannot be changed within <Text style={{ fontWeight: '600', color: Colors.TextPrimary }}>20 minutes</Text> of scheduled time.
+                <Info size={14} color={colors.TextMuted} strokeWidth={2} />
+                <Text style={[styles.inlineTipText, { color: colors.TextMuted }]}>
+                  Delivery time cannot be changed within <Text style={{ fontWeight: '600', color: colors.TextPrimary }}>20 minutes</Text> of scheduled time.
                 </Text>
               </View>
             </View>
 
             {/* Info section */}
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>HELP</Text>
+              <Text style={[styles.sectionLabel, { color: colors.TextMuted }]}>HELP</Text>
               <View style={styles.infoRow}>
-                <Info size={16} color={Colors.TextMuted} strokeWidth={2} />
-                <Text style={styles.infoText}>
+                <Info size={16} color={colors.TextMuted} strokeWidth={2} />
+                <Text style={[styles.infoText, { color: colors.TextSecondary }]}>
                   Not getting notifications? Go to{' '}
-                  <Text style={styles.infoTextBold}>Settings › App Management › DaySumm › Permissions › Notifications</Text>.
+                  <Text style={[styles.infoTextBold, { color: colors.TextPrimary }]}>Settings › App Management › DaySumm › Permissions › Notifications</Text>.
                 </Text>
               </View>
             </View>
           </ScrollView>
 
           {/* Save action bar */}
-          <View style={styles.actionBar}>
+          <View style={[styles.actionBar, { backgroundColor: colors.Surface, borderTopColor: colors.Divider }]}>
             <Pressable
               accessibilityRole="button"
               onPress={handleSave}
               disabled={saving || !isDirty}
               style={({ pressed }) => [
                 styles.saveButton,
+                { backgroundColor: colors.Primary },
                 (!isDirty || saving) && styles.saveButtonDisabled,
-                pressed && isDirty && !saving && styles.saveButtonPressed,
+                pressed && isDirty && !saving && { backgroundColor: colors.PrimaryDeep },
               ]}
             >
               {saving ? (

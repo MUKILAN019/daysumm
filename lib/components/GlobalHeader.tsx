@@ -2,7 +2,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, Typography, Spacing } from '../theme/tokens';
+import { Typography, Spacing } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import type { ReactNode } from 'react';
 
 interface GlobalHeaderProps {
@@ -15,10 +16,11 @@ interface GlobalHeaderProps {
 export function GlobalHeader({ title, subtitle, onBack, rightAction }: GlobalHeaderProps) {
   const insets = useSafeAreaInsets();
   const topPadding = Math.max(insets.top + Spacing.xs, 44);
+  const { isDark, colors } = useTheme();
 
   return (
     <View style={[styles.container, { paddingTop: topPadding }]}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.left}>
         {onBack ? (
           <Pressable
@@ -26,10 +28,12 @@ export function GlobalHeader({ title, subtitle, onBack, rightAction }: GlobalHea
             onPress={onBack}
             style={({ pressed }) => [
               styles.backButton,
-              pressed && styles.backButtonPressed,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255, 255, 255, 0.7)',
+                borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(229, 231, 235, 0.5)' },
+              pressed && { opacity: 0.7 },
             ]}
           >
-            <ChevronLeft size={24} strokeWidth={1.75} color={Colors.TextPrimary} />
+            <ChevronLeft size={24} strokeWidth={1.75} color={colors.TextPrimary} />
           </Pressable>
         ) : (
           <View style={styles.backButtonPlaceholder} />
@@ -37,9 +41,9 @@ export function GlobalHeader({ title, subtitle, onBack, rightAction }: GlobalHea
       </View>
 
       <View style={styles.center}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <Text style={[styles.title, { color: colors.TextPrimary }]} numberOfLines={1}>{title}</Text>
         {subtitle && (
-          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+          <Text style={[styles.subtitle, { color: colors.TextSecondary }]} numberOfLines={1}>{subtitle}</Text>
         )}
       </View>
 
@@ -77,12 +81,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.5)',
-  },
-  backButtonPressed: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   backButtonPlaceholder: {
     width: 44,
@@ -94,15 +93,13 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.ScreenTitle,
-    fontSize: 24, // Override screen title from 28 to 24 per requirement
+    fontSize: 24,
     lineHeight: 24 * 1.4,
-    color: Colors.TextPrimary,
     textAlign: 'center',
   },
   subtitle: {
     ...Typography.Secondary,
-    fontWeight: '400', // Override from 500 to 400 per requirement
-    color: Colors.TextSecondary,
+    fontWeight: '400',
     textAlign: 'center',
     marginTop: 2,
   },

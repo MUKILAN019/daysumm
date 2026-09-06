@@ -3,7 +3,8 @@ import { Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'reac
 import { Share as ShareIcon } from 'lucide-react-native';
 
 import type { Digest } from '../functions/generateDigest';
-import { Colors, Typography, Spacing, Radii } from '../theme/tokens';
+import { Typography, Spacing, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 
 interface DigestCardProps {
   digest: Digest;
@@ -39,6 +40,8 @@ function formatDigestForSharing(digest: Digest): string {
 }
 
 export function DigestCard({ digest }: DigestCardProps) {
+  const { colors } = useTheme();
+
   const sections = [
     { title: 'Highlights', items: digest.highlights },
     { title: 'Action items', items: digest.actionItems },
@@ -88,7 +91,7 @@ export function DigestCard({ digest }: DigestCardProps) {
   }
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.Card, borderColor: colors.Border }]}>
       <Animated.View
         style={[
           styles.headerRow,
@@ -111,10 +114,11 @@ export function DigestCard({ digest }: DigestCardProps) {
           },
         ]}
       >
-        <Text style={styles.headline}>{digest.headline}</Text>
-        <Pressable accessibilityRole="button" onPress={handleShare} style={styles.shareButton}>
-          <ShareIcon size={16} color={Colors.PrimaryDeep} />
-          <Text style={styles.shareButtonText}>Share</Text>
+        <Text style={[styles.headline, { color: colors.TextPrimary }]}>{digest.headline}</Text>
+        <Pressable accessibilityRole="button" onPress={handleShare}
+          style={[styles.shareButton, { backgroundColor: colors.PrimaryTint }]}>
+          <ShareIcon size={16} color={colors.PrimaryDeep} />
+          <Text style={[styles.shareButtonText, { color: colors.PrimaryDeep }]}>Share</Text>
         </Pressable>
       </Animated.View>
 
@@ -139,11 +143,11 @@ export function DigestCard({ digest }: DigestCardProps) {
               },
             ]}
           >
-            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.TextMuted }]}>{section.title}</Text>
             {section.items.map((item) => (
               <View key={item} style={styles.bulletRow}>
-                <View style={styles.bulletPoint} />
-                <Text style={styles.bulletItem}>{item}</Text>
+                <View style={[styles.bulletPoint, { backgroundColor: colors.Primary }]} />
+                <Text style={[styles.bulletItem, { color: colors.TextPrimary }]}>{item}</Text>
               </View>
             ))}
           </Animated.View>
@@ -170,10 +174,10 @@ export function DigestCard({ digest }: DigestCardProps) {
               },
             ]}
           >
-            <Text style={styles.sectionTitle}>Status update</Text>
+            <Text style={[styles.sectionTitle, { color: colors.TextMuted }]}>Status update</Text>
             <View style={styles.bulletRow}>
-              <View style={styles.bulletPoint} />
-              <Text style={styles.bulletItem}>{digest.statusUpdate}</Text>
+              <View style={[styles.bulletPoint, { backgroundColor: colors.Primary }]} />
+              <Text style={[styles.bulletItem, { color: colors.TextPrimary }]}>{digest.statusUpdate}</Text>
             </View>
           </Animated.View>
         );
@@ -186,9 +190,7 @@ const styles = StyleSheet.create({
   card: {
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.Border,
     borderRadius: Radii.card,
-    backgroundColor: Colors.Card,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
   },
@@ -202,7 +204,6 @@ const styles = StyleSheet.create({
     flex: 1,
     ...Typography.SectionHeader,
     fontWeight: '700',
-    color: Colors.TextPrimary,
   },
   shareButton: {
     flexDirection: 'row',
@@ -211,19 +212,16 @@ const styles = StyleSheet.create({
     minHeight: 32,
     paddingHorizontal: Spacing.sm,
     borderRadius: Radii.button,
-    backgroundColor: Colors.PrimaryTint,
   },
   shareButtonText: {
     ...Typography.Label,
     fontWeight: '600',
-    color: Colors.PrimaryDeep,
   },
   section: {
     gap: 6,
   },
   sectionTitle: {
     ...Typography.Label,
-    color: Colors.TextMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -236,22 +234,11 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.Primary,
-    marginTop: 8, // align with first line of text
+    marginTop: 8,
   },
   bulletItem: {
     flex: 1,
     ...Typography.Body,
-    color: Colors.TextPrimary,
-    lineHeight: 20,
-  },
-  emptyText: {
-    ...Typography.Body,
-    color: Colors.TextSecondary,
-  },
-  statusText: {
-    ...Typography.Body,
-    color: Colors.TextPrimary,
     lineHeight: 20,
   },
 });

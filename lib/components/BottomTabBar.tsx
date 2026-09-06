@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View, Animated } from 'react-native';
 import { PenLine, Mic, Sparkles, CalendarDays, User } from 'lucide-react-native';
-import { Colors, Elevation, Typography } from '../theme/tokens';
+import { Elevation, Typography } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { useEffect, useRef } from 'react';
 
 export type TabName = 'write' | 'voice' | 'digest' | 'history' | 'profile';
@@ -25,8 +26,13 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ activeTab, onTabPress }: BottomTabBarProps) {
+  const { colors, isDark } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {
+      backgroundColor: isDark ? colors.Surface : colors.Background,
+      borderTopColor: colors.Border,
+    }]}>
       <View style={styles.bar}>
         {TABS.map((tab) => {
           const isActive = tab.name === activeTab;
@@ -53,6 +59,7 @@ function TabItem({
   isActive: boolean;
   onPress: () => void;
 }) {
+  const { colors, isDark } = useTheme();
   const Icon = tab.IconComponent;
   const animation = useRef(new Animated.Value(isActive ? 1 : 0)).current;
 
@@ -60,13 +67,13 @@ function TabItem({
     Animated.timing(animation, {
       toValue: isActive ? 1 : 0,
       duration: 200,
-      useNativeDriver: false, // Color interpolation requires false
+      useNativeDriver: false,
     }).start();
   }, [isActive, animation]);
 
   const backgroundColor = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: ['rgba(236,253,245,0)', Colors.PrimaryTint],
+    outputRange: ['rgba(236,253,245,0)', isDark ? colors.PrimaryTint : colors.PrimaryTint],
   });
 
   const scale = animation.interpolate({
@@ -87,10 +94,14 @@ function TabItem({
         <Icon
           size={24}
           strokeWidth={1.75}
-          color={isActive ? Colors.Primary : Colors.TextMuted}
+          color={isActive ? colors.Primary : colors.TextMuted}
         />
       </View>
-      <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+      <Text style={[
+        styles.tabLabel,
+        { color: colors.TextMuted },
+        isActive && { color: colors.PrimaryDeep },
+      ]}>
         {tab.label}
       </Text>
     </Pressable>
@@ -99,9 +110,7 @@ function TabItem({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.Background,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.Border,
     ...Elevation,
     paddingBottom: 8,
   },
@@ -128,16 +137,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 18, // half of 36x36
+    borderRadius: 18,
   },
   tabLabel: {
     fontFamily: Typography.Secondary.fontFamily,
     fontSize: 12,
     fontWeight: '500',
-    color: Colors.TextMuted,
     lineHeight: 12 * 1.4,
-  },
-  tabLabelActive: {
-    color: Colors.PrimaryDeep,
   },
 });

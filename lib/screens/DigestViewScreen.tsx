@@ -3,11 +3,11 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 
 import { GlobalHeader } from '../components/GlobalHeader';
 import { MainBackground } from '../components/MainBackground';
-
 import { DigestCard } from '../components/DigestCard';
 import { fetchDigestRecordById } from '../firestore/digestRecords';
 import type { Digest } from '../functions/generateDigest';
-import { Colors, Spacing, Radii } from '../theme/tokens';
+import { Colors, Spacing } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 
 interface DigestViewScreenProps {
   digestRecordId: string;
@@ -15,6 +15,7 @@ interface DigestViewScreenProps {
 }
 
 export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenProps) {
+  const { colors } = useTheme();
   const [digest, setDigest] = useState<Digest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -59,11 +60,11 @@ export function DigestViewScreen({ digestRecordId, onBack }: DigestViewScreenPro
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {isLoading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color={Colors.Primary} />
+            <ActivityIndicator size="large" color={colors.Primary} />
           </View>
         ) : errorMessage ? (
           <View style={styles.centered}>
-            <Text style={styles.errorText}>{errorMessage}</Text>
+            <Text style={[styles.errorText, { color: colors.Danger }]}>{errorMessage}</Text>
           </View>
         ) : digest ? (
           <DigestCard digest={digest} />

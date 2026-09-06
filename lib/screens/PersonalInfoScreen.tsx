@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, Pressable, ScrollView, ActivityIndic
 import { getAuth, updateProfile } from '@react-native-firebase/auth';
 import { GlobalHeader } from '../components/GlobalHeader';
 import { Colors, Spacing, Typography, Radii } from '../theme/tokens';
+import { useTheme } from '../theme/ThemeContext';
 import { fetchUserSettings, updateUserRole } from '../firestore/userSettings';
 import { CustomModal, type CustomModalType } from '../components/CustomModal';
 import { MainBackground } from '../components/MainBackground';
@@ -12,6 +13,7 @@ interface PersonalInfoScreenProps {
 }
 
 export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
+  const { colors } = useTheme();
   const auth = getAuth();
   const user = auth.currentUser;
   
@@ -66,38 +68,38 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         
         {loading ? (
-          <ActivityIndicator size="large" color={Colors.Primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color={colors.Primary} style={{ marginTop: 40 }} />
         ) : (
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
+              <Text style={[styles.label, { color: colors.TextPrimary }]}>Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.Surface, borderColor: colors.Border, color: colors.TextPrimary }]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your name"
-                placeholderTextColor={Colors.TextMuted}
+                placeholderTextColor={colors.TextMuted}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { color: colors.TextPrimary }]}>Email</Text>
               <TextInput
-                style={[styles.input, styles.readOnlyInput]}
+                style={[styles.input, { backgroundColor: colors.Card, borderColor: colors.Border, color: colors.TextMuted }]}
                 value={user?.email || 'No email associated'}
                 editable={false}
               />
-              <Text style={styles.hint}>Email cannot be changed.</Text>
+              <Text style={[styles.hint, { color: colors.TextMuted }]}>Email cannot be changed.</Text>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Role</Text>
+              <Text style={[styles.label, { color: colors.TextPrimary }]}>Role</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.Surface, borderColor: colors.Border, color: colors.TextPrimary }]}
                 value={role}
                 onChangeText={setRole}
                 placeholder="e.g. Software Engineer"
-                placeholderTextColor={Colors.TextMuted}
+                placeholderTextColor={colors.TextMuted}
               />
             </View>
 
@@ -107,12 +109,12 @@ export function PersonalInfoScreen({ onBack }: PersonalInfoScreenProps) {
               disabled={!canSave}
               style={({ pressed }) => [
                 styles.saveButton,
-                pressed && styles.saveButtonPressed,
+                { backgroundColor: pressed ? colors.PrimaryDeep : colors.Primary },
                 !canSave && styles.saveButtonDisabled,
               ]}
             >
               {saving ? (
-                <ActivityIndicator color={Colors.White} />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               )}
