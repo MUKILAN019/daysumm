@@ -408,16 +408,6 @@ const styles = StyleSheet.create({
     color: Colors.TextSubtle,
     fontSize: 14,
   },
-  centeredMessage: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  centeredMessageText: {
-    color: Colors.TextSubtle,
-    fontSize: 16,
-  },
   undoToast: {
     position: 'absolute',
     bottom: 84,

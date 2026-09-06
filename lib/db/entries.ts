@@ -573,31 +573,6 @@ export async function getLatestEntryText(uid: string): Promise<string> {
   return row?.text ?? '';
 }
 
-export async function getHasSeenMilestone(milestone: number): Promise<boolean> {
-  const value = await getSetting(`seenMilestone_${milestone}`);
-  return value === '1';
-}
-
-export async function markMilestoneSeen(milestone: number): Promise<void> {
-  await setSetting(`seenMilestone_${milestone}`, '1');
-}
-
-export async function migrateLocalEntriesUid(fromUid: string, toUid: string): Promise<void> {
-  await initDb();
-
-  const db = await getDb();
-
-  await db.runAsync(
-    `
-      UPDATE entries
-      SET uid = ?, synced = 0
-      WHERE uid = ?
-    `,
-    toUid,
-    fromUid,
-  );
-}
-
 export async function migrateUnsyncedEntriesToUser(toUid: string): Promise<void> {
   await initDb();
 
