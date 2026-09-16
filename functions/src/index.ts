@@ -266,6 +266,28 @@ async function buildAndStoreDigestForUser(
 
   const entriesFingerprint = createHash('sha256').update(entryText).digest('hex');
 
+  // If there are no meaningful entries for today, skip AI generation, push,
+  // and streak updates. Return a friendly fallback digest so the client can
+  // show a helpful message to the user instead of incrementing streaks.
+  if (!entryText) {
+    console.log(`No entries for uid ${uid} on ${dateKey} — skipping digest generation`);
+
+    const noEntriesDigest: z.infer<typeof DigestSchema> = {
+      headline: "No entries for today",
+      highlights: [],
+      actionItems: [],
+      decisions: [],
+      blockers: [],
+      statusUpdate: "No entries were captured today. Add an entry and tap Generate to create your digest.",
+    };
+
+    // Record that we skipped generation due to no entries so the dispatcher
+    // won't repeatedly attempt to regenerate/push for this user today.
+    await dailyUsageRef.set({ uid, dateKey, status: 'no_entries' }, { merge: true });
+
+    return noEntriesDigest;
+  }
+
   let existingRecordData: (z.infer<typeof DigestSchema> & { entriesFingerprint?: string }) | undefined;
   if (existingDigestRecordId) {
     const snap = await db.collection('digestRecords').doc(existingDigestRecordId).get();
