@@ -14,7 +14,7 @@ The business value is simple: DaySumm removes the expensive reconstruction step 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Follow%20DaySumm-blue?logo=linkedin)](https://lnkd.in/p/gSPvQhF4)
 [![Download APK](https://img.shields.io/badge/Android-Download%20APK-3DDC84?logo=android&logoColor=white)](https://drive.google.com/file/d/1q9lmeHDccun28SEQOZ8Gzg4X8Ib8hq7x/view?usp=sharing)
 
-- **Full app walkthrough:** [View the complete demo](docs/demo.mp4), including the app screens and RevenueCat payment flow.
+- **App walkthrough:** [View the complete video](docs/demo.mp4), including the app screens and RevenueCat payment flow.
 - **YouTube:** [Watch the DaySumm problem story and AI demo](https://youtu.be/xuL0zrw7Eyw) for a quick first look at the product value and AI experience.
 - **LinkedIn:** [Follow the DaySumm product story](https://lnkd.in/p/gSPvQhF4) for product updates, development progress, and announcements.
 - **Android APK:** [Download and install the latest available APK](https://drive.google.com/file/d/1q9lmeHDccun28SEQOZ8Gzg4X8Ib8hq7x/view?usp=sharing) for a hands-on trial.
@@ -43,7 +43,7 @@ User speaks or types
         ↓
 React Native / Expo app
         ↓
-SQLite local queue ──(when available)──→ Firestore
+SQLite local queue ──(when available)⟼ Firestore
         ↓                                  ↓
   local UI + widget              Cloud Functions
                                            ├─ Groq: transcription, translation, classification
