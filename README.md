@@ -2,7 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-> **Problem:** My workday is full of meaningful moments, but when I need to explain what happened, I have to reconstruct it from memory.
+> **Problem:** The work is done, but the day’s story is scattered.
 
 DaySumm is an Android-first workday memory and reporting assistant. It lets people capture a thought, decision, completed task, or blocker in seconds by voice or text. The app keeps those fragments close to the user, classifies them in the background, and turns them into a concise daily digest that is ready to review or share.
 
